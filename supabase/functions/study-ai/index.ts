@@ -13,8 +13,7 @@ async function callOpenRouter(systemText: string, userText: string) {
     models: [
       "meta-llama/llama-3.3-70b-instruct:free",
       "google/gemma-4-31b-it:free",
-      "nousresearch/hermes-3-llama-3.1-405b:free",
-      "openai/gpt-oss-20b:free"
+      "nousresearch/hermes-3-llama-3.1-405b:free"
     ],
     route: "fallback",
     messages: [
