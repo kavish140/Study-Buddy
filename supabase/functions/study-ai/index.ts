@@ -8,14 +8,19 @@ const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
 async function callOpenRouter(systemText: string, userText: string) {
   if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is missing or empty! Check your Supabase Secrets.");
 
-  // We are using a fast, free model provided by OpenRouter
+  // We use fallback routing across multiple free models in case one is busy
   const payload = {
-    model: "meta-llama/llama-3.3-70b-instruct:free",
+    models: [
+      "meta-llama/llama-3.3-70b-instruct:free",
+      "google/gemma-4-31b-it:free",
+      "nousresearch/hermes-3-llama-3.1-405b:free",
+      "openai/gpt-oss-20b:free"
+    ],
+    route: "fallback",
     messages: [
       { role: "system", content: systemText },
       { role: "user", content: userText }
-    ],
-    response_format: { type: "json_object" }
+    ]
   };
 
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
