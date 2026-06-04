@@ -9,7 +9,7 @@ async function callGroq(systemText: string, userText: string) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is missing! Check your Supabase Secrets.");
 
   const payload = {
-    model: "llama3-8b-8192", // Groq's insanely fast free model
+    model: "llama-3.3-70b-versatile", // Groq's incredibly fast free model
     messages: [
       { role: "system", content: systemText },
       { role: "user", content: userText }
