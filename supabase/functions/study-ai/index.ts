@@ -10,7 +10,7 @@ async function callOpenRouter(systemText: string, userText: string) {
 
   // We are using a fast, free model provided by OpenRouter
   const payload = {
-    model: "meta-llama/llama-3-8b-instruct:free",
+    model: "meta-llama/llama-3.3-70b-instruct:free",
     messages: [
       { role: "system", content: systemText },
       { role: "user", content: userText }
