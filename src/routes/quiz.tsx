@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/quiz")({
   head: () => ({
     meta: [
-      { title: "Quizzes — StudyForge" },
+      { title: "Quizzes — AcePrep" },
       { name: "description", content: "Generate AI quizzes on any topic and review your past attempts." },
     ],
   }),
@@ -69,10 +69,10 @@ function QuizPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">AI Quizzer</h1>
+      <h1 className="text-3xl font-bold tracking-tight font-heading">AI Quizzer</h1>
       <p className="text-muted-foreground mt-1">Generate a quiz on anything — get instant feedback.</p>
 
-      <div className="p-5 rounded-xl bg-card border border-border mt-6 shadow-elegant">
+      <div className="p-5 rounded-2xl glass-card mt-6">
         <div className="flex items-center gap-2 text-sm font-medium mb-4">
           <Sparkles className="h-4 w-4 text-primary" /> New quiz
         </div>
@@ -113,7 +113,7 @@ function QuizPage() {
       ) : (
         <div className="grid md:grid-cols-2 gap-3">
           {quizzes.map((q) => (
-            <div key={q.id} className="p-4 rounded-xl bg-card border border-border flex items-center justify-between gap-3">
+            <div key={q.id} className="p-4 rounded-2xl glass-card flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="font-medium truncate">{q.topic}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">
@@ -155,7 +155,7 @@ function QuizRunner({ quiz, onFinish, onClose }: { quiz: SavedQuiz; onFinish: (s
 
       <div className="mt-6 space-y-4">
         {quiz.questions.map((q: QuizQuestion, i) => (
-          <div key={i} className="p-5 rounded-xl bg-card border border-border">
+          <div key={i} className="p-5 rounded-2xl glass-card">
             <div className="text-xs text-muted-foreground mb-1">Question {i + 1}</div>
             <div className="font-medium">{q.question}</div>
             <div className="grid gap-2 mt-3">
@@ -196,7 +196,7 @@ function QuizRunner({ quiz, onFinish, onClose }: { quiz: SavedQuiz; onFinish: (s
         ))}
       </div>
 
-      <div className="sticky bottom-0 mt-6 p-4 bg-background/80 backdrop-blur border-t border-border flex items-center justify-between">
+      <div className="sticky bottom-0 mt-6 p-4 glass border-t border-border flex items-center justify-between">
         {submitted ? (
           <>
             <div className="font-medium">

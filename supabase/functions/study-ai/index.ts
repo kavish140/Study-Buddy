@@ -69,6 +69,60 @@ Deno.serve(async (req) => {
       const system = "You create realistic study schedules. Respond ONLY with valid JSON.";
       const user = `Create a ${data.days}-day study plan for these topics: ${data.topics.join(", ")}.\nReturn JSON:\n{"plan":[{"day":1,"tasks":["Task 1","Task 2"]}]}\nBalance review and new material. 2-4 tasks per day.`;
       result = await callGroq(system, user);
+    } else if (action === "generateMockTest") {
+      const system = `You are an expert exam paper setter for ${data.examName || "competitive exams"}. Generate high-quality multiple-choice questions organized by section. Each question must be exam-appropriate in difficulty with 4 options, one correct answer, and a brief explanation. Respond ONLY with valid JSON.`;
+      const sectionInstructions = (data.sections || []).map((s: any) =>
+        `Section "${s.name}": ${s.questions} questions from topics: ${(s.topics || []).join(", ")}`
+      ).join("\n");
+      const user = `Generate a mock test for ${data.examName} with these sections:\n${sectionInstructions}\n\nReturn JSON in this exact shape:\n{"sections":[{"name":"Section Name","questions":[{"id":"q1","question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"...","section":"Section Name","topic":"Topic Name"}]}]}\nEach question must have exactly 4 options. answerIndex is 0-3. Give each question a unique id like q1, q2, etc.`;
+      result = await callGroq(system, user);
+    } else if (action === "chat") {
+      if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is missing!");
+
+      const examContext = data.examName ? `The student is preparing for ${data.examName}.` : "";
+      const systemPrompt = `You are AcePrep AI Tutor — a friendly, knowledgeable study companion. ${examContext} Your role:
+- Explain concepts clearly with examples
+- Use step-by-step solutions for math/science problems
+- Format responses with markdown (headers, bold, lists, code blocks)
+- For math, use clear notation
+- Be encouraging and supportive
+- If asked about a topic, provide exam-relevant insights
+- Keep responses concise but thorough`;
+
+      const messages = [
+        { role: "system", content: systemPrompt },
+        ...(data.messages || []).slice(-20).map((m: any) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      ];
+
+      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages,
+          stream: true,
+        }),
+      });
+
+      if (!groqRes.ok) {
+        const errText = await groqRes.text();
+        throw new Error(`Groq API Error (${groqRes.status}): ${errText}`);
+      }
+
+      // Stream the response back
+      return new Response(groqRes.body, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+        },
+      });
     } else {
       throw new Error(`Unknown action: ${action}`);
     }

@@ -81,16 +81,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "StudyForge — AI-powered syllabus tracker, quizzer & study planner" },
-      { name: "description", content: "Track your syllabus, generate AI quizzes, plan study sessions, and create flashcards — all in one place." },
-      { name: "author", content: "StudyForge" },
-      { property: "og:title", content: "StudyForge — your AI study OS" },
-      { property: "og:description", content: "Syllabus tracking, AI quizzes, study planner and notes — built for students." },
+      { title: "AcePrep — Ace any competitive exam with AI" },
+      { name: "description", content: "Your AI-powered competitive exam prep platform. Mock tests, AI tutor, syllabus tracking, analytics and more — for JEE, NEET, SAT, GRE & beyond." },
+      { name: "author", content: "AcePrep" },
+      { property: "og:title", content: "AcePrep — Ace any competitive exam with AI" },
+      { property: "og:description", content: "Mock tests, AI tutor, smart study plans, and analytics — your complete exam prep OS." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-
     ],
     links: [
+      {
+        rel: "preconnect",
+        href: "https://fonts.googleapis.com",
+      },
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,
@@ -119,7 +131,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {path === "/login" ? <Outlet /> : <AppLayout />}
+      {path === "/login" || path === "/onboarding" ? <Outlet /> : <AppLayout />}
       <Toaster richColors position="top-right" theme="dark" />
     </QueryClientProvider>
   );

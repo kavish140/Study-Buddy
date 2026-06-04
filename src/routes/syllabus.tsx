@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 export const Route = createFileRoute("/syllabus")({
   head: () => ({
     meta: [
-      { title: "Syllabus — StudyForge" },
+      { title: "Syllabus — AcePrep" },
       { name: "description", content: "Track your syllabus topic by topic with AI-assisted parsing." },
     ],
   }),
@@ -97,11 +97,11 @@ function SyllabusPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Syllabus tracker</h1>
+      <h1 className="text-3xl font-bold tracking-tight font-heading">Syllabus tracker</h1>
       <p className="text-muted-foreground mt-1">Paste your syllabus and let AI organize it, or add subjects manually.</p>
 
       <div className="grid md:grid-cols-2 gap-4 mt-6">
-        <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="p-5 rounded-2xl glass-card">
           <div className="flex items-center gap-2 text-sm font-medium mb-3">
             <Sparkles className="h-4 w-4 text-primary" /> AI parse syllabus
           </div>
@@ -115,7 +115,7 @@ function SyllabusPage() {
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Parse with AI"}
           </Button>
         </div>
-        <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="p-5 rounded-2xl glass-card">
           <div className="text-sm font-medium mb-3">Add subject manually</div>
           <div className="flex gap-2">
             <Input
@@ -181,7 +181,7 @@ function SubjectCard({
 }) {
   const [topic, setTopic] = useState("");
   return (
-    <div className="p-5 rounded-xl bg-card border border-border">
+    <div className="p-5 rounded-2xl glass-card">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <span className="h-3 w-3 rounded-full" style={{ background: subject.color }} />

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/notes")({
   head: () => ({
     meta: [
-      { title: "Notes & Flashcards — StudyForge" },
+      { title: "Notes & Flashcards — AcePrep" },
       { name: "description", content: "Turn any topic into a clear summary and flashcard deck with AI." },
     ],
   }),
@@ -61,10 +61,10 @@ function NotesPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Notes & flashcards</h1>
+      <h1 className="text-3xl font-bold tracking-tight font-heading">Notes & flashcards</h1>
       <p className="text-muted-foreground mt-1">Drop a topic, get a tight summary and a flashcard deck.</p>
 
-      <div className="p-5 rounded-xl bg-card border border-border mt-6 shadow-elegant">
+      <div className="p-5 rounded-2xl glass-card mt-6">
         <div className="flex items-center gap-2 text-sm font-medium mb-3">
           <Sparkles className="h-4 w-4 text-primary" /> Generate
         </div>
@@ -102,7 +102,7 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
   const next = () => { setRevealed(false); setIdx((i) => (i + 1) % total); };
 
   return (
-    <div className="p-5 rounded-xl bg-card border border-border">
+    <div className="p-5 rounded-2xl glass-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="font-semibold">{note.topic}</div>
@@ -117,7 +117,7 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
         <div className="text-xs text-muted-foreground mb-2">Flashcard {idx + 1} / {total}</div>
         <button
           onClick={() => setRevealed((r) => !r)}
-          className="w-full text-left p-5 rounded-xl bg-gradient-surface border border-border hover:border-primary/40 transition-colors min-h-32"
+          className="w-full text-left p-5 rounded-2xl glass-subtle hover:border-primary/30 transition-all min-h-32"
         >
           <div className="text-xs uppercase tracking-wide text-primary mb-2">{revealed ? "Answer" : "Question"}</div>
           <div className="text-base">{revealed ? card.a : card.q}</div>

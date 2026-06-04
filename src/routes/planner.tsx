@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export const Route = createFileRoute("/planner")({
   head: () => ({
     meta: [
-      { title: "Planner — StudyForge" },
+      { title: "Planner — AcePrep" },
       { name: "description", content: "AI-built multi-day study schedule based on the topics you need to cover." },
     ],
   }),
@@ -102,11 +102,11 @@ function PlannerPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Study planner</h1>
+      <h1 className="text-3xl font-bold tracking-tight font-heading">Study planner</h1>
       <p className="text-muted-foreground mt-1">Generate a schedule from your syllabus or build one yourself.</p>
 
       <div className="grid md:grid-cols-2 gap-4 mt-6">
-        <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="p-5 rounded-2xl glass-card">
           <div className="flex items-center gap-2 text-sm font-medium mb-3">
             <Sparkles className="h-4 w-4 text-primary" /> AI plan generator
           </div>
@@ -129,7 +129,7 @@ function PlannerPage() {
             </Button>
           </div>
         </div>
-        <div className="p-5 rounded-xl bg-card border border-border">
+        <div className="p-5 rounded-2xl glass-card">
           <div className="text-sm font-medium mb-3">Add task manually</div>
           <div className="flex gap-2">
             <Input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} className="w-44" />
@@ -155,7 +155,7 @@ function PlannerPage() {
             const label = d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
             const isToday = date === dayKey(0);
             return (
-              <div key={date} className="p-5 rounded-xl bg-card border border-border">
+              <div key={date} className="p-5 rounded-2xl glass-card">
                 <div className="flex items-center gap-2">
                   <div className="font-semibold">{label}</div>
                   {isToday && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">Today</span>}
