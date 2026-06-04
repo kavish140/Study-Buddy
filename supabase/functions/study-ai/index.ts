@@ -1,45 +1,40 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY") || "";
 
-async function callGemini(systemText: string, userText: string) {
-  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is missing");
+async function callOpenRouter(systemText: string, userText: string) {
+  if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is missing or empty! Check your Supabase Secrets.");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-  
+  // We are using a fast, free model provided by OpenRouter
   const payload = {
-    systemInstruction: {
-      parts: [{ text: systemText }]
-    },
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: userText }]
-      }
+    model: "meta-llama/llama-3-8b-instruct:free",
+    messages: [
+      { role: "system", content: systemText },
+      { role: "user", content: userText }
     ],
-    generationConfig: {
-      temperature: 0.7,
-      responseMimeType: "application/json"
-    }
+    response_format: { type: "json_object" }
   };
 
-  const res = await fetch(url, {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${OPENROUTER_API_KEY}`
     },
     body: JSON.stringify(payload)
   });
 
   if (!res.ok) {
     const errorText = await res.text();
-    console.error("Gemini Error:", errorText);
-    throw new Error(`AI Request Failed: ${res.status}`);
+    console.error("OpenRouter Error:", errorText);
+    throw new Error(`OpenRouter API Error (${res.status}): ${errorText}`);
   }
 
   const data = await res.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const rawText = data.choices?.[0]?.message?.content || "";
   
   try {
     return JSON.parse(rawText);
@@ -50,7 +45,8 @@ async function callGemini(systemText: string, userText: string) {
   }
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
+  // 1. Handle CORS Preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -62,19 +58,19 @@ serve(async (req) => {
     if (action === "generateQuiz") {
       const system = "You are an expert educator. Generate multiple-choice quiz questions. Respond ONLY with valid JSON.";
       const user = `Create ${data.count} ${data.difficulty} multiple-choice questions about: "${data.topic}".\nReturn JSON in this exact shape:\n{"questions":[{"question":"...","options":["A","B","C","D"],"answerIndex":0,"explanation":"..."}]}\nEach question must have exactly 4 options. answerIndex is 0-3.`;
-      result = await callGemini(system, user);
+      result = await callOpenRouter(system, user);
     } else if (action === "generateNotes") {
       const system = "You are a concise study coach. Produce study notes and flashcards. Respond ONLY with valid JSON.";
       const user = `Topic: "${data.topic}".\nReturn JSON:\n{"summary":"3-5 sentence clear summary","flashcards":[{"q":"...","a":"..."}]}\nGenerate 6 flashcards covering the most important ideas.`;
-      result = await callGemini(system, user);
+      result = await callOpenRouter(system, user);
     } else if (action === "parseSyllabus") {
       const system = "You convert raw syllabus text into structured subjects and topics. Respond ONLY with valid JSON.";
       const user = `Syllabus text:\n${data.text}\n\nReturn JSON:\n{"subjects":[{"name":"Subject","topics":["Topic 1","Topic 2"]}]}\nGroup related items. Keep topic names short and concrete.`;
-      result = await callGemini(system, user);
+      result = await callOpenRouter(system, user);
     } else if (action === "generatePlan") {
       const system = "You create realistic study schedules. Respond ONLY with valid JSON.";
       const user = `Create a ${data.days}-day study plan for these topics: ${data.topics.join(", ")}.\nReturn JSON:\n{"plan":[{"day":1,"tasks":["Task 1","Task 2"]}]}\nBalance review and new material. 2-4 tasks per day.`;
-      result = await callGemini(system, user);
+      result = await callOpenRouter(system, user);
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
@@ -84,10 +80,10 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error: any) {
-    console.error(error);
+    console.error("Function Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 200,
     });
   }
 });
