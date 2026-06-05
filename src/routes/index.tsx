@@ -1,5 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BookOpen, Brain, Calendar, FileText, Clock, TrendingUp, Zap, Target, BarChart3 } from "lucide-react";
+import {
+  BookOpen,
+  Brain,
+  Calendar,
+  FileText,
+  Clock,
+  TrendingUp,
+  Zap,
+  Target,
+  BarChart3,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getExamById } from "@/lib/exam-catalog";
@@ -8,7 +18,11 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Dashboard — AcePrep" },
-      { name: "description", content: "Your AI-powered competitive exam prep dashboard: syllabus progress, quizzes, study plan and notes." },
+      {
+        name: "description",
+        content:
+          "Your AI-powered competitive exam prep dashboard: syllabus progress, quizzes, study plan and notes.",
+      },
     ],
   }),
   component: Dashboard,
@@ -24,16 +38,17 @@ function Dashboard() {
 
   const examInfo = profile?.exam_id ? getExamById(profile.exam_id) : null;
   const daysRemaining = profile?.target_date
-    ? Math.max(0, Math.ceil((new Date(profile.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(
+        0,
+        Math.ceil((new Date(profile.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+      )
     : null;
 
   const totalTopics = subjects.reduce((s, x) => s + x.topics.length, 0);
   const doneTopics = subjects.reduce((s, x) => s + x.topics.filter((t) => t.done).length, 0);
   const pct = totalTopics ? Math.round((doneTopics / totalTopics) * 100) : 0;
   const avgScore = quizzes.length
-    ? Math.round(
-        (quizzes.reduce((s, q) => s + (q.score ?? 0), 0) / quizzes.length) * 100,
-      ) / 100
+    ? Math.round((quizzes.reduce((s, q) => s + (q.score ?? 0), 0) / quizzes.length) * 100) / 100
     : 0;
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayItems = plan.filter((p) => p.date === todayKey);
@@ -56,7 +71,8 @@ function Dashboard() {
           Welcome to <span className="text-gradient">AcePrep</span>
         </h1>
         <p className="mt-3 text-muted-foreground max-w-xl text-lg">
-          Your all-in-one platform to crack competitive exams. Track progress, practice smart, and ace your goals.
+          Your all-in-one platform to crack competitive exams. Track progress, practice smart, and
+          ace your goals.
         </p>
 
         {/* Exam countdown card */}
@@ -66,7 +82,7 @@ function Dashboard() {
               <div className="flex items-center gap-4">
                 <div
                   className="h-14 w-14 rounded-xl grid place-items-center text-2xl"
-                  style={{ backgroundColor: (examInfo.color || '#3b82f6') + '15' }}
+                  style={{ backgroundColor: (examInfo.color || "#3b82f6") + "15" }}
                 >
                   {examInfo.icon}
                 </div>
@@ -79,13 +95,17 @@ function Dashboard() {
                       {examInfo.examPattern.totalTimeMinutes} min
                     </span>
                     <span>{examInfo.examPattern.totalQuestions} questions</span>
-                    <Link to="/onboarding" className="text-primary hover:underline">Change</Link>
+                    <Link to="/onboarding" className="text-primary hover:underline">
+                      Change
+                    </Link>
                   </div>
                 </div>
               </div>
               {daysRemaining !== null && (
                 <div className="text-center sm:text-right px-4 py-3 rounded-xl bg-primary/5 border border-primary/10">
-                  <div className="text-3xl font-bold font-heading text-gradient">{daysRemaining}</div>
+                  <div className="text-3xl font-bold font-heading text-gradient">
+                    {daysRemaining}
+                  </div>
                   <div className="text-xs text-muted-foreground">days left</div>
                 </div>
               )}
@@ -126,7 +146,18 @@ function Dashboard() {
           <Link to="/analytics" className="contents">
             <StatCard
               label="Accuracy"
-              value={`${quizzes.length + mockTests.filter(t => t.status === 'completed').length > 0 ? Math.round(quizzes.reduce((s, q) => s + (q.score ?? 0), 0) / Math.max(1, quizzes.reduce((s, q) => s + q.questions.length, 0)) * 100) : 0}%`}
+              value={`${
+                quizzes.length + mockTests.filter((t) => t.status === "completed").length > 0
+                  ? Math.round(
+                      (quizzes.reduce((s, q) => s + (q.score ?? 0), 0) /
+                        Math.max(
+                          1,
+                          quizzes.reduce((s, q) => s + q.questions.length, 0),
+                        )) *
+                        100,
+                    )
+                  : 0
+              }%`}
               hint="view analytics"
               icon={<BarChart3 className="h-4 w-4" />}
               accentColor="accent"
@@ -217,7 +248,9 @@ function StatCard({
     <div className="glass-card p-5 rounded-2xl">
       <div className="flex items-center justify-between mb-3">
         <div className="text-xs text-muted-foreground font-medium">{label}</div>
-        <div className={`h-8 w-8 rounded-lg ${colors.bg} ${colors.text} grid place-items-center border ${colors.border}`}>
+        <div
+          className={`h-8 w-8 rounded-lg ${colors.bg} ${colors.text} grid place-items-center border ${colors.border}`}
+        >
           {icon}
         </div>
       </div>
@@ -241,12 +274,11 @@ function FeatureCard({
   gradient: string;
 }) {
   return (
-    <Link
-      to={to}
-      className="group glass-card p-6 rounded-2xl relative overflow-hidden"
-    >
+    <Link to={to} className="group glass-card p-6 rounded-2xl relative overflow-hidden">
       {/* Gradient hover background */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+      />
 
       <div className="relative">
         <div className="h-11 w-11 rounded-xl bg-gradient-primary grid place-items-center text-white mb-4 group-hover:shadow-glow-sm transition-shadow duration-300">

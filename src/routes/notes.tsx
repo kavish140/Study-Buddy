@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Trash2, RotateCw } from "lucide-react";
+import { Loader2, Sparkles, Trash2, RotateCw, BookOpen } from "lucide-react";
 import { uid, type Note } from "@/lib/storage";
 import { generateNotes } from "@/lib/ai.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,7 +13,10 @@ export const Route = createFileRoute("/notes")({
   head: () => ({
     meta: [
       { title: "Notes & Flashcards — AcePrep" },
-      { name: "description", content: "Turn any topic into a clear summary and flashcard deck with AI." },
+      {
+        name: "description",
+        content: "Turn any topic into a clear summary and flashcard deck with AI.",
+      },
     ],
   }),
   component: NotesPage,
@@ -22,6 +25,7 @@ export const Route = createFileRoute("/notes")({
 function NotesPage() {
   const queryClient = useQueryClient();
   const { data: notes = [] } = useQuery({ queryKey: ["notes"], queryFn: api.getNotes });
+  const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
 
   const saveMutation = useMutation({
     mutationFn: api.saveNote,
@@ -39,7 +43,7 @@ function NotesPage() {
     if (!topic.trim()) return;
     setLoading(true);
     try {
-      const res = await generateNotes({ data: { topic } });
+      const res = await generateNotes({ data: { topic, examName: profile?.exam_name } });
       const note: Note = {
         id: uid(),
         topic: topic.trim(),
@@ -62,7 +66,10 @@ function NotesPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Notes & flashcards</h1>
-      <p className="text-muted-foreground mt-1">Drop a topic, get a tight summary and a flashcard deck.</p>
+      <p className="text-muted-foreground mt-1">
+        Drop a syllabus topic, get a crisp summary and flashcard deck.
+        {profile?.exam_name && <span className="text-primary font-medium"> Tailored for {profile.exam_name}.</span>}
+      </p>
 
       <div className="p-5 rounded-2xl glass-card mt-6">
         <div className="flex items-center gap-2 text-sm font-medium mb-3">
@@ -72,10 +79,14 @@ function NotesPage() {
           <Input
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. Mitochondria and ATP production"
+            placeholder={profile?.exam_name ? `e.g. Kinematics, Organic Chemistry, Integral Calculus...` : "e.g. Kinematics, Organic Chemistry..."}
             onKeyDown={(e) => e.key === "Enter" && !loading && handleGenerate()}
           />
-          <Button onClick={handleGenerate} disabled={loading || !topic.trim()} className="bg-gradient-primary">
+          <Button
+            onClick={handleGenerate}
+            disabled={loading || !topic.trim()}
+            className="bg-gradient-primary"
+          >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate"}
           </Button>
         </div>
@@ -99,7 +110,10 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
   const [revealed, setRevealed] = useState(false);
   const total = note.flashcards.length;
   const card = note.flashcards[idx];
-  const next = () => { setRevealed(false); setIdx((i) => (i + 1) % total); };
+  const next = () => {
+    setRevealed(false);
+    setIdx((i) => (i + 1) % total);
+  };
 
   return (
     <div className="p-5 rounded-2xl glass-card">
@@ -114,12 +128,16 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
       </div>
 
       <div className="mt-5">
-        <div className="text-xs text-muted-foreground mb-2">Flashcard {idx + 1} / {total}</div>
+        <div className="text-xs text-muted-foreground mb-2">
+          Flashcard {idx + 1} / {total}
+        </div>
         <button
           onClick={() => setRevealed((r) => !r)}
           className="w-full text-left p-5 rounded-2xl glass-subtle hover:border-primary/30 transition-all min-h-32"
         >
-          <div className="text-xs uppercase tracking-wide text-primary mb-2">{revealed ? "Answer" : "Question"}</div>
+          <div className="text-xs uppercase tracking-wide text-primary mb-2">
+            {revealed ? "Answer" : "Question"}
+          </div>
           <div className="text-base">{revealed ? card.a : card.q}</div>
           {!revealed && <div className="text-xs text-muted-foreground mt-3">Tap to reveal</div>}
         </button>

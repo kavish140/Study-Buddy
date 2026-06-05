@@ -2,8 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
-  Send, Plus, Trash2, Loader2, Sparkles, MessageSquare,
-  ChevronLeft, Lightbulb, HelpCircle, BookOpen, User, Bot,
+  Send,
+  Plus,
+  Trash2,
+  Loader2,
+  Sparkles,
+  MessageSquare,
+  ChevronLeft,
+  Lightbulb,
+  HelpCircle,
+  BookOpen,
+  User,
+  Bot,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -16,7 +26,11 @@ export const Route = createFileRoute("/chat")({
   head: () => ({
     meta: [
       { title: "AI Tutor — AcePrep" },
-      { name: "description", content: "Ask your AI tutor any question. Get step-by-step explanations and exam-relevant insights." },
+      {
+        name: "description",
+        content:
+          "Ask your AI tutor any question. Get step-by-step explanations and exam-relevant insights.",
+      },
     ],
   }),
   component: ChatPage,
@@ -24,11 +38,16 @@ export const Route = createFileRoute("/chat")({
 
 function ChatPage() {
   const queryClient = useQueryClient();
-  const { data: sessions = [] } = useQuery({ queryKey: ["chatSessions"], queryFn: api.getChatSessions });
+  const { data: sessions = [] } = useQuery({
+    queryKey: ["chatSessions"],
+    queryFn: api.getChatSessions,
+  });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
+  // Tracks a pending first message when creating a new session from empty state
+  const [pendingFirstMsg, setPendingFirstMsg] = useState<string | null>(null);
 
   const saveMutation = useMutation({
     mutationFn: api.saveChatSession,
@@ -54,6 +73,20 @@ function ChatPage() {
     setShowSidebar(false);
   };
 
+  // Called from EmptyState — creates session AND sends first message immediately
+  const handleSendFromEmpty = (msg: string) => {
+    const newSession: ChatSession = {
+      id: uid(),
+      title: msg.slice(0, 50) + (msg.length > 50 ? "…" : ""),
+      exam_id: profile?.exam_id,
+      messages: [],
+    };
+    saveMutation.mutate(newSession);
+    setActiveSessionId(newSession.id);
+    setPendingFirstMsg(msg);
+    setShowSidebar(false);
+  };
+
   const handleDeleteChat = (id: string) => {
     deleteMutation.mutate(id);
     if (activeSessionId === id) setActiveSessionId(null);
@@ -66,10 +99,14 @@ function ChatPage() {
   return (
     <div className="relative h-[calc(100vh-64px)] lg:h-screen flex overflow-hidden">
       {/* Sidebar */}
-      <aside className={cn(
-        "w-72 border-r border-border flex flex-col bg-sidebar transition-all duration-300 absolute lg:relative z-20 h-full",
-        showSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-0 lg:border-0 lg:overflow-hidden",
-      )}>
+      <aside
+        className={cn(
+          "w-72 border-r border-border flex flex-col bg-sidebar transition-all duration-300 absolute lg:relative z-20 h-full",
+          showSidebar
+            ? "translate-x-0"
+            : "-translate-x-full lg:translate-x-0 lg:w-0 lg:border-0 lg:overflow-hidden",
+        )}
+      >
         <div className="p-4 border-b border-border flex items-center justify-between">
           <span className="font-semibold font-heading text-sm">Chat History</span>
           <Button variant="ghost" size="sm" onClick={handleNewChat}>
@@ -92,12 +129,18 @@ function ChatPage() {
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
               )}
-              onClick={() => { setActiveSessionId(session.id); setShowSidebar(false); }}
+              onClick={() => {
+                setActiveSessionId(session.id);
+                setShowSidebar(false);
+              }}
             >
               <MessageSquare className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate flex-1">{session.title}</span>
               <button
-                onClick={(e) => { e.stopPropagation(); handleDeleteChat(session.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteChat(session.id);
+                }}
                 className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
               >
                 <Trash2 className="h-3 w-3" />
@@ -123,9 +166,14 @@ function ChatPage() {
             examName={profile?.exam_name}
             onUpdate={handleUpdateSession}
             onToggleSidebar={() => setShowSidebar(!showSidebar)}
+            initialMessage={pendingFirstMsg ?? undefined}
+            onInitialMessageConsumed={() => setPendingFirstMsg(null)}
           />
         ) : (
-          <EmptyState onNewChat={handleNewChat} onToggleSidebar={() => setShowSidebar(!showSidebar)} />
+          <EmptyState
+            onSend={handleSendFromEmpty}
+            onToggleSidebar={() => setShowSidebar(!showSidebar)}
+          />
         )}
       </main>
     </div>
@@ -133,44 +181,112 @@ function ChatPage() {
 }
 
 /* ─── Empty State ─── */
-function EmptyState({ onNewChat, onToggleSidebar }: { onNewChat: () => void; onToggleSidebar: () => void }) {
-  return (
-    <div className="flex-1 flex items-center justify-center p-8">
-      <div className="text-center max-w-md">
-        <div className="h-16 w-16 rounded-2xl bg-gradient-primary grid place-items-center mx-auto mb-6 shadow-glow">
-          <Sparkles className="h-8 w-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold font-heading mb-2">AcePrep AI Tutor</h2>
-        <p className="text-muted-foreground mb-6">
-          Ask anything about your exam topics. Get step-by-step solutions,
-          concept explanations, and exam strategies.
-        </p>
-        <div className="flex flex-col gap-2">
-          <Button className="bg-gradient-primary" onClick={onNewChat}>
-            <Plus className="h-4 w-4 mr-2" /> Start a conversation
-          </Button>
-          <Button variant="ghost" className="lg:hidden" onClick={onToggleSidebar}>
-            <MessageSquare className="h-4 w-4 mr-2" /> View history
-          </Button>
-        </div>
+function EmptyState({
+  onSend,
+  onToggleSidebar,
+}: {
+  onSend: (msg: string) => void;
+  onToggleSidebar: () => void;
+}) {
+  const [input, setInput] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-8">
-          {[
-            { icon: HelpCircle, text: "Explain the concept of electronegativity" },
-            { icon: Lightbulb, text: "How do I solve projectile motion problems?" },
-            { icon: BookOpen, text: "Summarize the French Revolution" },
-            { icon: Sparkles, text: "What are the best strategies for JEE Math?" },
-          ].map((prompt, i) => (
-            <button
-              key={i}
-              onClick={onNewChat}
-              className="glass-subtle p-3 rounded-xl text-left text-xs text-muted-foreground hover:text-foreground hover:border-primary/20 transition-all"
-            >
-              <prompt.icon className="h-3.5 w-3.5 mb-1.5 text-primary" />
-              {prompt.text}
-            </button>
-          ))}
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + "px";
+    }
+  }, [input]);
+
+  const handleSend = (text?: string) => {
+    const msg = text || input.trim();
+    if (!msg) return;
+    setInput("");
+    onSend(msg);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const suggestedPrompts = [
+    { icon: HelpCircle, text: "Explain the concept of electronegativity" },
+    { icon: Lightbulb, text: "How do I solve projectile motion problems?" },
+    { icon: BookOpen, text: "Summarize the French Revolution" },
+    { icon: Sparkles, text: "What are the best strategies for JEE Math?" },
+  ];
+
+  return (
+    <div className="flex-1 flex flex-col min-w-0">
+      {/* Header */}
+      <header className="glass border-b border-border px-4 py-3 flex items-center gap-3 shrink-0">
+        <button onClick={onToggleSidebar} className="lg:hidden text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center">
+          <Sparkles className="h-4 w-4 text-white" />
         </div>
+        <div>
+          <div className="font-medium text-sm">AcePrep AI Tutor</div>
+          <div className="text-xs text-muted-foreground">Ready to help</div>
+        </div>
+      </header>
+
+      {/* Hero area */}
+      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+        <div className="text-center max-w-lg w-full">
+          <div className="h-16 w-16 rounded-2xl bg-gradient-primary grid place-items-center mx-auto mb-5 shadow-glow">
+            <Sparkles className="h-8 w-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold font-heading mb-2">AcePrep AI Tutor</h2>
+          <p className="text-muted-foreground mb-8 text-sm">
+            Ask anything about your exam topics. Get step-by-step solutions,
+            concept explanations, and exam strategies.
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 mb-8">
+            {suggestedPrompts.map((prompt, i) => (
+              <button
+                key={i}
+                onClick={() => handleSend(prompt.text)}
+                className="glass-subtle p-3 rounded-xl text-left text-xs text-muted-foreground hover:text-foreground hover:border-primary/20 transition-all"
+              >
+                <prompt.icon className="h-3.5 w-3.5 mb-1.5 text-primary" />
+                {prompt.text}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Input bar — always visible */}
+      <div className="border-t border-border p-4 shrink-0">
+        <div className="max-w-3xl mx-auto flex items-end gap-3">
+          <div className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/30 transition-colors">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask a question... (Enter to send)"
+              rows={1}
+              autoFocus
+              className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
+            />
+          </div>
+          <Button
+            onClick={() => handleSend()}
+            disabled={!input.trim()}
+            className="bg-gradient-primary h-11 w-11 shrink-0 rounded-xl p-0"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+        <p className="text-center text-xs text-muted-foreground mt-2">Press Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   );
@@ -182,17 +298,22 @@ function ChatView({
   examName,
   onUpdate,
   onToggleSidebar,
+  initialMessage,
+  onInitialMessageConsumed,
 }: {
   session: ChatSession;
   examName?: string;
   onUpdate: (session: ChatSession) => void;
   onToggleSidebar: () => void;
+  initialMessage?: string;
+  onInitialMessageConsumed?: () => void;
 }) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const sentInitialRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -210,6 +331,16 @@ function ChatView({
     }
   }, [input]);
 
+  // Auto-send the first message if it came from the empty state
+  useEffect(() => {
+    if (initialMessage && !sentInitialRef.current) {
+      sentInitialRef.current = true;
+      onInitialMessageConsumed?.();
+      handleSend(initialMessage);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialMessage]);
+
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
     if (!msg || isStreaming) return;
@@ -223,9 +354,10 @@ function ChatView({
     const updatedMessages = [...session.messages, userMessage];
 
     // Update title on first message
-    const title = session.messages.length === 0
-      ? msg.slice(0, 50) + (msg.length > 50 ? "…" : "")
-      : session.title;
+    const title =
+      session.messages.length === 0
+        ? msg.slice(0, 50) + (msg.length > 50 ? "…" : "")
+        : session.title;
 
     const updatedSession: ChatSession = {
       ...session,
@@ -287,7 +419,10 @@ function ChatView({
     <>
       {/* Chat header */}
       <header className="glass border-b border-border px-4 py-3 flex items-center gap-3 shrink-0">
-        <button onClick={onToggleSidebar} className="lg:hidden text-muted-foreground hover:text-foreground">
+        <button
+          onClick={onToggleSidebar}
+          className="lg:hidden text-muted-foreground hover:text-foreground"
+        >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center">
@@ -307,9 +442,7 @@ function ChatView({
           {session.messages.length === 0 && !isStreaming && (
             <div className="text-center py-12">
               <Sparkles className="h-10 w-10 text-primary/30 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">
-                Ask me anything about your studies!
-              </p>
+              <p className="text-sm text-muted-foreground">Ask me anything about your studies!</p>
             </div>
           )}
 
@@ -343,20 +476,22 @@ function ChatView({
       </div>
 
       {/* Quick actions (show after assistant response) */}
-      {session.messages.length > 0 && session.messages[session.messages.length - 1]?.role === "assistant" && !isStreaming && (
-        <div className="px-4 pb-2 flex gap-2 max-w-3xl mx-auto w-full">
-          {quickActions.map((action) => (
-            <button
-              key={action.label}
-              onClick={() => handleSend(action.label)}
-              className="text-xs px-3 py-1.5 rounded-full glass-subtle hover:border-primary/20 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5"
-            >
-              <action.icon className="h-3 w-3" />
-              {action.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {session.messages.length > 0 &&
+        session.messages[session.messages.length - 1]?.role === "assistant" &&
+        !isStreaming && (
+          <div className="px-4 pb-2 flex gap-2 max-w-3xl mx-auto w-full">
+            {quickActions.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => handleSend(action.label)}
+                className="text-xs px-3 py-1.5 rounded-full glass-subtle hover:border-primary/20 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5"
+              >
+                <action.icon className="h-3 w-3" />
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
 
       {/* Input area */}
       <div className="border-t border-border p-4 shrink-0">
@@ -402,24 +537,22 @@ function MessageBubble({
 
   return (
     <div className={cn("flex items-start gap-3", isUser && "flex-row-reverse")}>
-      <div className={cn(
-        "h-8 w-8 rounded-lg grid place-items-center shrink-0",
-        isUser ? "bg-accent/10" : "bg-gradient-primary",
-      )}>
-        {isUser ? (
-          <User className="h-4 w-4 text-accent" />
-        ) : (
-          <Bot className="h-4 w-4 text-white" />
+      <div
+        className={cn(
+          "h-8 w-8 rounded-lg grid place-items-center shrink-0",
+          isUser ? "bg-accent/10" : "bg-gradient-primary",
         )}
+      >
+        {isUser ? <User className="h-4 w-4 text-accent" /> : <Bot className="h-4 w-4 text-white" />}
       </div>
 
-      <div className={cn(
-        "max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed",
-        isUser
-          ? "bg-primary/10 text-foreground rounded-tr-sm"
-          : "glass-subtle rounded-tl-sm",
-        isStreaming && "animate-pulse-subtle",
-      )}>
+      <div
+        className={cn(
+          "max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed",
+          isUser ? "bg-primary/10 text-foreground rounded-tr-sm" : "glass-subtle rounded-tl-sm",
+          isStreaming && "animate-pulse-subtle",
+        )}
+      >
         {isUser ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
@@ -461,7 +594,10 @@ function MarkdownContent({ content }: { content: string }) {
       if (line.trim().startsWith("```")) {
         if (inCodeBlock) {
           blocks.push(
-            <pre key={blocks.length} className="bg-muted/30 rounded-lg p-3 mb-2 overflow-x-auto text-xs font-mono">
+            <pre
+              key={blocks.length}
+              className="bg-muted/30 rounded-lg p-3 mb-2 overflow-x-auto text-xs font-mono"
+            >
               <code>{currentBlock.join("\n")}</code>
             </pre>,
           );
@@ -483,17 +619,29 @@ function MarkdownContent({ content }: { content: string }) {
       // Headers
       if (line.startsWith("### ")) {
         flushParagraph();
-        blocks.push(<h4 key={blocks.length} className="font-semibold text-sm mt-3 mb-1">{renderInline(line.slice(4))}</h4>);
+        blocks.push(
+          <h4 key={blocks.length} className="font-semibold text-sm mt-3 mb-1">
+            {renderInline(line.slice(4))}
+          </h4>,
+        );
         continue;
       }
       if (line.startsWith("## ")) {
         flushParagraph();
-        blocks.push(<h3 key={blocks.length} className="font-bold text-sm mt-3 mb-1">{renderInline(line.slice(3))}</h3>);
+        blocks.push(
+          <h3 key={blocks.length} className="font-bold text-sm mt-3 mb-1">
+            {renderInline(line.slice(3))}
+          </h3>,
+        );
         continue;
       }
       if (line.startsWith("# ")) {
         flushParagraph();
-        blocks.push(<h2 key={blocks.length} className="font-bold mt-3 mb-1">{renderInline(line.slice(2))}</h2>);
+        blocks.push(
+          <h2 key={blocks.length} className="font-bold mt-3 mb-1">
+            {renderInline(line.slice(2))}
+          </h2>,
+        );
         continue;
       }
 

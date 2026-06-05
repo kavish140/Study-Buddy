@@ -1,5 +1,14 @@
 import { supabase } from "./supabase";
-import { Subject, SavedQuiz, PlanItem, Note, UserProfile, MockTest, PerformanceLog, ChatSession } from "./storage";
+import {
+  Subject,
+  SavedQuiz,
+  PlanItem,
+  Note,
+  UserProfile,
+  MockTest,
+  PerformanceLog,
+  ChatSession,
+} from "./storage";
 
 export const api = {
   // Subjects
@@ -12,8 +21,12 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    
-    const { data, error } = await supabase.from("subjects").upsert({ ...subject, user_id }).select().single();
+
+    const { data, error } = await supabase
+      .from("subjects")
+      .upsert({ ...subject, user_id })
+      .select()
+      .single();
     if (error) throw error;
     return data;
   },
@@ -24,7 +37,10 @@ export const api = {
 
   // Quizzes
   getQuizzes: async () => {
-    const { data, error } = await supabase.from("quizzes").select("*").order('createdAt', { ascending: false });
+    const { data, error } = await supabase
+      .from("quizzes")
+      .select("*")
+      .order("createdAt", { ascending: false });
     if (error) throw error;
     return (data as SavedQuiz[]) || [];
   },
@@ -33,7 +49,11 @@ export const api = {
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
-    const { data, error } = await supabase.from("quizzes").upsert({ ...quiz, user_id }).select().single();
+    const { data, error } = await supabase
+      .from("quizzes")
+      .upsert({ ...quiz, user_id })
+      .select()
+      .single();
     if (error) throw error;
     return data;
   },
@@ -53,13 +73,18 @@ export const api = {
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
-    const mapped = items.map(item => ({ ...item, user_id }));
+    const mapped = items.map((item) => ({ ...item, user_id }));
     const { data, error } = await supabase.from("plan_items").upsert(mapped).select();
     if (error) throw error;
     return data;
   },
   updatePlanItem: async (id: string, done: boolean) => {
-    const { data, error } = await supabase.from("plan_items").update({ done }).eq("id", id).select().single();
+    const { data, error } = await supabase
+      .from("plan_items")
+      .update({ done })
+      .eq("id", id)
+      .select()
+      .single();
     if (error) throw error;
     return data;
   },
@@ -70,7 +95,10 @@ export const api = {
 
   // Notes
   getNotes: async () => {
-    const { data, error } = await supabase.from("notes").select("*").order('createdAt', { ascending: false });
+    const { data, error } = await supabase
+      .from("notes")
+      .select("*")
+      .order("createdAt", { ascending: false });
     if (error) throw error;
     return (data as Note[]) || [];
   },
@@ -79,7 +107,11 @@ export const api = {
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
-    const { data, error } = await supabase.from("notes").upsert({ ...note, user_id }).select().single();
+    const { data, error } = await supabase
+      .from("notes")
+      .upsert({ ...note, user_id })
+      .select()
+      .single();
     if (error) throw error;
     return data;
   },
@@ -161,7 +193,7 @@ export const api = {
       .from("performance_logs")
       .upsert(
         { ...log, user_id, last_attempted: new Date().toISOString() },
-        { onConflict: "user_id,subject,topic" }
+        { onConflict: "user_id,subject,topic" },
       )
       .select()
       .single();

@@ -15,7 +15,6 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppLayout } from "../components/AppLayout";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -82,10 +81,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "AcePrep — Ace any competitive exam with AI" },
-      { name: "description", content: "Your AI-powered competitive exam prep platform. Mock tests, AI tutor, syllabus tracking, analytics and more — for JEE, NEET, SAT, GRE & beyond." },
+      {
+        name: "description",
+        content:
+          "Your AI-powered competitive exam prep platform. Mock tests, AI tutor, syllabus tracking, analytics and more — for JEE, NEET, SAT, GRE & beyond.",
+      },
       { name: "author", content: "AcePrep" },
       { property: "og:title", content: "AcePrep — Ace any competitive exam with AI" },
-      { property: "og:description", content: "Mock tests, AI tutor, smart study plans, and analytics — your complete exam prep OS." },
+      {
+        property: "og:description",
+        content:
+          "Mock tests, AI tutor, smart study plans, and analytics — your complete exam prep OS.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -136,4 +143,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-

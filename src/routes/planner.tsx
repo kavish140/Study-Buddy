@@ -9,13 +9,22 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
     meta: [
       { title: "Planner — AcePrep" },
-      { name: "description", content: "AI-built multi-day study schedule based on the topics you need to cover." },
+      {
+        name: "description",
+        content: "AI-built multi-day study schedule based on the topics you need to cover.",
+      },
     ],
   }),
   component: PlannerPage,
@@ -38,7 +47,7 @@ function PlannerPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, done }: { id: string, done: boolean }) => api.updatePlanItem(id, done),
+    mutationFn: ({ id, done }: { id: string; done: boolean }) => api.updatePlanItem(id, done),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["plan"] }),
   });
 
@@ -52,12 +61,15 @@ function PlannerPage() {
   const [manualTask, setManualTask] = useState("");
 
   const pendingTopics = useMemo(
-    () => subjects.flatMap((s) => s.topics.filter((t) => !t.done).map((t) => `${s.name}: ${t.name}`)),
+    () =>
+      subjects.flatMap((s) => s.topics.filter((t) => !t.done).map((t) => `${s.name}: ${t.name}`)),
     [subjects],
   );
 
   const handleGenerate = async () => {
-    const topics = pendingTopics.length ? pendingTopics : subjects.flatMap((s) => s.topics.map((t) => `${s.name}: ${t.name}`));
+    const topics = pendingTopics.length
+      ? pendingTopics
+      : subjects.flatMap((s) => s.topics.map((t) => `${s.name}: ${t.name}`));
     if (topics.length === 0) {
       toast.error("Add subjects & topics first on the Syllabus page.");
       return;
@@ -103,7 +115,9 @@ function PlannerPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Study planner</h1>
-      <p className="text-muted-foreground mt-1">Generate a schedule from your syllabus or build one yourself.</p>
+      <p className="text-muted-foreground mt-1">
+        Generate a schedule from your syllabus or build one yourself.
+      </p>
 
       <div className="grid md:grid-cols-2 gap-4 mt-6">
         <div className="p-5 rounded-2xl glass-card">
@@ -117,14 +131,22 @@ function PlannerPage() {
           </div>
           <div className="flex gap-2">
             <Select value={days} onValueChange={setDays}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {[3, 5, 7, 10, 14, 21].map((n) => (
-                  <SelectItem key={n} value={String(n)}>{n} days</SelectItem>
+                  <SelectItem key={n} value={String(n)}>
+                    {n} days
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={handleGenerate} disabled={loading} className="flex-1 bg-gradient-primary">
+            <Button
+              onClick={handleGenerate}
+              disabled={loading}
+              className="flex-1 bg-gradient-primary"
+            >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate plan"}
             </Button>
           </div>
@@ -132,14 +154,21 @@ function PlannerPage() {
         <div className="p-5 rounded-2xl glass-card">
           <div className="text-sm font-medium mb-3">Add task manually</div>
           <div className="flex gap-2">
-            <Input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} className="w-44" />
+            <Input
+              type="date"
+              value={manualDate}
+              onChange={(e) => setManualDate(e.target.value)}
+              className="w-44"
+            />
             <Input
               value={manualTask}
               onChange={(e) => setManualTask(e.target.value)}
               placeholder="Task…"
               onKeyDown={(e) => e.key === "Enter" && addManual()}
             />
-            <Button variant="secondary" onClick={addManual}><Plus className="h-4 w-4" /></Button>
+            <Button variant="secondary" onClick={addManual}>
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -152,21 +181,41 @@ function PlannerPage() {
         ) : (
           byDay.map(([date, items]) => {
             const d = new Date(date + "T00:00:00");
-            const label = d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+            const label = d.toLocaleDateString(undefined, {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+            });
             const isToday = date === dayKey(0);
             return (
               <div key={date} className="p-5 rounded-2xl glass-card">
                 <div className="flex items-center gap-2">
                   <div className="font-semibold">{label}</div>
-                  {isToday && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">Today</span>}
-                  <span className="text-xs text-muted-foreground ml-auto">{items.filter((i) => i.done).length}/{items.length}</span>
+                  {isToday && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                      Today
+                    </span>
+                  )}
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {items.filter((i) => i.done).length}/{items.length}
+                  </span>
                 </div>
                 <div className="mt-3 space-y-1.5">
                   {items.map((it) => (
-                    <label key={it.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 group">
+                    <label
+                      key={it.id}
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 group"
+                    >
                       <Checkbox checked={it.done} onCheckedChange={() => toggle(it.id)} />
-                      <span className={it.done ? "line-through text-muted-foreground flex-1" : "flex-1"}>{it.task}</span>
-                      <button onClick={() => remove(it.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
+                      <span
+                        className={it.done ? "line-through text-muted-foreground flex-1" : "flex-1"}
+                      >
+                        {it.task}
+                      </span>
+                      <button
+                        onClick={() => remove(it.id)}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </label>

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Sparkles, Trash2, Loader2 } from "lucide-react";
+import { Plus, Sparkles, Trash2, Loader2, BookOpen, GraduationCap } from "lucide-react";
 import { uid, type Subject } from "@/lib/storage";
 import { parseSyllabus } from "@/lib/ai.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,12 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/syllabus")({
   head: () => ({
     meta: [
       { title: "Syllabus — AcePrep" },
-      { name: "description", content: "Track your syllabus topic by topic with AI-assisted parsing." },
+      {
+        name: "description",
+        content: "Track your syllabus topic by topic with AI-assisted parsing.",
+      },
     ],
   }),
   component: SyllabusPage,
@@ -26,9 +30,45 @@ const COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#10b981", "#f59e0b", "#06b6d4"
 function SyllabusPage() {
   const queryClient = useQueryClient();
   const { data: subjects = [] } = useQuery({ queryKey: ["subjects"], queryFn: api.getSubjects });
+  const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
   const [raw, setRaw] = useState("");
   const [loading, setLoading] = useState(false);
   const [newSubject, setNewSubject] = useState("");
+  const [classFilter, setClassFilter] = useState<"11" | "12" | null>(null);
+
+  // JEE/NEET class-wise topic split
+  const isJeeNeet = profile?.exam_id && ["jee-main", "jee-advanced", "neet"].includes(profile.exam_id);
+
+  const CLASS_TOPICS: Record<string, Record<"11" | "12", { subject: string; topics: string[] }[]>> = {
+    "jee-main": {
+      "11": [
+        { subject: "Physics", topics: ["Units and Measurements", "Kinematics", "Laws of Motion", "Work, Energy and Power", "Rotational Motion", "Gravitation", "Properties of Solids and Liquids", "Thermodynamics", "Kinetic Theory of Gases", "Oscillations and Waves"] },
+        { subject: "Chemistry", topics: ["Some Basic Concepts in Chemistry", "Atomic Structure", "Chemical Bonding", "States of Matter", "Chemical Thermodynamics", "Equilibrium", "Redox Reactions", "Hydrogen", "s-Block Elements", "p-Block Elements (Part 1)", "Organic Chemistry Basics", "Hydrocarbons", "Environmental Chemistry"] },
+        { subject: "Mathematics", topics: ["Sets, Relations and Functions", "Complex Numbers", "Quadratic Equations", "Permutations and Combinations", "Binomial Theorem", "Sequences and Series", "Limits and Derivatives", "Trigonometry", "Straight Lines", "Conic Sections", "Statistics and Probability", "Mathematical Reasoning"] },
+      ],
+      "12": [
+        { subject: "Physics", topics: ["Electrostatics", "Current Electricity", "Magnetic Effects of Current", "Electromagnetic Induction", "Electromagnetic Waves", "Optics", "Dual Nature of Matter and Radiation", "Atoms and Nuclei", "Electronic Devices", "Communication Systems"] },
+        { subject: "Chemistry", topics: ["Solid State", "Solutions", "Electrochemistry", "Chemical Kinetics", "Surface Chemistry", "Classification of Elements", "d and f Block Elements", "Coordination Compounds", "Organic Compounds with Functional Groups", "Polymers", "Biomolecules", "Chemistry in Everyday Life"] },
+        { subject: "Mathematics", topics: ["Matrices and Determinants", "Integral Calculus", "Differential Equations", "Coordinate Geometry", "Three Dimensional Geometry", "Vector Algebra", "Statistics and Probability (Advanced)"] },
+      ],
+    },
+    "neet": {
+      "11": [
+        { subject: "Physics", topics: ["Physical World and Measurement", "Kinematics", "Laws of Motion", "Work, Energy and Power", "Motion of System of Particles", "Gravitation", "Properties of Bulk Matter", "Thermodynamics", "Kinetic Theory of Gases", "Oscillations and Waves"] },
+        { subject: "Chemistry", topics: ["Basic Concepts of Chemistry", "Structure of Atom", "Classification of Elements", "Chemical Bonding", "States of Matter", "Thermodynamics", "Equilibrium", "Redox Reactions", "Hydrogen", "s-Block Elements", "p-Block Elements", "Organic Chemistry Basics", "Hydrocarbons", "Environmental Chemistry"] },
+        { subject: "Biology", topics: ["Diversity in Living World", "Structural Organisation in Animals and Plants", "Cell Structure and Function", "Plant Physiology", "Human Physiology"] },
+      ],
+      "12": [
+        { subject: "Physics", topics: ["Electrostatics", "Current Electricity", "Magnetic Effects of Current", "Electromagnetic Induction and AC", "Electromagnetic Waves", "Optics", "Dual Nature of Radiation", "Atoms and Nuclei", "Electronic Devices"] },
+        { subject: "Chemistry", topics: ["Solid State", "Solutions", "Electrochemistry", "Chemical Kinetics", "Surface Chemistry", "d and f Block Elements", "Coordination Compounds", "Aldehydes, Ketones", "Amines", "Biomolecules", "Polymers"] },
+        { subject: "Biology", topics: ["Reproduction", "Genetics and Evolution", "Biology and Human Welfare", "Biotechnology", "Ecology and Environment"] },
+      ],
+    },
+  };
+
+  const classTopics = isJeeNeet && classFilter && CLASS_TOPICS[profile!.exam_id]
+    ? CLASS_TOPICS[profile!.exam_id][classFilter]
+    : null;
 
   const saveMutation = useMutation({
     mutationFn: api.saveSubject,
@@ -62,7 +102,7 @@ function SyllabusPage() {
         color: COLORS[(subjects.length + i) % COLORS.length],
         topics: s.topics.map((t) => ({ id: uid(), name: t, done: false })),
       }));
-      await Promise.all(next.map(s => saveMutation.mutateAsync(s)));
+      await Promise.all(next.map((s) => saveMutation.mutateAsync(s)));
       setRaw("");
       toast.success(`Added ${next.length} subjects`);
     } catch (e) {
@@ -73,15 +113,18 @@ function SyllabusPage() {
   };
 
   const toggleTopic = (sid: string, tid: string) => {
-    const s = subjects.find(x => x.id === sid);
+    const s = subjects.find((x) => x.id === sid);
     if (!s) return;
-    const updated = { ...s, topics: s.topics.map((t) => (t.id === tid ? { ...t, done: !t.done } : t)) };
+    const updated = {
+      ...s,
+      topics: s.topics.map((t) => (t.id === tid ? { ...t, done: !t.done } : t)),
+    };
     saveMutation.mutate(updated);
   };
 
   const addTopic = (sid: string, name: string) => {
     if (!name.trim()) return;
-    const s = subjects.find(x => x.id === sid);
+    const s = subjects.find((x) => x.id === sid);
     if (!s) return;
     const updated = { ...s, topics: [...s.topics, { id: uid(), name: name.trim(), done: false }] };
     saveMutation.mutate(updated);
@@ -89,7 +132,7 @@ function SyllabusPage() {
 
   const removeSubject = (sid: string) => deleteMutation.mutate(sid);
   const removeTopic = (sid: string, tid: string) => {
-    const s = subjects.find(x => x.id === sid);
+    const s = subjects.find((x) => x.id === sid);
     if (!s) return;
     const updated = { ...s, topics: s.topics.filter((t) => t.id !== tid) };
     saveMutation.mutate(updated);
@@ -98,7 +141,64 @@ function SyllabusPage() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Syllabus tracker</h1>
-      <p className="text-muted-foreground mt-1">Paste your syllabus and let AI organize it, or add subjects manually.</p>
+      <p className="text-muted-foreground mt-1">
+        Track your topics chapter by chapter. Mark done as you go.
+      </p>
+
+      {/* Class 11 / 12 quick-loader for JEE/NEET */}
+      {isJeeNeet && (
+        <div className="glass-card p-5 rounded-2xl mt-6">
+          <div className="flex items-center gap-2 text-sm font-medium mb-3">
+            <GraduationCap className="h-4 w-4 text-primary" />
+            Quick load syllabus by class
+            <span className="text-xs text-muted-foreground ml-1">({profile?.exam_name})</span>
+          </div>
+          <div className="flex gap-3 mb-4">
+            {(["11", "12"] as const).map((cls) => (
+              <button
+                key={cls}
+                onClick={() => setClassFilter(classFilter === cls ? null : cls)}
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                  classFilter === cls
+                    ? "bg-gradient-primary text-white shadow-glow-sm"
+                    : "glass-subtle text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Class {cls}
+              </button>
+            ))}
+          </div>
+
+          {classTopics && (
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                These are the Class {classFilter} topics for {profile?.exam_name}. Click a subject to load it into your tracker.
+              </p>
+              <div className="grid sm:grid-cols-3 gap-2">
+                {classTopics.map((group) => (
+                  <div key={group.subject} className="glass-subtle p-3 rounded-xl">
+                    <div className="text-xs font-semibold text-primary mb-2">{group.subject} · {group.topics.length} topics</div>
+                    <div className="space-y-0.5 max-h-40 overflow-y-auto">
+                      {group.topics.map((t) => (
+                        <div key={t} className="text-xs text-muted-foreground py-0.5">{t}</div>
+                      ))}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="mt-2 w-full text-xs"
+                      onClick={() => addSubject(`${group.subject} (Class ${classFilter})`, group.topics)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Add to tracker
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-4 mt-6">
         <div className="p-5 rounded-2xl glass-card">
@@ -111,7 +211,11 @@ function SyllabusPage() {
             placeholder="Paste raw syllabus text here…"
             className="min-h-32"
           />
-          <Button onClick={handleParse} disabled={loading || !raw.trim()} className="mt-3 w-full bg-gradient-primary">
+          <Button
+            onClick={handleParse}
+            disabled={loading || !raw.trim()}
+            className="mt-3 w-full bg-gradient-primary"
+          >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Parse with AI"}
           </Button>
         </div>
@@ -154,7 +258,18 @@ function SyllabusPage() {
           subjects.map((s) => {
             const done = s.topics.filter((t) => t.done).length;
             const pct = s.topics.length ? Math.round((done / s.topics.length) * 100) : 0;
-            return <SubjectCard key={s.id} subject={s} pct={pct} done={done} onToggle={toggleTopic} onAddTopic={addTopic} onRemove={removeSubject} onRemoveTopic={removeTopic} />;
+            return (
+              <SubjectCard
+                key={s.id}
+                subject={s}
+                pct={pct}
+                done={done}
+                onToggle={toggleTopic}
+                onAddTopic={addTopic}
+                onRemove={removeSubject}
+                onRemoveTopic={removeTopic}
+              />
+            );
           })
         )}
       </div>
@@ -186,7 +301,9 @@ function SubjectCard({
         <div className="flex items-center gap-3 min-w-0">
           <span className="h-3 w-3 rounded-full" style={{ background: subject.color }} />
           <div className="font-semibold truncate">{subject.name}</div>
-          <span className="text-xs text-muted-foreground">{done}/{subject.topics.length} · {pct}%</span>
+          <span className="text-xs text-muted-foreground">
+            {done}/{subject.topics.length} · {pct}%
+          </span>
         </div>
         <Button size="icon" variant="ghost" onClick={() => onRemove(subject.id)}>
           <Trash2 className="h-4 w-4" />
@@ -202,7 +319,9 @@ function SubjectCard({
             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 cursor-pointer group"
           >
             <Checkbox checked={t.done} onCheckedChange={() => onToggle(subject.id, t.id)} />
-            <span className={t.done ? "line-through text-muted-foreground flex-1" : "flex-1"}>{t.name}</span>
+            <span className={t.done ? "line-through text-muted-foreground flex-1" : "flex-1"}>
+              {t.name}
+            </span>
             <button
               onClick={(e) => {
                 e.preventDefault();

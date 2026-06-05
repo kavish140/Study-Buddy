@@ -3,13 +3,28 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getExamById } from "@/lib/exam-catalog";
 import {
-  BarChart3, TrendingUp, TrendingDown, Target, Brain, Zap,
-  AlertTriangle, CheckCircle2, Clock, ArrowUpRight,
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Brain,
+  Zap,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, AreaChart, Area,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
 } from "recharts";
 import type { SavedQuiz, MockTest, PerformanceLog } from "@/lib/storage";
 
@@ -17,7 +32,10 @@ export const Route = createFileRoute("/analytics")({
   head: () => ({
     meta: [
       { title: "Analytics — AcePrep" },
-      { name: "description", content: "Track your performance, identify weak areas, and monitor your progress." },
+      {
+        name: "description",
+        content: "Track your performance, identify weak areas, and monitor your progress.",
+      },
     ],
   }),
   component: AnalyticsPage,
@@ -61,7 +79,10 @@ function computeQuizTrend(quizzes: SavedQuiz[], mockTests: MockTest[]) {
   });
 
   return Array.from(grouped.entries()).map(([date, scores]) => ({
-    date: new Date(date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    date: new Date(date + "T00:00:00").toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    }),
     score: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
   }));
 }
@@ -71,7 +92,10 @@ function computeTopicMastery(
   mockTests: MockTest[],
   perfLogs: PerformanceLog[],
 ) {
-  const topicMap = new Map<string, { subject: string; topic: string; correct: number; total: number }>();
+  const topicMap = new Map<
+    string,
+    { subject: string; topic: string; correct: number; total: number }
+  >();
 
   // From performance logs (primary source)
   perfLogs.forEach((log) => {
@@ -88,7 +112,12 @@ function computeTopicMastery(
   quizzes.forEach((q) => {
     if (q.score === undefined || q.score === null) return;
     const key = `General::${q.topic}`;
-    const existing = topicMap.get(key) || { subject: "General", topic: q.topic, correct: 0, total: 0 };
+    const existing = topicMap.get(key) || {
+      subject: "General",
+      topic: q.topic,
+      correct: 0,
+      total: 0,
+    };
     existing.correct += q.score;
     existing.total += q.questions.length;
     topicMap.set(key, existing);
@@ -101,7 +130,12 @@ function computeTopicMastery(
       t.sections.forEach((section) => {
         section.questions.forEach((q) => {
           const key = `${section.name}::${q.topic}`;
-          const existing = topicMap.get(key) || { subject: section.name, topic: q.topic, correct: 0, total: 0 };
+          const existing = topicMap.get(key) || {
+            subject: section.name,
+            topic: q.topic,
+            correct: 0,
+            total: 0,
+          };
           existing.total += 1;
           if (t.answers[q.id] === q.answerIndex) existing.correct += 1;
           topicMap.set(key, existing);
@@ -118,30 +152,48 @@ function computeTopicMastery(
 function AnalyticsPage() {
   const { data: quizzes = [] } = useQuery({ queryKey: ["quizzes"], queryFn: api.getQuizzes });
   const { data: mockTests = [] } = useQuery({ queryKey: ["mockTests"], queryFn: api.getMockTests });
-  const { data: perfLogs = [] } = useQuery({ queryKey: ["perfLogs"], queryFn: api.getPerformanceLogs });
+  const { data: perfLogs = [] } = useQuery({
+    queryKey: ["perfLogs"],
+    queryFn: api.getPerformanceLogs,
+  });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
 
   const examInfo = profile?.exam_id ? getExamById(profile.exam_id) : null;
   const trendData = computeQuizTrend(quizzes, mockTests);
   const topicData = computeTopicMastery(quizzes, mockTests, perfLogs);
   const weakTopics = topicData.filter((t) => t.accuracy < 50).slice(0, 5);
-  const strongTopics = topicData.filter((t) => t.accuracy >= 70).sort((a, b) => b.accuracy - a.accuracy).slice(0, 5);
+  const strongTopics = topicData
+    .filter((t) => t.accuracy >= 70)
+    .sort((a, b) => b.accuracy - a.accuracy)
+    .slice(0, 5);
 
   // Overall stats
   const completedMocks = mockTests.filter((t) => t.status === "completed");
   const totalQuizzes = quizzes.length;
   const totalMocks = completedMocks.length;
-  const totalQuestions = quizzes.reduce((s, q) => s + q.questions.length, 0) +
-    completedMocks.reduce((s, t) => s + t.sections.reduce((ss, sec) => ss + sec.questions.length, 0), 0);
+  const totalQuestions =
+    quizzes.reduce((s, q) => s + q.questions.length, 0) +
+    completedMocks.reduce(
+      (s, t) => s + t.sections.reduce((ss, sec) => ss + sec.questions.length, 0),
+      0,
+    );
 
   const overallAccuracy = topicData.length
-    ? Math.round(topicData.reduce((s, t) => s + t.correct, 0) / Math.max(1, topicData.reduce((s, t) => s + t.total, 0)) * 100)
+    ? Math.round(
+        (topicData.reduce((s, t) => s + t.correct, 0) /
+          Math.max(
+            1,
+            topicData.reduce((s, t) => s + t.total, 0),
+          )) *
+          100,
+      )
     : 0;
 
   const recentScores = trendData.slice(-5);
-  const trend = recentScores.length >= 2
-    ? recentScores[recentScores.length - 1].score - recentScores[0].score
-    : 0;
+  const trend =
+    recentScores.length >= 2
+      ? recentScores[recentScores.length - 1].score - recentScores[0].score
+      : 0;
 
   // Group topics by subject for heatmap
   const subjectGroups = new Map<string, typeof topicData>();
@@ -162,7 +214,9 @@ function AnalyticsPage() {
           <span className="text-gradient">Analytics</span>
         </h1>
         <p className="text-muted-foreground mt-2">
-          {examInfo ? `Performance overview for ${examInfo.name}` : "Track your exam prep performance"}
+          {examInfo
+            ? `Performance overview for ${examInfo.name}`
+            : "Track your exam prep performance"}
         </p>
 
         {!hasData ? (
@@ -170,8 +224,8 @@ function AnalyticsPage() {
             <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
             <h2 className="font-semibold font-heading text-lg mb-2">No data yet</h2>
             <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Take quizzes and mock tests to see your performance analytics here.
-              Your scores, topic mastery, and improvement trends will appear automatically.
+              Take quizzes and mock tests to see your performance analytics here. Your scores, topic
+              mastery, and improvement trends will appear automatically.
             </p>
           </div>
         ) : (
@@ -182,7 +236,13 @@ function AnalyticsPage() {
                 label="Overall accuracy"
                 value={`${overallAccuracy}%`}
                 icon={<Target className="h-4 w-4" />}
-                accent={overallAccuracy >= 70 ? "success" : overallAccuracy >= 40 ? "warning" : "destructive"}
+                accent={
+                  overallAccuracy >= 70
+                    ? "success"
+                    : overallAccuracy >= 40
+                      ? "warning"
+                      : "destructive"
+                }
               />
               <StatCard
                 label="Questions practiced"
@@ -199,7 +259,13 @@ function AnalyticsPage() {
               <StatCard
                 label="Score trend"
                 value={`${trend >= 0 ? "+" : ""}${trend}%`}
-                icon={trend >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                icon={
+                  trend >= 0 ? (
+                    <TrendingUp className="h-4 w-4" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4" />
+                  )
+                }
                 accent={trend >= 0 ? "success" : "destructive"}
               />
             </div>
@@ -335,12 +401,17 @@ function AnalyticsPage() {
                   {weakTopics.length > 0 ? (
                     <div className="space-y-2">
                       {weakTopics.map((t) => (
-                        <div key={`${t.subject}-${t.topic}`} className="flex items-center justify-between">
+                        <div
+                          key={`${t.subject}-${t.topic}`}
+                          className="flex items-center justify-between"
+                        >
                           <div className="min-w-0">
                             <div className="text-sm font-medium truncate">{t.topic}</div>
                             <div className="text-xs text-muted-foreground">{t.subject}</div>
                           </div>
-                          <span className="text-sm font-bold text-destructive shrink-0 ml-2">{t.accuracy}%</span>
+                          <span className="text-sm font-bold text-destructive shrink-0 ml-2">
+                            {t.accuracy}%
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -360,12 +431,17 @@ function AnalyticsPage() {
                   {strongTopics.length > 0 ? (
                     <div className="space-y-2">
                       {strongTopics.map((t) => (
-                        <div key={`${t.subject}-${t.topic}`} className="flex items-center justify-between">
+                        <div
+                          key={`${t.subject}-${t.topic}`}
+                          className="flex items-center justify-between"
+                        >
                           <div className="min-w-0">
                             <div className="text-sm font-medium truncate">{t.topic}</div>
                             <div className="text-xs text-muted-foreground">{t.subject}</div>
                           </div>
-                          <span className="text-sm font-bold text-success shrink-0 ml-2">{t.accuracy}%</span>
+                          <span className="text-sm font-bold text-success shrink-0 ml-2">
+                            {t.accuracy}%
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -387,14 +463,25 @@ function AnalyticsPage() {
                 </div>
                 <div className="space-y-2">
                   {completedMocks.slice(0, 8).map((t) => {
-                    const pct = t.total_marks ? Math.round(((t.score ?? 0) / t.total_marks) * 100) : 0;
+                    const pct = t.total_marks
+                      ? Math.round(((t.score ?? 0) / t.total_marks) * 100)
+                      : 0;
                     const mins = t.time_taken_seconds ? Math.round(t.time_taken_seconds / 60) : 0;
                     return (
-                      <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/20 transition-colors">
-                        <div className={cn(
-                          "h-10 w-10 rounded-lg grid place-items-center text-sm font-bold font-heading",
-                          pct >= 70 ? "bg-success/10 text-success" : pct >= 40 ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive",
-                        )}>
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/20 transition-colors"
+                      >
+                        <div
+                          className={cn(
+                            "h-10 w-10 rounded-lg grid place-items-center text-sm font-bold font-heading",
+                            pct >= 70
+                              ? "bg-success/10 text-success"
+                              : pct >= 40
+                                ? "bg-warning/10 text-warning"
+                                : "bg-destructive/10 text-destructive",
+                          )}
+                        >
                           {pct}%
                         </div>
                         <div className="flex-1 min-w-0">
@@ -436,14 +523,20 @@ function StatCard({
     accent: { bg: "bg-accent/10", text: "text-accent", border: "border-accent/20" },
     success: { bg: "bg-success/10", text: "text-success", border: "border-success/20" },
     warning: { bg: "bg-warning/10", text: "text-warning", border: "border-warning/20" },
-    destructive: { bg: "bg-destructive/10", text: "text-destructive", border: "border-destructive/20" },
+    destructive: {
+      bg: "bg-destructive/10",
+      text: "text-destructive",
+      border: "border-destructive/20",
+    },
   };
   const c = colorMap[accent];
   return (
     <div className="glass-card p-5 rounded-2xl">
       <div className="flex items-center justify-between mb-3">
         <div className="text-xs text-muted-foreground font-medium">{label}</div>
-        <div className={`h-8 w-8 rounded-lg ${c.bg} ${c.text} grid place-items-center border ${c.border}`}>
+        <div
+          className={`h-8 w-8 rounded-lg ${c.bg} ${c.text} grid place-items-center border ${c.border}`}
+        >
           {icon}
         </div>
       </div>

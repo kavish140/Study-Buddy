@@ -24,7 +24,6 @@ export function useLocalStorage<T>(key: string, initial: T) {
   return [value, setValue] as const;
 }
 
-
 export type Topic = { id: string; name: string; done: boolean };
 export type Subject = { id: string; name: string; color: string; topics: Topic[] };
 
@@ -92,7 +91,7 @@ export type MockTest = {
   total_marks?: number;
   time_taken_seconds?: number;
   total_time_seconds: number;
-  status: 'in_progress' | 'completed';
+  status: "in_progress" | "completed";
   started_at?: string;
   completed_at?: string;
   created_at?: string;
@@ -110,7 +109,7 @@ export type PerformanceLog = {
 };
 
 export type ChatMessage = {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: string;
 };

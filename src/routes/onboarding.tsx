@@ -1,7 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { GraduationCap, ChevronRight, ChevronLeft, Calendar, Sparkles, Check, Search, Loader2 } from "lucide-react";
+import {
+  GraduationCap,
+  ChevronRight,
+  ChevronLeft,
+  Calendar,
+  Sparkles,
+  Check,
+  Search,
+  Loader2,
+} from "lucide-react";
 import { EXAM_CATALOG, type ExamInfo } from "@/lib/exam-catalog";
 import { api } from "@/lib/api";
 import { uid, type Subject } from "@/lib/storage";
@@ -15,13 +24,26 @@ export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
       { title: "Get Started — AcePrep" },
-      { name: "description", content: "Set up your AcePrep profile: pick your exam, select subjects, and let AI create your study plan." },
+      {
+        name: "description",
+        content:
+          "Set up your AcePrep profile: pick your exam, select subjects, and let AI create your study plan.",
+      },
     ],
   }),
   component: OnboardingPage,
 });
 
-const SUBJECT_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#10b981", "#f59e0b", "#06b6d4", "#ef4444", "#14b8a6"];
+const SUBJECT_COLORS = [
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#10b981",
+  "#f59e0b",
+  "#06b6d4",
+  "#ef4444",
+  "#14b8a6",
+];
 
 function OnboardingPage() {
   const navigate = useNavigate();
@@ -77,9 +99,7 @@ function OnboardingPage() {
       });
 
       // 2. Create subjects from exam syllabus
-      const examSubjects = selectedExam.subjects.filter((s) =>
-        selectedSubjects.includes(s.name),
-      );
+      const examSubjects = selectedExam.subjects.filter((s) => selectedSubjects.includes(s.name));
       for (let i = 0; i < examSubjects.length; i++) {
         const es = examSubjects[i];
         const subject: Subject = {
@@ -99,9 +119,7 @@ function OnboardingPage() {
             .slice(0, 40);
           const daysUntil = Math.max(
             1,
-            Math.ceil(
-              (new Date(targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-            ),
+            Math.ceil((new Date(targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
           );
           const planDays = Math.min(daysUntil, 14);
           const res = await generatePlan({ data: { topics, days: planDays } });
@@ -143,7 +161,10 @@ function OnboardingPage() {
       <div className="absolute inset-0 bg-gradient-hero" />
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-primary/5 blur-3xl animate-float" />
-        <div className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full bg-accent/5 blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
+        <div
+          className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full bg-accent/5 blur-3xl animate-float"
+          style={{ animationDelay: "-3s" }}
+        />
       </div>
 
       <div className="relative z-10 max-w-2xl mx-auto px-6 py-10">
@@ -173,7 +194,9 @@ function OnboardingPage() {
               >
                 {i < step ? <Check className="h-4 w-4" /> : i + 1}
               </div>
-              <span className={`text-sm hidden sm:inline ${i === step ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+              <span
+                className={`text-sm hidden sm:inline ${i === step ? "text-foreground font-medium" : "text-muted-foreground"}`}
+              >
                 {label}
               </span>
               {i < 2 && <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />}
@@ -184,8 +207,12 @@ function OnboardingPage() {
         {/* Step 0: Pick Exam */}
         {step === 0 && (
           <div>
-            <h1 className="text-2xl font-bold font-heading mb-2">Which exam are you preparing for?</h1>
-            <p className="text-muted-foreground mb-6">Choose your target exam and we'll load the official syllabus.</p>
+            <h1 className="text-2xl font-bold font-heading mb-2">
+              Which exam are you preparing for?
+            </h1>
+            <p className="text-muted-foreground mb-6">
+              Choose your target exam and we'll load the official syllabus.
+            </p>
 
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -258,7 +285,8 @@ function OnboardingPage() {
           <div>
             <h1 className="text-2xl font-bold font-heading mb-2">Select your subjects</h1>
             <p className="text-muted-foreground mb-6">
-              Choose which subjects you want to focus on for {selectedExam.shortName}. You can change this later.
+              Choose which subjects you want to focus on for {selectedExam.shortName}. You can
+              change this later.
             </p>
 
             <div className="space-y-3">
@@ -269,9 +297,7 @@ function OnboardingPage() {
                     key={subject.name}
                     onClick={() => toggleSubject(subject.name)}
                     className={`w-full text-left p-5 rounded-2xl transition-all duration-200 ${
-                      isSelected
-                        ? "glass border border-primary/30"
-                        : "glass-card opacity-60"
+                      isSelected ? "glass border border-primary/30" : "glass-card opacity-60"
                     }`}
                   >
                     <div className="flex items-center gap-4">
@@ -279,7 +305,8 @@ function OnboardingPage() {
                       <div className="flex-1">
                         <div className="font-semibold">{subject.name}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          {subject.topics.length} topics · {subject.topics.slice(0, 3).join(", ")}{subject.topics.length > 3 ? "..." : ""}
+                          {subject.topics.length} topics · {subject.topics.slice(0, 3).join(", ")}
+                          {subject.topics.length > 3 ? "..." : ""}
                         </div>
                       </div>
                     </div>
@@ -318,7 +345,9 @@ function OnboardingPage() {
                 </div>
                 <div>
                   <div className="font-medium">Exam date</div>
-                  <div className="text-xs text-muted-foreground">Typically held in {selectedExam.typicalMonth}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Typically held in {selectedExam.typicalMonth}
+                  </div>
                 </div>
               </div>
 
@@ -332,7 +361,9 @@ function OnboardingPage() {
 
               {daysRemaining !== null && daysRemaining > 0 && (
                 <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
-                  <div className="text-3xl font-bold font-heading text-gradient">{daysRemaining}</div>
+                  <div className="text-3xl font-bold font-heading text-gradient">
+                    {daysRemaining}
+                  </div>
                   <div className="text-sm text-muted-foreground">days until your exam</div>
                 </div>
               )}
@@ -347,7 +378,9 @@ function OnboardingPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Exam</span>
-                  <span className="font-medium">{selectedExam.icon} {selectedExam.name}</span>
+                  <span className="font-medium">
+                    {selectedExam.icon} {selectedExam.name}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subjects</span>

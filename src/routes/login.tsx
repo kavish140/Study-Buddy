@@ -13,7 +13,10 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in — AcePrep" },
-      { name: "description", content: "Sign in to AcePrep and start acing your competitive exams with AI." },
+      {
+        name: "description",
+        content: "Sign in to AcePrep and start acing your competitive exams with AI.",
+      },
     ],
   }),
   component: Login,
@@ -36,20 +39,38 @@ function Login() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Floating orbs */}
         <div className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-primary/5 blur-3xl animate-float" />
-        <div className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full bg-accent/5 blur-3xl animate-float" style={{ animationDelay: '-3s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/3 blur-3xl animate-float" style={{ animationDelay: '-1.5s' }} />
+        <div
+          className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full bg-accent/5 blur-3xl animate-float"
+          style={{ animationDelay: "-3s" }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/3 blur-3xl animate-float"
+          style={{ animationDelay: "-1.5s" }}
+        />
         {/* Grid overlay */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: 'linear-gradient(rgba(59,130,246,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.3) 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-        }} />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(59,130,246,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.3) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
       </div>
 
       <div className="relative z-10 w-full max-w-md mx-4">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="h-16 w-16 rounded-2xl bg-gradient-primary grid place-items-center shadow-glow mb-5">
-            <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              className="h-8 w-8 text-white"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
               <path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5" />
             </svg>
@@ -58,7 +79,8 @@ function Login() {
             <span className="text-gradient">AcePrep</span>
           </h1>
           <p className="text-muted-foreground text-sm mt-2 text-center max-w-xs">
-            Ace any competitive exam with AI — mock tests, smart tutoring, and personalized study plans.
+            Ace any competitive exam with AI — mock tests, smart tutoring, and personalized study
+            plans.
           </p>
         </div>
 
@@ -66,7 +88,9 @@ function Login() {
         <div className="glass p-8 rounded-2xl shadow-elegant">
           <div className="text-center mb-6">
             <h2 className="text-lg font-semibold">Welcome back</h2>
-            <p className="text-sm text-muted-foreground mt-1">Sign in to continue your prep journey</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Sign in to continue your prep journey
+            </p>
           </div>
 
           <button
@@ -102,7 +126,10 @@ function Login() {
 
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {["JEE", "NEET", "SAT", "GRE", "CAT", "UPSC"].map((exam) => (
-              <span key={exam} className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary/80 font-medium">
+              <span
+                key={exam}
+                className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary/80 font-medium"
+              >
                 {exam}
               </span>
             ))}

@@ -1,7 +1,17 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { BookOpen, Brain, Calendar, FileText, LayoutDashboard, GraduationCap, Timer, BarChart3, Sparkles } from "lucide-react";
+import {
+  BookOpen,
+  Brain,
+  Calendar,
+  FileText,
+  LayoutDashboard,
+  GraduationCap,
+  Timer,
+  BarChart3,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
@@ -36,7 +46,13 @@ export function AppLayout() {
   }, [user, loading, path, navigate]);
 
   useEffect(() => {
-    if (user && !profileLoading && !profile?.onboarding_completed && path !== "/onboarding" && path !== "/login") {
+    if (
+      user &&
+      !profileLoading &&
+      !profile?.onboarding_completed &&
+      path !== "/onboarding" &&
+      path !== "/login"
+    ) {
       navigate({ to: "/onboarding" });
     }
   }, [user, profileLoading, profile, path, navigate]);
@@ -143,12 +159,15 @@ export function AppLayout() {
                   to={to}
                   className={cn(
                     "flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all min-w-[56px]",
-                    active
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground",
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <Icon className={cn("h-5 w-5", active && "drop-shadow-[0_0_6px_rgba(59,130,246,0.5)]")} />
+                  <Icon
+                    className={cn(
+                      "h-5 w-5",
+                      active && "drop-shadow-[0_0_6px_rgba(59,130,246,0.5)]",
+                    )}
+                  />
                   <span className="text-[10px] font-medium">{label}</span>
                   {active && (
                     <div className="absolute -top-px left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gradient-primary rounded-full" />
