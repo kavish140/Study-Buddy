@@ -14,10 +14,14 @@ import {
   BookOpen,
   User,
   Bot,
+  Camera,
+  ImageIcon,
+  X,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { streamChat } from "@/lib/ai.functions";
+import { streamChat, solveFromImage } from "@/lib/ai.functions";
+import { compressImage, createImagePreview } from "@/lib/image-utils";
 import { uid, type ChatSession, type ChatMessage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -266,6 +270,27 @@ function EmptyState({
       {/* Input bar — always visible */}
       <div className="border-t border-border p-4 shrink-0">
         <div className="max-w-3xl mx-auto flex items-end gap-3">
+          {/* Camera / upload button */}
+          <label
+            className="h-11 w-11 shrink-0 rounded-xl glass-subtle grid place-items-center cursor-pointer hover:border-primary/30 transition-colors"
+            title="Upload image or take photo"
+          >
+            <Camera className="h-4 w-4 text-muted-foreground" />
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  // For empty state, delegate to ChatView after creation
+                  toast.info("Start a new chat to upload images");
+                }
+                e.target.value = "";
+              }}
+            />
+          </label>
           <div className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/30 transition-colors">
             <textarea
               ref={inputRef}
@@ -286,7 +311,7 @@ function EmptyState({
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-center text-xs text-muted-foreground mt-2">Press Enter to send · Shift+Enter for new line</p>
+        <p className="text-center text-xs text-muted-foreground mt-2">Press Enter to send · Shift+Enter for new line · 📷 Upload image</p>
       </div>
     </div>
   );
@@ -311,8 +336,11 @@ function ChatView({
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const sentInitialRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
@@ -341,8 +369,76 @@ function ChatView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMessage]);
 
+  const handleImageSelect = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    const previewUrl = await createImagePreview(file);
+    setPendingImage({ file, previewUrl });
+  };
+
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
+
+    // If there's a pending image, handle image-based flow
+    if (pendingImage) {
+      const imageFile = pendingImage;
+      const userMsg = msg || "Solve this question from the image";
+
+      const userMessage: ChatMessage = {
+        role: "user",
+        content: userMsg,
+        timestamp: new Date().toISOString(),
+        imageUrl: imageFile.previewUrl,
+      };
+
+      const updatedMessages = [...session.messages, userMessage];
+      const title =
+        session.messages.length === 0
+          ? "📷 " + userMsg.slice(0, 45) + (userMsg.length > 45 ? "…" : "")
+          : session.title;
+
+      const updatedSession: ChatSession = {
+        ...session,
+        messages: updatedMessages,
+        title,
+      };
+      onUpdate(updatedSession);
+      setInput("");
+      setPendingImage(null);
+      setIsAnalyzingImage(true);
+      setIsStreaming(true);
+
+      try {
+        const { base64, mimeType } = await compressImage(imageFile.file);
+        const result = await solveFromImage({
+          imageBase64: base64,
+          mimeType,
+          prompt: userMsg,
+          examName,
+        });
+
+        const assistantMessage: ChatMessage = {
+          role: "assistant",
+          content: result.response,
+          timestamp: new Date().toISOString(),
+        };
+
+        onUpdate({
+          ...updatedSession,
+          messages: [...updatedMessages, assistantMessage],
+        });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to analyze image");
+      } finally {
+        setIsStreaming(false);
+        setIsAnalyzingImage(false);
+      }
+      return;
+    }
+
+    // Regular text-only flow
     if (!msg || isStreaming) return;
 
     const userMessage: ChatMessage = {
@@ -410,9 +506,9 @@ function ChatView({
   };
 
   const quickActions = [
-    { label: "Explain simpler", icon: Lightbulb },
-    { label: "Give an example", icon: BookOpen },
-    { label: "Quiz me on this", icon: HelpCircle },
+    { label: "Explain simpler", prompt: "Re-explain that concept using a different approach or analogy. Keep it at JEE level.", icon: Lightbulb },
+    { label: "Give an example", prompt: "Give me a fully solved JEE exam-style numerical problem on this topic. Show every step.", icon: BookOpen },
+    { label: "Quiz me on this", prompt: "Generate 1 JEE Advanced level MCQ on exactly the topic we just discussed. Give 4 numerical options. Then reveal the answer and full solution after I respond.", icon: HelpCircle },
   ];
 
   return (
@@ -465,7 +561,11 @@ function ChatView({
               <div className="glass-subtle px-4 py-3 rounded-2xl rounded-tl-sm">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Thinking...
+                  {isAnalyzingImage ? (
+                    <span>Analyzing image with AI vision…</span>
+                  ) : (
+                    <span>Thinking...</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -483,7 +583,7 @@ function ChatView({
             {quickActions.map((action) => (
               <button
                 key={action.label}
-                onClick={() => handleSend(action.label)}
+                onClick={() => handleSend(action.prompt)}
                 className="text-xs px-3 py-1.5 rounded-full glass-subtle hover:border-primary/20 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5"
               >
                 <action.icon className="h-3 w-3" />
@@ -493,16 +593,62 @@ function ChatView({
           </div>
         )}
 
+      {/* Image preview strip */}
+      {pendingImage && (
+        <div className="px-4 pb-2 max-w-3xl mx-auto w-full">
+          <div className="inline-flex items-center gap-2 glass-subtle p-2 rounded-xl">
+            <img
+              src={pendingImage.previewUrl}
+              alt="Upload preview"
+              className="h-16 w-16 object-cover rounded-lg"
+            />
+            <div className="text-xs text-muted-foreground">
+              <div className="font-medium text-foreground">{pendingImage.file.name}</div>
+              <div>{(pendingImage.file.size / 1024).toFixed(0)} KB</div>
+            </div>
+            <button
+              onClick={() => setPendingImage(null)}
+              className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input area */}
       <div className="border-t border-border p-4 shrink-0">
         <div className="max-w-3xl mx-auto flex items-end gap-3">
+          {/* Camera / upload button */}
+          <label
+            className={cn(
+              "h-11 w-11 shrink-0 rounded-xl glass-subtle grid place-items-center cursor-pointer hover:border-primary/30 transition-colors",
+              isStreaming && "opacity-50 pointer-events-none",
+            )}
+            title="Upload image or take photo"
+          >
+            <Camera className="h-4 w-4 text-muted-foreground" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              disabled={isStreaming}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageSelect(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
           <div className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/30 transition-colors">
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a question..."
+              placeholder={pendingImage ? "Add a message about this image... (optional)" : "Ask a question..."}
               rows={1}
               className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
               disabled={isStreaming}
@@ -510,7 +656,7 @@ function ChatView({
           </div>
           <Button
             onClick={() => handleSend()}
-            disabled={!input.trim() || isStreaming}
+            disabled={(!input.trim() && !pendingImage) || isStreaming}
             className="bg-gradient-primary h-11 w-11 shrink-0 rounded-xl p-0"
           >
             {isStreaming ? (
@@ -548,16 +694,28 @@ function MessageBubble({
 
       <div
         className={cn(
-          "max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed",
+          "max-w-[80%] rounded-2xl text-sm leading-relaxed",
           isUser ? "bg-primary/10 text-foreground rounded-tr-sm" : "glass-subtle rounded-tl-sm",
           isStreaming && "animate-pulse-subtle",
         )}
       >
-        {isUser ? (
-          <p className="whitespace-pre-wrap">{message.content}</p>
-        ) : (
-          <MarkdownContent content={message.content} />
+        {/* Render image if present */}
+        {message.imageUrl && (
+          <div className="p-2 pb-0">
+            <img
+              src={message.imageUrl}
+              alt="Uploaded image"
+              className="max-w-full max-h-64 rounded-xl object-contain"
+            />
+          </div>
         )}
+        <div className="px-4 py-3">
+          {isUser ? (
+            <p className="whitespace-pre-wrap">{message.content}</p>
+          ) : (
+            <MarkdownContent content={message.content} />
+          )}
+        </div>
       </div>
     </div>
   );

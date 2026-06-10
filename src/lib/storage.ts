@@ -112,6 +112,8 @@ export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   timestamp: string;
+  /** Data URL for an image attached to this message (user-uploaded for OCR) */
+  imageUrl?: string;
 };
 
 export type ChatSession = {

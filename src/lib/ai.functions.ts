@@ -47,6 +47,40 @@ export const generateMockTest = async ({
   return invokeEdgeFunction("generateMockTest", data);
 };
 
+export async function solveFromImage({
+  imageBase64,
+  mimeType,
+  prompt,
+  examName,
+}: {
+  imageBase64: string;
+  mimeType: string;
+  prompt?: string;
+  examName?: string;
+}): Promise<{ response: string }> {
+  const { data: userData } = await supabase.auth.getSession();
+  if (!userData?.session) throw new Error("Authentication required");
+
+  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-ai`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${userData.session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ imageBase64, mimeType, prompt, examName }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || "Image analysis failed");
+  }
+
+  const result = await res.json();
+  if (result?.error) throw new Error(result.error);
+  return result;
+}
+
 export async function streamChat({
   messages,
   examName,
