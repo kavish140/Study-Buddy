@@ -16,12 +16,14 @@ import {
   Bot,
   Camera,
   ImageIcon,
+  FileText,
+  Upload,
   X,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { streamChat, solveFromImage } from "@/lib/ai.functions";
-import { compressImage, createImagePreview } from "@/lib/image-utils";
+import { compressImage, createImagePreview, extractPdfText, getFileType } from "@/lib/image-utils";
 import { uid, type ChatSession, type ChatMessage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -337,7 +339,10 @@ function ChatView({
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
+  const [pendingPdf, setPendingPdf] = useState<{ file: File; pageCount?: number } | null>(null);
   const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -369,19 +374,108 @@ function ChatView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMessage]);
 
-  const handleImageSelect = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+  // ── Drag & Drop handlers ──────────────────────────────────────────
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current++;
+    if (dragCounter.current === 1) setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragging(false);
+  };
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await handleFileSelect(file);
+  };
+
+  // ── Unified file handler (images + PDFs) ─────────────────────────
+  const handleFileSelect = async (file: File) => {
+    const type = getFileType(file);
+    if (type === "unsupported") {
+      toast.error("Only images (JPG, PNG, WEBP) and PDFs are supported.");
       return;
     }
-    const previewUrl = await createImagePreview(file);
-    setPendingImage({ file, previewUrl });
+    // Clear the other pending type
+    setPendingPdf(null);
+    setPendingImage(null);
+
+    if (type === "image") {
+      const previewUrl = await createImagePreview(file);
+      setPendingImage({ file, previewUrl });
+    } else {
+      // PDF — extract page count immediately for the preview badge
+      setPendingPdf({ file });
+      try {
+        const { pageCount } = await extractPdfText(file);
+        setPendingPdf({ file, pageCount });
+      } catch {
+        // page count is optional, don't block
+      }
+    }
   };
 
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
 
-    // If there's a pending image, handle image-based flow
+    // ── PDF flow ─────────────────────────────────────────────────────
+    if (pendingPdf) {
+      const pdfFile = pendingPdf.file;
+      const userMsg = msg || `Analyze this PDF: ${pdfFile.name}`;
+
+      // Optimistic UI — show user message immediately
+      const userMessage: ChatMessage = {
+        role: "user",
+        content: `📄 **${pdfFile.name}** (${pendingPdf.pageCount ?? "?"} pages)\n\n${userMsg}`,
+        timestamp: new Date().toISOString(),
+      };
+      const updatedMessages = [...session.messages, userMessage];
+      const title =
+        session.messages.length === 0
+          ? `📄 ${pdfFile.name.slice(0, 40)}`
+          : session.title;
+      const updatedSession: ChatSession = { ...session, messages: updatedMessages, title };
+      onUpdate(updatedSession);
+      setInput("");
+      setPendingPdf(null);
+      setIsStreaming(true);
+      setStreamingContent("");
+
+      try {
+        const { text, pageCount } = await extractPdfText(pdfFile);
+        const contextMsg = `The student has uploaded a PDF: "${pdfFile.name}" (${pageCount} pages).\n\nPDF CONTENT:\n${text.slice(0, 12000)}${text.length > 12000 ? "\n\n[...content truncated to first 12,000 characters...]" : ""}\n\nStudent's question: ${userMsg}`;
+
+        // Send as a chat message with the PDF content as context
+        const messagesWithPdf = [
+          ...updatedMessages.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
+          { role: "user" as const, content: contextMsg },
+        ];
+
+        let fullResponse = "";
+        await streamChat({
+          messages: messagesWithPdf,
+          examName,
+          onChunk: (chunk) => { fullResponse += chunk; setStreamingContent(fullResponse); },
+          onDone: () => {
+            onUpdate({ ...updatedSession, messages: [...updatedMessages, { role: "assistant", content: fullResponse, timestamp: new Date().toISOString() }] });
+            setStreamingContent("");
+            setIsStreaming(false);
+          },
+        });
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to read PDF");
+        setIsStreaming(false);
+        setStreamingContent("");
+      }
+      return;
+    }
+
+    // ── Image flow ───────────────────────────────────────────────────
     if (pendingImage) {
       const imageFile = pendingImage;
       const userMsg = msg || "Solve this question from the image";
@@ -513,8 +607,23 @@ function ChatView({
 
   return (
     <>
+      {/* Drag & Drop overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-2 border-dashed border-primary rounded-2xl pointer-events-none">
+          <Upload className="h-12 w-12 text-primary mb-3 animate-bounce" />
+          <p className="text-lg font-semibold text-primary">Drop your image or PDF</p>
+          <p className="text-sm text-muted-foreground">Supports JPG, PNG, WEBP, PDF</p>
+        </div>
+      )}
+
       {/* Chat header */}
-      <header className="glass border-b border-border px-4 py-3 flex items-center gap-3 shrink-0">
+      <header
+        className="glass border-b border-border px-4 py-3 flex items-center gap-3 shrink-0"
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <button
           onClick={onToggleSidebar}
           className="lg:hidden text-muted-foreground hover:text-foreground"
@@ -532,8 +641,14 @@ function ChatView({
         </div>
       </header>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Messages — also a drop target */}
+      <div
+        className="flex-1 overflow-y-auto relative"
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
           {session.messages.length === 0 && !isStreaming && (
             <div className="text-center py-12">
@@ -604,12 +719,30 @@ function ChatView({
             />
             <div className="text-xs text-muted-foreground">
               <div className="font-medium text-foreground">{pendingImage.file.name}</div>
-              <div>{(pendingImage.file.size / 1024).toFixed(0)} KB</div>
+              <div>{(pendingImage.file.size / 1024).toFixed(0)} KB · Image</div>
             </div>
-            <button
-              onClick={() => setPendingImage(null)}
-              className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <button onClick={() => setPendingImage(null)} className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PDF preview strip */}
+      {pendingPdf && (
+        <div className="px-4 pb-2 max-w-3xl mx-auto w-full">
+          <div className="inline-flex items-center gap-2 glass-subtle p-2 rounded-xl border border-primary/20">
+            <div className="h-12 w-12 rounded-lg bg-primary/10 grid place-items-center shrink-0">
+              <FileText className="h-6 w-6 text-primary" />
+            </div>
+            <div className="text-xs">
+              <div className="font-medium text-foreground truncate max-w-[180px]">{pendingPdf.file.name}</div>
+              <div className="text-muted-foreground">
+                {pendingPdf.pageCount ? `${pendingPdf.pageCount} pages · ` : ""}
+                {(pendingPdf.file.size / 1024).toFixed(0)} KB · PDF
+              </div>
+            </div>
+            <button onClick={() => setPendingPdf(null)} className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -631,13 +764,12 @@ function ChatView({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept="image/*,application/pdf"
               className="hidden"
               disabled={isStreaming}
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleImageSelect(file);
+                if (file) handleFileSelect(file);
                 e.target.value = "";
               }}
             />
@@ -648,7 +780,7 @@ function ChatView({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={pendingImage ? "Add a message about this image... (optional)" : "Ask a question..."}
+              placeholder={pendingImage ? "Add a message about this image... (optional)" : pendingPdf ? "Ask something about this PDF..." : "Ask a question, or drop an image / PDF here..."}
               rows={1}
               className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
               disabled={isStreaming}
@@ -656,7 +788,7 @@ function ChatView({
           </div>
           <Button
             onClick={() => handleSend()}
-            disabled={(!input.trim() && !pendingImage) || isStreaming}
+            disabled={(!input.trim() && !pendingImage && !pendingPdf) || isStreaming}
             className="bg-gradient-primary h-11 w-11 shrink-0 rounded-xl p-0"
           >
             {isStreaming ? (

@@ -1,3 +1,49 @@
+// PDF.js is loaded lazily to avoid bundle size hit
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let pdfJsLib: any = null;
+
+async function getPdfJs() {
+  if (!pdfJsLib) {
+    pdfJsLib = await import("pdfjs-dist");
+    // Use the CDN worker to avoid bundling issues
+    pdfJsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsLib.version}/pdf.worker.min.mjs`;
+  }
+  return pdfJsLib;
+}
+
+/**
+ * Extracts all text content from a PDF file.
+ * Returns the text and page count.
+ */
+export async function extractPdfText(file: File): Promise<{ text: string; pageCount: number }> {
+  const pdfjsLib = await getPdfJs();
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pageCount = pdf.numPages;
+  const texts: string[] = [];
+
+  // Extract text from every page (cap at 20 pages to avoid token overflow)
+  const maxPages = Math.min(pageCount, 20);
+  for (let i = 1; i <= maxPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((item: any) => item.str)
+      .join(" ");
+    texts.push(`--- Page ${i} ---\n${pageText}`);
+  }
+
+  return { text: texts.join("\n\n"), pageCount };
+}
+
+/** Returns 'image', 'pdf', or 'unsupported' */
+export function getFileType(file: File): "image" | "pdf" | "unsupported" {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type === "application/pdf") return "pdf";
+  return "unsupported";
+}
+
 /**
  * Compresses an image file to a target size using canvas.
  * Returns base64-encoded string (without the data:... prefix) and the mime type.
