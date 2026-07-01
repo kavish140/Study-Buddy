@@ -13,6 +13,7 @@ import { Route as SyllabusRouteImport } from './routes/syllabus'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as QuizRouteImport } from './routes/quiz'
+import { Route as PyqRouteImport } from './routes/pyq'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NotesRouteImport } from './routes/notes'
@@ -20,6 +21,7 @@ import { Route as MockTestRouteImport } from './routes/mock-test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as FocusRouteImport } from './routes/focus'
+import { Route as CommunityRouteImport } from './routes/community'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
@@ -42,6 +44,11 @@ const ReviewRoute = ReviewRouteImport.update({
 const QuizRoute = QuizRouteImport.update({
   id: '/quiz',
   path: '/quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PyqRoute = PyqRouteImport.update({
+  id: '/pyq',
+  path: '/pyq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlannerRoute = PlannerRouteImport.update({
@@ -79,6 +86,11 @@ const FocusRoute = FocusRouteImport.update({
   path: '/focus',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -99,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
+  '/community': typeof CommunityRoute
   '/focus': typeof FocusRoute
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
@@ -106,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
   '/planner': typeof PlannerRoute
+  '/pyq': typeof PyqRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -115,6 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
+  '/community': typeof CommunityRoute
   '/focus': typeof FocusRoute
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
@@ -122,6 +137,7 @@ export interface FileRoutesByTo {
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
   '/planner': typeof PlannerRoute
+  '/pyq': typeof PyqRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -132,6 +148,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
+  '/community': typeof CommunityRoute
   '/focus': typeof FocusRoute
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
@@ -139,6 +156,7 @@ export interface FileRoutesById {
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
   '/planner': typeof PlannerRoute
+  '/pyq': typeof PyqRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -150,6 +168,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/chat'
+    | '/community'
     | '/focus'
     | '/leaderboard'
     | '/login'
@@ -157,6 +176,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/onboarding'
     | '/planner'
+    | '/pyq'
     | '/quiz'
     | '/review'
     | '/sitemap.xml'
@@ -166,6 +186,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/chat'
+    | '/community'
     | '/focus'
     | '/leaderboard'
     | '/login'
@@ -173,6 +194,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/onboarding'
     | '/planner'
+    | '/pyq'
     | '/quiz'
     | '/review'
     | '/sitemap.xml'
@@ -182,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/chat'
+    | '/community'
     | '/focus'
     | '/leaderboard'
     | '/login'
@@ -189,6 +212,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/onboarding'
     | '/planner'
+    | '/pyq'
     | '/quiz'
     | '/review'
     | '/sitemap.xml'
@@ -199,6 +223,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
   ChatRoute: typeof ChatRoute
+  CommunityRoute: typeof CommunityRoute
   FocusRoute: typeof FocusRoute
   LeaderboardRoute: typeof LeaderboardRoute
   LoginRoute: typeof LoginRoute
@@ -206,6 +231,7 @@ export interface RootRouteChildren {
   NotesRoute: typeof NotesRoute
   OnboardingRoute: typeof OnboardingRoute
   PlannerRoute: typeof PlannerRoute
+  PyqRoute: typeof PyqRoute
   QuizRoute: typeof QuizRoute
   ReviewRoute: typeof ReviewRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -240,6 +266,13 @@ declare module '@tanstack/react-router' {
       path: '/quiz'
       fullPath: '/quiz'
       preLoaderRoute: typeof QuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pyq': {
+      id: '/pyq'
+      path: '/pyq'
+      fullPath: '/pyq'
+      preLoaderRoute: typeof PyqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planner': {
@@ -291,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FocusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat': {
       id: '/chat'
       path: '/chat'
@@ -319,6 +359,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
   ChatRoute: ChatRoute,
+  CommunityRoute: CommunityRoute,
   FocusRoute: FocusRoute,
   LeaderboardRoute: LeaderboardRoute,
   LoginRoute: LoginRoute,
@@ -326,6 +367,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotesRoute: NotesRoute,
   OnboardingRoute: OnboardingRoute,
   PlannerRoute: PlannerRoute,
+  PyqRoute: PyqRoute,
   QuizRoute: QuizRoute,
   ReviewRoute: ReviewRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

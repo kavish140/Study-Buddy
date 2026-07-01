@@ -249,3 +249,45 @@ export const BADGE_DEFS: BadgeDef[] = [
   { id: "grinder",        name: "Grinder",          description: "Complete 10 focus sessions",    emoji: "💪", color: "text-orange-400" },
   { id: "reviewer",       name: "Card Shark",       description: "Review 50 flashcards",          emoji: "🃏", color: "text-pink-400" },
 ];
+
+/* ─────────────────────────────────────────────────
+   Phase 10 — PYQ Bank + Community Forums
+───────────────────────────────────────────────── */
+
+export type PYQQuestion = {
+  id: string;
+  exam_id: string;
+  year: number;
+  subject: string;
+  topic: string;
+  question: string;
+  question_type: "mcq" | "integer" | "assertion";
+  options?: string[];
+  answer: string;
+  explanation?: string;
+  difficulty: "easy" | "medium" | "hard";
+  tags: string[];
+};
+
+export type ForumPost = {
+  id: string;
+  user_id?: string;
+  exam_id?: string;
+  subject?: string;
+  topic?: string;
+  title: string;
+  content: string;
+  upvotes: number;
+  reply_count: number;
+  created_at?: string;
+};
+
+export type ForumReply = {
+  id: string;
+  post_id: string;
+  user_id?: string;
+  content: string;
+  upvotes: number;
+  is_accepted: boolean;
+  created_at?: string;
+};

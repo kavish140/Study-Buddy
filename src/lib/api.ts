@@ -11,6 +11,9 @@ import {
   ReviewCard,
   FocusSession,
   UserStats,
+  PYQQuestion,
+  ForumPost,
+  ForumReply,
   sm2,
   xpToLevel,
   BADGE_DEFS,
@@ -438,5 +441,93 @@ export const api = {
     if (error) throw error;
     return (data as UserStats[]) || [];
   },
-};
 
+  // ── PYQ Bank ─────────────────────────────────────────────────────
+  getPYQQuestions: async (filters?: {
+    exam_id?: string; year?: number; subject?: string;
+    difficulty?: string; search?: string;
+  }): Promise<PYQQuestion[]> => {
+    let q = supabase.from("pyq_questions").select("*");
+    if (filters?.exam_id)   q = q.eq("exam_id", filters.exam_id);
+    if (filters?.year)      q = q.eq("year", filters.year);
+    if (filters?.subject)   q = q.eq("subject", filters.subject);
+    if (filters?.difficulty) q = q.eq("difficulty", filters.difficulty);
+    if (filters?.search)    q = q.ilike("question", `%${filters.search}%`);
+    const { data, error } = await q.order("year", { ascending: false }).limit(100);
+    if (error) throw error;
+    return (data as PYQQuestion[]) || [];
+  },
+  savePYQQuestion: async (q: Omit<PYQQuestion, "id">): Promise<PYQQuestion> => {
+    const { uid } = await import("./storage");
+    const { data, error } = await supabase
+      .from("pyq_questions")
+      .insert({ ...q, id: uid() })
+      .select().single();
+    if (error) throw error;
+    return data as PYQQuestion;
+  },
+  savePYQQuestions: async (questions: Omit<PYQQuestion, "id">[]): Promise<void> => {
+    const { uid } = await import("./storage");
+    const rows = questions.map((q) => ({ ...q, id: uid() }));
+    const { error } = await supabase.from("pyq_questions").insert(rows);
+    if (error) throw error;
+  },
+
+  // ── Community Forum ──────────────────────────────────────────────
+  getForumPosts: async (filters?: { exam_id?: string; subject?: string }): Promise<ForumPost[]> => {
+    let q = supabase.from("forum_posts").select("*");
+    if (filters?.exam_id) q = q.eq("exam_id", filters.exam_id);
+    if (filters?.subject) q = q.eq("subject", filters.subject);
+    const { data, error } = await q.order("created_at", { ascending: false }).limit(50);
+    if (error) throw error;
+    return (data as ForumPost[]) || [];
+  },
+  getForumPost: async (id: string): Promise<ForumPost | null> => {
+    const { data, error } = await supabase.from("forum_posts").select("*").eq("id", id).maybeSingle();
+    if (error) throw error;
+    return data as ForumPost | null;
+  },
+  createForumPost: async (post: Pick<ForumPost, "title" | "content" | "exam_id" | "subject" | "topic">): Promise<ForumPost> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { uid } = await import("./storage");
+    const { data, error } = await supabase
+      .from("forum_posts")
+      .insert({ ...post, id: uid(), user_id, upvotes: 0, reply_count: 0 })
+      .select().single();
+    if (error) throw error;
+    return data as ForumPost;
+  },
+  upvotePost: async (id: string): Promise<void> => {
+    await supabase.rpc("increment_post_upvotes", { post_id: id }).throwOnError();
+  },
+  getForumReplies: async (post_id: string): Promise<ForumReply[]> => {
+    const { data, error } = await supabase
+      .from("forum_replies").select("*").eq("post_id", post_id)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data as ForumReply[]) || [];
+  },
+  createForumReply: async (post_id: string, content: string): Promise<ForumReply> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { uid } = await import("./storage");
+    const { data, error } = await supabase
+      .from("forum_replies")
+      .insert({ id: uid(), post_id, user_id, content, upvotes: 0, is_accepted: false })
+      .select().single();
+    if (error) throw error;
+    // Increment reply count by fetching current and adding 1
+    const { data: postRow } = await supabase.from("forum_posts").select("reply_count").eq("id", post_id).single();
+    if (postRow) {
+      await supabase.from("forum_posts").update({ reply_count: (postRow.reply_count ?? 0) + 1 }).eq("id", post_id);
+    }
+    return data as ForumReply;
+
+  },
+  acceptReply: async (reply_id: string): Promise<void> => {
+    await supabase.from("forum_replies").update({ is_accepted: true }).eq("id", reply_id).throwOnError();
+  },
+};

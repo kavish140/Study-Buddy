@@ -18,10 +18,11 @@ import {
   Flame,
   Trophy,
   Zap,
+  Library,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
 const nav = [
@@ -31,6 +32,8 @@ const nav = [
   { to: "/mock-test", label: "Mock Test", icon: Timer },
   { to: "/review", label: "Smart Review", icon: FlipHorizontal2 },
   { to: "/focus", label: "Focus Timer", icon: Flame },
+  { to: "/pyq", label: "PYQ Bank", icon: Library },
+  { to: "/community", label: "Community", icon: MessageCircle },
   { to: "/planner", label: "Planner", icon: Calendar },
   { to: "/notes", label: "Notes", icon: FileText },
   { to: "/chat", label: "AI Tutor", icon: Sparkles },
