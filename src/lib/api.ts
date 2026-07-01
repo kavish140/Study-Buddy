@@ -10,7 +10,10 @@ import {
   ChatSession,
   ReviewCard,
   FocusSession,
+  UserStats,
   sm2,
+  xpToLevel,
+  BADGE_DEFS,
 } from "./storage";
 
 export const api = {
@@ -317,6 +320,123 @@ export const api = {
       .single();
     if (error) throw error;
     return data as FocusSession;
+  },
+
+  // ── Gamification (XP, Streaks, Badges, Leaderboard) ───────────────
+  getUserStats: async (): Promise<UserStats | null> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return null;
+    const { data } = await supabase
+      .from("user_stats")
+      .select("*")
+      .eq("user_id", user_id)
+      .maybeSingle();
+    return (data as UserStats) || null;
+  },
+
+  /**
+   * Award XP for an action. Handles:
+   * - Creating the row on first call
+   * - Streak updates (consecutive daily activity)
+   * - Level-up calculation
+   * - Badge unlocks
+   * Returns the updated stats + any newly unlocked badges.
+   */
+  awardXP: async (
+    amount: number,
+    context?: { mockCount?: number; focusCount?: number; reviewCount?: number; quizPerfect?: boolean },
+  ): Promise<{ stats: UserStats; newBadges: string[] }> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+
+    const today = new Date().toISOString().split("T")[0];
+    const hour = new Date().getHours();
+
+    // Fetch or create current stats
+    let { data: existing } = await supabase
+      .from("user_stats")
+      .select("*")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    const { uid } = await import("./storage");
+    if (!existing) {
+      const { data: created } = await supabase
+        .from("user_stats")
+        .insert({ id: uid(), user_id, xp: 0, level: 1, current_streak: 0, longest_streak: 0, badges: [] })
+        .select()
+        .single();
+      existing = created;
+    }
+
+    const cur = existing as UserStats;
+
+    // Streak logic
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = yesterday.toISOString().split("T")[0];
+    let newStreak = cur.current_streak;
+    if (cur.last_active_date === today) {
+      newStreak = cur.current_streak; // already active today
+    } else if (cur.last_active_date === yStr) {
+      newStreak = cur.current_streak + 1; // consecutive!
+    } else {
+      newStreak = 1; // streak broken
+    }
+    const longestStreak = Math.max(cur.longest_streak, newStreak);
+
+    // New XP and level
+    const newXp = cur.xp + amount;
+    const newLevel = xpToLevel(newXp);
+
+    // Badge evaluation
+    const earned = new Set<string>(cur.badges);
+    const newBadges: string[] = [];
+
+    const checkBadge = (id: string, condition: boolean) => {
+      if (condition && !earned.has(id)) { earned.add(id); newBadges.push(id); }
+    };
+
+    checkBadge("century",     newXp >= 100);
+    checkBadge("on_fire",     newStreak >= 7);
+    checkBadge("scholar",     newStreak >= 30);
+    checkBadge("quiz_master", !!context?.quizPerfect);
+    checkBadge("mock_warrior", (context?.mockCount ?? 0) >= 5);
+    checkBadge("grinder",     (context?.focusCount ?? 0) >= 10);
+    checkBadge("reviewer",    (context?.reviewCount ?? 0) >= 50);
+    checkBadge("night_owl",   hour >= 0 && hour < 4);
+    if (cur.badges.includes("first_steps") || cur.xp > 0) checkBadge("first_steps", true);
+
+    const updates = {
+      xp: newXp,
+      level: newLevel,
+      current_streak: newStreak,
+      longest_streak: longestStreak,
+      last_active_date: today,
+      badges: [...earned],
+    };
+
+    const { data: updated, error } = await supabase
+      .from("user_stats")
+      .update(updates)
+      .eq("user_id", user_id)
+      .select()
+      .single();
+    if (error) throw error;
+
+    return { stats: updated as UserStats, newBadges };
+  },
+
+  getLeaderboard: async (): Promise<(UserStats & { display_name?: string })[]> => {
+    const { data, error } = await supabase
+      .from("user_stats")
+      .select("*")
+      .order("xp", { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    return (data as UserStats[]) || [];
   },
 };
 

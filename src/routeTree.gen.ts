@@ -18,6 +18,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MockTestRouteImport } from './routes/mock-test'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as FocusRouteImport } from './routes/focus'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -68,6 +69,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FocusRoute = FocusRouteImport.update({
   id: '/focus',
   path: '/focus',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/focus': typeof FocusRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/mock-test': typeof MockTestRoute
   '/notes': typeof NotesRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/focus': typeof FocusRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/mock-test': typeof MockTestRoute
   '/notes': typeof NotesRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/focus': typeof FocusRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/mock-test': typeof MockTestRoute
   '/notes': typeof NotesRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/chat'
     | '/focus'
+    | '/leaderboard'
     | '/login'
     | '/mock-test'
     | '/notes'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/chat'
     | '/focus'
+    | '/leaderboard'
     | '/login'
     | '/mock-test'
     | '/notes'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/chat'
     | '/focus'
+    | '/leaderboard'
     | '/login'
     | '/mock-test'
     | '/notes'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   ChatRoute: typeof ChatRoute
   FocusRoute: typeof FocusRoute
+  LeaderboardRoute: typeof LeaderboardRoute
   LoginRoute: typeof LoginRoute
   MockTestRoute: typeof MockTestRoute
   NotesRoute: typeof NotesRoute
@@ -264,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/focus': {
       id: '/focus'
       path: '/focus'
@@ -300,6 +320,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   ChatRoute: ChatRoute,
   FocusRoute: FocusRoute,
+  LeaderboardRoute: LeaderboardRoute,
   LoginRoute: LoginRoute,
   MockTestRoute: MockTestRoute,
   NotesRoute: NotesRoute,

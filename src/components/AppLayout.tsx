@@ -1,6 +1,9 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { xpForNextLevel, BADGE_DEFS } from "@/lib/storage";
 import {
   BookOpen,
   Brain,
@@ -13,6 +16,8 @@ import {
   Sparkles,
   FlipHorizontal2,
   Flame,
+  Trophy,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -30,6 +35,7 @@ const nav = [
   { to: "/notes", label: "Notes", icon: FileText },
   { to: "/chat", label: "AI Tutor", icon: Sparkles },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ] as const;
 
 export function AppLayout() {
@@ -37,11 +43,41 @@ export function AppLayout() {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
+  const qc = useQueryClient();
+
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["userProfile"],
     queryFn: api.getUserProfile,
     enabled: !!user,
   });
+
+  const { data: userStats } = useQuery({
+    queryKey: ["userStats"],
+    queryFn: api.getUserStats,
+    enabled: !!user,
+  });
+
+  const awardMutation = useMutation({
+    mutationFn: () => api.awardXP(5), // daily login XP
+    onSuccess: ({ newBadges }) => {
+      qc.invalidateQueries({ queryKey: ["userStats"] });
+      newBadges.forEach((id) => {
+        const badge = BADGE_DEFS.find((b) => b.id === id);
+        if (badge) toast.success(`${badge.emoji} Badge unlocked: ${badge.name}!`, { duration: 5000 });
+      });
+    },
+  });
+
+  // Award daily login XP once per day
+  useEffect(() => {
+    if (!user) return;
+    const todayKey = `aceprep_login_${new Date().toISOString().split("T")[0]}`;
+    if (!localStorage.getItem(todayKey)) {
+      localStorage.setItem(todayKey, "1");
+      awardMutation.mutate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const { data: dueCards = [] } = useQuery({
     queryKey: ["reviewCards"],
@@ -133,7 +169,42 @@ export function AppLayout() {
         </nav>
 
         {/* Bottom user section */}
-        <div className="mt-auto pt-4 border-t border-sidebar-border">
+        <div className="mt-auto pt-4 border-t border-sidebar-border space-y-3">
+          {/* XP Progress bar */}
+          {userStats && (() => {
+            const { pct, current, needed } = xpForNextLevel(userStats.xp);
+            return (
+              <div className="px-2">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5 text-amber-400" />
+                    <span className="text-xs font-semibold">{userStats.xp} XP</span>
+                    <span className="text-xs text-muted-foreground">· Lv.{userStats.level}</span>
+                  </div>
+                  {userStats.current_streak > 0 && (
+                    <div className="flex items-center gap-1 text-xs text-amber-400">
+                      <Flame className="h-3 w-3" />
+                      {userStats.current_streak}d
+                    </div>
+                  )}
+                </div>
+                <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">{current}/{needed} XP to Lv.{userStats.level + 1}</div>
+                {userStats.badges.length > 0 && (
+                  <div className="flex gap-1 mt-1.5 flex-wrap">
+                    {userStats.badges.slice(0, 6).map((id) => {
+                      const b = BADGE_DEFS.find((bd) => bd.id === id);
+                      return b ? <span key={id} title={b.name} className="text-sm cursor-default">{b.emoji}</span> : null;
+                    })}
+                    {userStats.badges.length > 6 && <span className="text-xs text-muted-foreground">+{userStats.badges.length - 6}</span>}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <div className="flex items-center gap-3 px-2">
             <div className="h-8 w-8 rounded-full bg-gradient-primary grid place-items-center text-xs font-bold text-white">
               {user?.email?.charAt(0).toUpperCase() || "?"}
@@ -144,7 +215,7 @@ export function AppLayout() {
           </div>
           <button
             onClick={signOut}
-            className="mt-3 w-full text-left text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-lg hover:bg-sidebar-accent transition-colors"
+            className="w-full text-left text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-lg hover:bg-sidebar-accent transition-colors"
           >
             Sign out
           </button>
