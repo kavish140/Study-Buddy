@@ -230,7 +230,10 @@ function EmptyState({
     <div className="flex-1 flex flex-col min-w-0">
       {/* Header */}
       <header className="glass border-b border-border px-4 py-3 flex items-center gap-3 shrink-0">
-        <button onClick={onToggleSidebar} className="lg:hidden text-muted-foreground hover:text-foreground">
+        <button
+          onClick={onToggleSidebar}
+          className="lg:hidden text-muted-foreground hover:text-foreground"
+        >
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center">
@@ -250,8 +253,8 @@ function EmptyState({
           </div>
           <h2 className="text-2xl font-bold font-heading mb-2">AcePrep AI Tutor</h2>
           <p className="text-muted-foreground mb-8 text-sm">
-            Ask anything about your exam topics. Get step-by-step solutions,
-            concept explanations, and exam strategies.
+            Ask anything about your exam topics. Get step-by-step solutions, concept explanations,
+            and exam strategies.
           </p>
 
           <div className="grid grid-cols-2 gap-2 mb-8">
@@ -313,7 +316,9 @@ function EmptyState({
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-center text-xs text-muted-foreground mt-2">Press Enter to send · Shift+Enter for new line · 📷 Upload image</p>
+        <p className="text-center text-xs text-muted-foreground mt-2">
+          Press Enter to send · Shift+Enter for new line · 📷 Upload image
+        </p>
       </div>
     </div>
   );
@@ -371,7 +376,7 @@ function ChatView({
       onInitialMessageConsumed?.();
       handleSend(initialMessage);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMessage]);
 
   // ── Drag & Drop handlers ──────────────────────────────────────────
@@ -436,9 +441,7 @@ function ChatView({
       };
       const updatedMessages = [...session.messages, userMessage];
       const title =
-        session.messages.length === 0
-          ? `📄 ${pdfFile.name.slice(0, 40)}`
-          : session.title;
+        session.messages.length === 0 ? `📄 ${pdfFile.name.slice(0, 40)}` : session.title;
       const updatedSession: ChatSession = { ...session, messages: updatedMessages, title };
       onUpdate(updatedSession);
       setInput("");
@@ -460,9 +463,18 @@ function ChatView({
         await streamChat({
           messages: messagesWithPdf,
           examName,
-          onChunk: (chunk) => { fullResponse += chunk; setStreamingContent(fullResponse); },
+          onChunk: (chunk) => {
+            fullResponse += chunk;
+            setStreamingContent(fullResponse);
+          },
           onDone: () => {
-            onUpdate({ ...updatedSession, messages: [...updatedMessages, { role: "assistant", content: fullResponse, timestamp: new Date().toISOString() }] });
+            onUpdate({
+              ...updatedSession,
+              messages: [
+                ...updatedMessages,
+                { role: "assistant", content: fullResponse, timestamp: new Date().toISOString() },
+              ],
+            });
             setStreamingContent("");
             setIsStreaming(false);
           },
@@ -600,9 +612,24 @@ function ChatView({
   };
 
   const quickActions = [
-    { label: "Explain simpler", prompt: "Re-explain that concept using a different approach or analogy. Keep it at JEE level.", icon: Lightbulb },
-    { label: "Give an example", prompt: "Give me a fully solved JEE exam-style numerical problem on this topic. Show every step.", icon: BookOpen },
-    { label: "Quiz me on this", prompt: "Generate 1 JEE Advanced level MCQ on exactly the topic we just discussed. Give 4 numerical options. Then reveal the answer and full solution after I respond.", icon: HelpCircle },
+    {
+      label: "Explain simpler",
+      prompt:
+        "Re-explain that concept using a different approach or analogy. Keep it at JEE level.",
+      icon: Lightbulb,
+    },
+    {
+      label: "Give an example",
+      prompt:
+        "Give me a fully solved JEE exam-style numerical problem on this topic. Show every step.",
+      icon: BookOpen,
+    },
+    {
+      label: "Quiz me on this",
+      prompt:
+        "Generate 1 JEE Advanced level MCQ on exactly the topic we just discussed. Give 4 numerical options. Then reveal the answer and full solution after I respond.",
+      icon: HelpCircle,
+    },
   ];
 
   return (
@@ -721,7 +748,10 @@ function ChatView({
               <div className="font-medium text-foreground">{pendingImage.file.name}</div>
               <div>{(pendingImage.file.size / 1024).toFixed(0)} KB · Image</div>
             </div>
-            <button onClick={() => setPendingImage(null)} className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              onClick={() => setPendingImage(null)}
+              className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -736,13 +766,18 @@ function ChatView({
               <FileText className="h-6 w-6 text-primary" />
             </div>
             <div className="text-xs">
-              <div className="font-medium text-foreground truncate max-w-[180px]">{pendingPdf.file.name}</div>
+              <div className="font-medium text-foreground truncate max-w-[180px]">
+                {pendingPdf.file.name}
+              </div>
               <div className="text-muted-foreground">
                 {pendingPdf.pageCount ? `${pendingPdf.pageCount} pages · ` : ""}
                 {(pendingPdf.file.size / 1024).toFixed(0)} KB · PDF
               </div>
             </div>
-            <button onClick={() => setPendingPdf(null)} className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              onClick={() => setPendingPdf(null)}
+              className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -780,7 +815,13 @@ function ChatView({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={pendingImage ? "Add a message about this image... (optional)" : pendingPdf ? "Ask something about this PDF..." : "Ask a question, or drop an image / PDF here..."}
+              placeholder={
+                pendingImage
+                  ? "Add a message about this image... (optional)"
+                  : pendingPdf
+                    ? "Ask something about this PDF..."
+                    : "Ask a question, or drop an image / PDF here..."
+              }
               rows={1}
               className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
               disabled={isStreaming}
@@ -988,12 +1029,11 @@ function MarkdownContent({ content }: { content: string }) {
       let firstMatch: { index: number; length: number; node: React.ReactNode } | null = null;
 
       if (boldMatch?.index !== undefined) {
-        const candidate = {
+        firstMatch = {
           index: boldMatch.index,
           length: boldMatch[0].length,
           node: <strong key={key++}>{boldMatch[1]}</strong>,
         };
-        if (!firstMatch || candidate.index < firstMatch.index) firstMatch = candidate;
       }
 
       if (codeMatch?.index !== undefined) {
@@ -1006,7 +1046,7 @@ function MarkdownContent({ content }: { content: string }) {
             </code>
           ),
         };
-        if (!firstMatch || candidate.index < firstMatch.index) firstMatch = candidate;
+        if (firstMatch === null || candidate.index < firstMatch.index) firstMatch = candidate;
       }
 
       if (firstMatch) {

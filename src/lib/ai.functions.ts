@@ -1,6 +1,9 @@
 import { supabase } from "./supabase";
 
-async function invokeEdgeFunction(action: string, data: any) {
+async function invokeEdgeFunction<T = Record<string, unknown>>(
+  action: string,
+  data: unknown,
+): Promise<T> {
   const { data: userData } = await supabase.auth.getSession();
   if (!userData?.session) throw new Error("Authentication required");
 
@@ -22,21 +25,29 @@ async function invokeEdgeFunction(action: string, data: any) {
 export const generateQuiz = async ({
   data,
 }: {
-  data: { topic: string; count: number; difficulty: string };
+  data: { topic: string; count: number; difficulty: string; examName?: string };
 }) => {
-  return invokeEdgeFunction("generateQuiz", data);
+  return invokeEdgeFunction<{
+    questions: { question: string; options: string[]; answerIndex: number; explanation: string }[];
+  }>("generateQuiz", data);
 };
 
-export const generateNotes = async ({ data }: { data: { topic: string } }) => {
-  return invokeEdgeFunction("generateNotes", data);
+export const generateNotes = async ({ data }: { data: { topic: string; examName?: string } }) => {
+  return invokeEdgeFunction<{ summary: string; flashcards: { q: string; a: string }[] }>(
+    "generateNotes",
+    data,
+  );
 };
 
 export const parseSyllabus = async ({ data }: { data: { text: string } }) => {
-  return invokeEdgeFunction("parseSyllabus", data);
+  return invokeEdgeFunction<{ subjects: { name: string; topics: string[] }[] }>(
+    "parseSyllabus",
+    data,
+  );
 };
 
 export const generatePlan = async ({ data }: { data: { topics: string[]; days: number } }) => {
-  return invokeEdgeFunction("generatePlan", data);
+  return invokeEdgeFunction<{ plan: { day: number; tasks: string[] }[] }>("generatePlan", data);
 };
 
 export const generateMockTest = async ({
@@ -44,7 +55,19 @@ export const generateMockTest = async ({
 }: {
   data: { examName: string; sections: { name: string; questions: number; topics: string[] }[] };
 }) => {
-  return invokeEdgeFunction("generateMockTest", data);
+  return invokeEdgeFunction<{
+    sections: {
+      name: string;
+      questions: {
+        id?: string;
+        question: string;
+        options: string[];
+        answerIndex: number;
+        explanation: string;
+        topic?: string;
+      }[];
+    }[];
+  }>("generateMockTest", data);
 };
 
 export async function solveFromImage({
@@ -136,7 +159,9 @@ export async function streamChat({
         const parsed = JSON.parse(jsonStr);
         const content = parsed.choices?.[0]?.delta?.content;
         if (content) onChunk(content);
-      } catch {}
+      } catch {
+        // Ignore malformed SSE JSON chunks (partial data)
+      }
     }
   }
   onDone();

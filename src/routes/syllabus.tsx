@@ -37,38 +37,209 @@ function SyllabusPage() {
   const [classFilter, setClassFilter] = useState<"11" | "12" | null>(null);
 
   // JEE/NEET class-wise topic split
-  const isJeeNeet = profile?.exam_id && ["jee-main", "jee-advanced", "neet"].includes(profile.exam_id);
+  const isJeeNeet =
+    profile?.exam_id && ["jee-main", "jee-advanced", "neet"].includes(profile.exam_id);
 
-  const CLASS_TOPICS: Record<string, Record<"11" | "12", { subject: string; topics: string[] }[]>> = {
+  const CLASS_TOPICS: Record<
+    string,
+    Record<"11" | "12", { subject: string; topics: string[] }[]>
+  > = {
     "jee-main": {
       "11": [
-        { subject: "Physics", topics: ["Units and Measurements", "Kinematics", "Laws of Motion", "Work, Energy and Power", "Rotational Motion", "Gravitation", "Properties of Solids and Liquids", "Thermodynamics", "Kinetic Theory of Gases", "Oscillations and Waves"] },
-        { subject: "Chemistry", topics: ["Some Basic Concepts in Chemistry", "Atomic Structure", "Chemical Bonding", "States of Matter", "Chemical Thermodynamics", "Equilibrium", "Redox Reactions", "Hydrogen", "s-Block Elements", "p-Block Elements (Part 1)", "Organic Chemistry Basics", "Hydrocarbons", "Environmental Chemistry"] },
-        { subject: "Mathematics", topics: ["Sets, Relations and Functions", "Complex Numbers", "Quadratic Equations", "Permutations and Combinations", "Binomial Theorem", "Sequences and Series", "Limits and Derivatives", "Trigonometry", "Straight Lines", "Conic Sections", "Statistics and Probability", "Mathematical Reasoning"] },
+        {
+          subject: "Physics",
+          topics: [
+            "Units and Measurements",
+            "Kinematics",
+            "Laws of Motion",
+            "Work, Energy and Power",
+            "Rotational Motion",
+            "Gravitation",
+            "Properties of Solids and Liquids",
+            "Thermodynamics",
+            "Kinetic Theory of Gases",
+            "Oscillations and Waves",
+          ],
+        },
+        {
+          subject: "Chemistry",
+          topics: [
+            "Some Basic Concepts in Chemistry",
+            "Atomic Structure",
+            "Chemical Bonding",
+            "States of Matter",
+            "Chemical Thermodynamics",
+            "Equilibrium",
+            "Redox Reactions",
+            "Hydrogen",
+            "s-Block Elements",
+            "p-Block Elements (Part 1)",
+            "Organic Chemistry Basics",
+            "Hydrocarbons",
+            "Environmental Chemistry",
+          ],
+        },
+        {
+          subject: "Mathematics",
+          topics: [
+            "Sets, Relations and Functions",
+            "Complex Numbers",
+            "Quadratic Equations",
+            "Permutations and Combinations",
+            "Binomial Theorem",
+            "Sequences and Series",
+            "Limits and Derivatives",
+            "Trigonometry",
+            "Straight Lines",
+            "Conic Sections",
+            "Statistics and Probability",
+            "Mathematical Reasoning",
+          ],
+        },
       ],
       "12": [
-        { subject: "Physics", topics: ["Electrostatics", "Current Electricity", "Magnetic Effects of Current", "Electromagnetic Induction", "Electromagnetic Waves", "Optics", "Dual Nature of Matter and Radiation", "Atoms and Nuclei", "Electronic Devices", "Communication Systems"] },
-        { subject: "Chemistry", topics: ["Solid State", "Solutions", "Electrochemistry", "Chemical Kinetics", "Surface Chemistry", "Classification of Elements", "d and f Block Elements", "Coordination Compounds", "Organic Compounds with Functional Groups", "Polymers", "Biomolecules", "Chemistry in Everyday Life"] },
-        { subject: "Mathematics", topics: ["Matrices and Determinants", "Integral Calculus", "Differential Equations", "Coordinate Geometry", "Three Dimensional Geometry", "Vector Algebra", "Statistics and Probability (Advanced)"] },
+        {
+          subject: "Physics",
+          topics: [
+            "Electrostatics",
+            "Current Electricity",
+            "Magnetic Effects of Current",
+            "Electromagnetic Induction",
+            "Electromagnetic Waves",
+            "Optics",
+            "Dual Nature of Matter and Radiation",
+            "Atoms and Nuclei",
+            "Electronic Devices",
+            "Communication Systems",
+          ],
+        },
+        {
+          subject: "Chemistry",
+          topics: [
+            "Solid State",
+            "Solutions",
+            "Electrochemistry",
+            "Chemical Kinetics",
+            "Surface Chemistry",
+            "Classification of Elements",
+            "d and f Block Elements",
+            "Coordination Compounds",
+            "Organic Compounds with Functional Groups",
+            "Polymers",
+            "Biomolecules",
+            "Chemistry in Everyday Life",
+          ],
+        },
+        {
+          subject: "Mathematics",
+          topics: [
+            "Matrices and Determinants",
+            "Integral Calculus",
+            "Differential Equations",
+            "Coordinate Geometry",
+            "Three Dimensional Geometry",
+            "Vector Algebra",
+            "Statistics and Probability (Advanced)",
+          ],
+        },
       ],
     },
-    "neet": {
+    neet: {
       "11": [
-        { subject: "Physics", topics: ["Physical World and Measurement", "Kinematics", "Laws of Motion", "Work, Energy and Power", "Motion of System of Particles", "Gravitation", "Properties of Bulk Matter", "Thermodynamics", "Kinetic Theory of Gases", "Oscillations and Waves"] },
-        { subject: "Chemistry", topics: ["Basic Concepts of Chemistry", "Structure of Atom", "Classification of Elements", "Chemical Bonding", "States of Matter", "Thermodynamics", "Equilibrium", "Redox Reactions", "Hydrogen", "s-Block Elements", "p-Block Elements", "Organic Chemistry Basics", "Hydrocarbons", "Environmental Chemistry"] },
-        { subject: "Biology", topics: ["Diversity in Living World", "Structural Organisation in Animals and Plants", "Cell Structure and Function", "Plant Physiology", "Human Physiology"] },
+        {
+          subject: "Physics",
+          topics: [
+            "Physical World and Measurement",
+            "Kinematics",
+            "Laws of Motion",
+            "Work, Energy and Power",
+            "Motion of System of Particles",
+            "Gravitation",
+            "Properties of Bulk Matter",
+            "Thermodynamics",
+            "Kinetic Theory of Gases",
+            "Oscillations and Waves",
+          ],
+        },
+        {
+          subject: "Chemistry",
+          topics: [
+            "Basic Concepts of Chemistry",
+            "Structure of Atom",
+            "Classification of Elements",
+            "Chemical Bonding",
+            "States of Matter",
+            "Thermodynamics",
+            "Equilibrium",
+            "Redox Reactions",
+            "Hydrogen",
+            "s-Block Elements",
+            "p-Block Elements",
+            "Organic Chemistry Basics",
+            "Hydrocarbons",
+            "Environmental Chemistry",
+          ],
+        },
+        {
+          subject: "Biology",
+          topics: [
+            "Diversity in Living World",
+            "Structural Organisation in Animals and Plants",
+            "Cell Structure and Function",
+            "Plant Physiology",
+            "Human Physiology",
+          ],
+        },
       ],
       "12": [
-        { subject: "Physics", topics: ["Electrostatics", "Current Electricity", "Magnetic Effects of Current", "Electromagnetic Induction and AC", "Electromagnetic Waves", "Optics", "Dual Nature of Radiation", "Atoms and Nuclei", "Electronic Devices"] },
-        { subject: "Chemistry", topics: ["Solid State", "Solutions", "Electrochemistry", "Chemical Kinetics", "Surface Chemistry", "d and f Block Elements", "Coordination Compounds", "Aldehydes, Ketones", "Amines", "Biomolecules", "Polymers"] },
-        { subject: "Biology", topics: ["Reproduction", "Genetics and Evolution", "Biology and Human Welfare", "Biotechnology", "Ecology and Environment"] },
+        {
+          subject: "Physics",
+          topics: [
+            "Electrostatics",
+            "Current Electricity",
+            "Magnetic Effects of Current",
+            "Electromagnetic Induction and AC",
+            "Electromagnetic Waves",
+            "Optics",
+            "Dual Nature of Radiation",
+            "Atoms and Nuclei",
+            "Electronic Devices",
+          ],
+        },
+        {
+          subject: "Chemistry",
+          topics: [
+            "Solid State",
+            "Solutions",
+            "Electrochemistry",
+            "Chemical Kinetics",
+            "Surface Chemistry",
+            "d and f Block Elements",
+            "Coordination Compounds",
+            "Aldehydes, Ketones",
+            "Amines",
+            "Biomolecules",
+            "Polymers",
+          ],
+        },
+        {
+          subject: "Biology",
+          topics: [
+            "Reproduction",
+            "Genetics and Evolution",
+            "Biology and Human Welfare",
+            "Biotechnology",
+            "Ecology and Environment",
+          ],
+        },
       ],
     },
   };
 
-  const classTopics = isJeeNeet && classFilter && CLASS_TOPICS[profile!.exam_id]
-    ? CLASS_TOPICS[profile!.exam_id][classFilter]
-    : null;
+  const classTopics =
+    isJeeNeet && classFilter && CLASS_TOPICS[profile!.exam_id]
+      ? CLASS_TOPICS[profile!.exam_id][classFilter]
+      : null;
 
   const saveMutation = useMutation({
     mutationFn: api.saveSubject,
@@ -173,22 +344,29 @@ function SyllabusPage() {
           {classTopics && (
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                These are the Class {classFilter} topics for {profile?.exam_name}. Click a subject to load it into your tracker.
+                These are the Class {classFilter} topics for {profile?.exam_name}. Click a subject
+                to load it into your tracker.
               </p>
               <div className="grid sm:grid-cols-3 gap-2">
                 {classTopics.map((group) => (
                   <div key={group.subject} className="glass-subtle p-3 rounded-xl">
-                    <div className="text-xs font-semibold text-primary mb-2">{group.subject} · {group.topics.length} topics</div>
+                    <div className="text-xs font-semibold text-primary mb-2">
+                      {group.subject} · {group.topics.length} topics
+                    </div>
                     <div className="space-y-0.5 max-h-40 overflow-y-auto">
                       {group.topics.map((t) => (
-                        <div key={t} className="text-xs text-muted-foreground py-0.5">{t}</div>
+                        <div key={t} className="text-xs text-muted-foreground py-0.5">
+                          {t}
+                        </div>
                       ))}
                     </div>
                     <Button
                       size="sm"
                       variant="secondary"
                       className="mt-2 w-full text-xs"
-                      onClick={() => addSubject(`${group.subject} (Class ${classFilter})`, group.topics)}
+                      onClick={() =>
+                        addSubject(`${group.subject} (Class ${classFilter})`, group.topics)
+                      }
                     >
                       <Plus className="h-3 w-3 mr-1" /> Add to tracker
                     </Button>

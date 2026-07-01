@@ -68,7 +68,9 @@ function NotesPage() {
       <h1 className="text-3xl font-bold tracking-tight font-heading">Notes & flashcards</h1>
       <p className="text-muted-foreground mt-1">
         Drop a syllabus topic, get a crisp summary and flashcard deck.
-        {profile?.exam_name && <span className="text-primary font-medium"> Tailored for {profile.exam_name}.</span>}
+        {profile?.exam_name && (
+          <span className="text-primary font-medium"> Tailored for {profile.exam_name}.</span>
+        )}
       </p>
 
       <div className="p-5 rounded-2xl glass-card mt-6">
@@ -79,7 +81,11 @@ function NotesPage() {
           <Input
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder={profile?.exam_name ? `e.g. Kinematics, Organic Chemistry, Integral Calculus...` : "e.g. Kinematics, Organic Chemistry..."}
+            placeholder={
+              profile?.exam_name
+                ? `e.g. Kinematics, Organic Chemistry, Integral Calculus...`
+                : "e.g. Kinematics, Organic Chemistry..."
+            }
             onKeyDown={(e) => e.key === "Enter" && !loading && handleGenerate()}
           />
           <Button

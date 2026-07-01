@@ -66,7 +66,8 @@ export function AppLayout() {
       qc.invalidateQueries({ queryKey: ["userStats"] });
       newBadges.forEach((id) => {
         const badge = BADGE_DEFS.find((b) => b.id === id);
-        if (badge) toast.success(`${badge.emoji} Badge unlocked: ${badge.name}!`, { duration: 5000 });
+        if (badge)
+          toast.success(`${badge.emoji} Badge unlocked: ${badge.name}!`, { duration: 5000 });
       });
     },
   });
@@ -79,7 +80,7 @@ export function AppLayout() {
       localStorage.setItem(todayKey, "1");
       awardMutation.mutate();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const { data: dueCards = [] } = useQuery({
@@ -174,39 +175,53 @@ export function AppLayout() {
         {/* Bottom user section */}
         <div className="mt-auto pt-4 border-t border-sidebar-border space-y-3">
           {/* XP Progress bar */}
-          {userStats && (() => {
-            const { pct, current, needed } = xpForNextLevel(userStats.xp);
-            return (
-              <div className="px-2">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="h-3.5 w-3.5 text-amber-400" />
-                    <span className="text-xs font-semibold">{userStats.xp} XP</span>
-                    <span className="text-xs text-muted-foreground">· Lv.{userStats.level}</span>
+          {userStats &&
+            (() => {
+              const { pct, current, needed } = xpForNextLevel(userStats.xp);
+              return (
+                <div className="px-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <Zap className="h-3.5 w-3.5 text-amber-400" />
+                      <span className="text-xs font-semibold">{userStats.xp} XP</span>
+                      <span className="text-xs text-muted-foreground">· Lv.{userStats.level}</span>
+                    </div>
+                    {userStats.current_streak > 0 && (
+                      <div className="flex items-center gap-1 text-xs text-amber-400">
+                        <Flame className="h-3 w-3" />
+                        {userStats.current_streak}d
+                      </div>
+                    )}
                   </div>
-                  {userStats.current_streak > 0 && (
-                    <div className="flex items-center gap-1 text-xs text-amber-400">
-                      <Flame className="h-3 w-3" />
-                      {userStats.current_streak}d
+                  <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full transition-all duration-700"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                    {current}/{needed} XP to Lv.{userStats.level + 1}
+                  </div>
+                  {userStats.badges.length > 0 && (
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                      {userStats.badges.slice(0, 6).map((id) => {
+                        const b = BADGE_DEFS.find((bd) => bd.id === id);
+                        return b ? (
+                          <span key={id} title={b.name} className="text-sm cursor-default">
+                            {b.emoji}
+                          </span>
+                        ) : null;
+                      })}
+                      {userStats.badges.length > 6 && (
+                        <span className="text-xs text-muted-foreground">
+                          +{userStats.badges.length - 6}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
-                <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
-                </div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">{current}/{needed} XP to Lv.{userStats.level + 1}</div>
-                {userStats.badges.length > 0 && (
-                  <div className="flex gap-1 mt-1.5 flex-wrap">
-                    {userStats.badges.slice(0, 6).map((id) => {
-                      const b = BADGE_DEFS.find((bd) => bd.id === id);
-                      return b ? <span key={id} title={b.name} className="text-sm cursor-default">{b.emoji}</span> : null;
-                    })}
-                    {userStats.badges.length > 6 && <span className="text-xs text-muted-foreground">+{userStats.badges.length - 6}</span>}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+              );
+            })()}
 
           <div className="flex items-center gap-3 px-2">
             <div className="h-8 w-8 rounded-full bg-gradient-primary grid place-items-center text-xs font-bold text-white">

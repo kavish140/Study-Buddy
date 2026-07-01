@@ -17,9 +17,24 @@ export const Route = createFileRoute("/leaderboard")({
 });
 
 const RANK_STYLES = [
-  { bg: "from-amber-500/20 to-yellow-500/10", border: "border-amber-500/30", icon: "🥇", label: "text-amber-400" },
-  { bg: "from-slate-400/20 to-gray-500/10",   border: "border-slate-400/30",  icon: "🥈", label: "text-slate-300" },
-  { bg: "from-orange-500/20 to-amber-600/10", border: "border-orange-500/30", icon: "🥉", label: "text-orange-400" },
+  {
+    bg: "from-amber-500/20 to-yellow-500/10",
+    border: "border-amber-500/30",
+    icon: "🥇",
+    label: "text-amber-400",
+  },
+  {
+    bg: "from-slate-400/20 to-gray-500/10",
+    border: "border-slate-400/30",
+    icon: "🥈",
+    label: "text-slate-300",
+  },
+  {
+    bg: "from-orange-500/20 to-amber-600/10",
+    border: "border-orange-500/30",
+    icon: "🥉",
+    label: "text-orange-400",
+  },
 ];
 
 function LeaderboardPage() {
@@ -56,7 +71,9 @@ function LeaderboardPage() {
             </div>
             <div>
               <div className="text-sm font-medium">Your rank</div>
-              <div className="text-xs text-muted-foreground">{myStats.xp} XP · Level {myStats.level}</div>
+              <div className="text-xs text-muted-foreground">
+                {myStats.xp} XP · Level {myStats.level}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -78,7 +95,8 @@ function LeaderboardPage() {
                 key={entry?.user_id ?? i}
                 className={cn(
                   "glass-card rounded-2xl p-4 text-center bg-gradient-to-b border transition-all",
-                  style.bg, style.border,
+                  style.bg,
+                  style.border,
                   podiumRank === 1 && "scale-105 shadow-glow-sm",
                   isMe && "ring-2 ring-primary",
                 )}
@@ -119,14 +137,19 @@ function LeaderboardPage() {
                   )}
                 >
                   {/* Rank */}
-                  <div className={cn(
-                    "h-9 w-9 shrink-0 rounded-lg grid place-items-center text-sm font-bold",
-                    rank === 1 ? "bg-amber-500/20 text-amber-400" :
-                    rank === 2 ? "bg-slate-400/20 text-slate-300" :
-                    rank === 3 ? "bg-orange-500/20 text-orange-400" :
-                    "bg-muted/20 text-muted-foreground",
-                  )}>
-                    {rank <= 3 ? ["🥇","🥈","🥉"][rank-1] : `#${rank}`}
+                  <div
+                    className={cn(
+                      "h-9 w-9 shrink-0 rounded-lg grid place-items-center text-sm font-bold",
+                      rank === 1
+                        ? "bg-amber-500/20 text-amber-400"
+                        : rank === 2
+                          ? "bg-slate-400/20 text-slate-300"
+                          : rank === 3
+                            ? "bg-orange-500/20 text-orange-400"
+                            : "bg-muted/20 text-muted-foreground",
+                    )}
+                  >
+                    {rank <= 3 ? ["🥇", "🥈", "🥉"][rank - 1] : `#${rank}`}
                   </div>
 
                   {/* Avatar */}
@@ -144,7 +167,10 @@ function LeaderboardPage() {
                     </div>
                     {/* XP progress bar */}
                     <div className="mt-1 h-1 bg-muted/30 rounded-full overflow-hidden w-24">
-                      <div className="h-full bg-gradient-primary rounded-full" style={{ width: `${pct}%` }} />
+                      <div
+                        className="h-full bg-gradient-primary rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
                   </div>
 

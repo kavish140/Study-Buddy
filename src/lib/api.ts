@@ -311,7 +311,9 @@ export const api = {
     if (error) throw error;
     return (data as FocusSession[]) || [];
   },
-  saveFocusSession: async (session: Omit<FocusSession, "id" | "user_id">): Promise<FocusSession> => {
+  saveFocusSession: async (
+    session: Omit<FocusSession, "id" | "user_id">,
+  ): Promise<FocusSession> => {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
@@ -348,7 +350,12 @@ export const api = {
    */
   awardXP: async (
     amount: number,
-    context?: { mockCount?: number; focusCount?: number; reviewCount?: number; quizPerfect?: boolean },
+    context?: {
+      mockCount?: number;
+      focusCount?: number;
+      reviewCount?: number;
+      quizPerfect?: boolean;
+    },
   ): Promise<{ stats: UserStats; newBadges: string[] }> => {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
@@ -368,7 +375,15 @@ export const api = {
     if (!existing) {
       const { data: created } = await supabase
         .from("user_stats")
-        .insert({ id: uid(), user_id, xp: 0, level: 1, current_streak: 0, longest_streak: 0, badges: [] })
+        .insert({
+          id: uid(),
+          user_id,
+          xp: 0,
+          level: 1,
+          current_streak: 0,
+          longest_streak: 0,
+          badges: [],
+        })
         .select()
         .single();
       existing = created;
@@ -399,17 +414,20 @@ export const api = {
     const newBadges: string[] = [];
 
     const checkBadge = (id: string, condition: boolean) => {
-      if (condition && !earned.has(id)) { earned.add(id); newBadges.push(id); }
+      if (condition && !earned.has(id)) {
+        earned.add(id);
+        newBadges.push(id);
+      }
     };
 
-    checkBadge("century",     newXp >= 100);
-    checkBadge("on_fire",     newStreak >= 7);
-    checkBadge("scholar",     newStreak >= 30);
+    checkBadge("century", newXp >= 100);
+    checkBadge("on_fire", newStreak >= 7);
+    checkBadge("scholar", newStreak >= 30);
     checkBadge("quiz_master", !!context?.quizPerfect);
     checkBadge("mock_warrior", (context?.mockCount ?? 0) >= 5);
-    checkBadge("grinder",     (context?.focusCount ?? 0) >= 10);
-    checkBadge("reviewer",    (context?.reviewCount ?? 0) >= 50);
-    checkBadge("night_owl",   hour >= 0 && hour < 4);
+    checkBadge("grinder", (context?.focusCount ?? 0) >= 10);
+    checkBadge("reviewer", (context?.reviewCount ?? 0) >= 50);
+    checkBadge("night_owl", hour >= 0 && hour < 4);
     if (cur.badges.includes("first_steps") || cur.xp > 0) checkBadge("first_steps", true);
 
     const updates = {
@@ -444,15 +462,18 @@ export const api = {
 
   // ── PYQ Bank ─────────────────────────────────────────────────────
   getPYQQuestions: async (filters?: {
-    exam_id?: string; year?: number; subject?: string;
-    difficulty?: string; search?: string;
+    exam_id?: string;
+    year?: number;
+    subject?: string;
+    difficulty?: string;
+    search?: string;
   }): Promise<PYQQuestion[]> => {
     let q = supabase.from("pyq_questions").select("*");
-    if (filters?.exam_id)   q = q.eq("exam_id", filters.exam_id);
-    if (filters?.year)      q = q.eq("year", filters.year);
-    if (filters?.subject)   q = q.eq("subject", filters.subject);
+    if (filters?.exam_id) q = q.eq("exam_id", filters.exam_id);
+    if (filters?.year) q = q.eq("year", filters.year);
+    if (filters?.subject) q = q.eq("subject", filters.subject);
     if (filters?.difficulty) q = q.eq("difficulty", filters.difficulty);
-    if (filters?.search)    q = q.ilike("question", `%${filters.search}%`);
+    if (filters?.search) q = q.ilike("question", `%${filters.search}%`);
     const { data, error } = await q.order("year", { ascending: false }).limit(100);
     if (error) throw error;
     return (data as PYQQuestion[]) || [];
@@ -462,7 +483,8 @@ export const api = {
     const { data, error } = await supabase
       .from("pyq_questions")
       .insert({ ...q, id: uid() })
-      .select().single();
+      .select()
+      .single();
     if (error) throw error;
     return data as PYQQuestion;
   },
@@ -483,11 +505,17 @@ export const api = {
     return (data as ForumPost[]) || [];
   },
   getForumPost: async (id: string): Promise<ForumPost | null> => {
-    const { data, error } = await supabase.from("forum_posts").select("*").eq("id", id).maybeSingle();
+    const { data, error } = await supabase
+      .from("forum_posts")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
     if (error) throw error;
     return data as ForumPost | null;
   },
-  createForumPost: async (post: Pick<ForumPost, "title" | "content" | "exam_id" | "subject" | "topic">): Promise<ForumPost> => {
+  createForumPost: async (
+    post: Pick<ForumPost, "title" | "content" | "exam_id" | "subject" | "topic">,
+  ): Promise<ForumPost> => {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
@@ -495,7 +523,8 @@ export const api = {
     const { data, error } = await supabase
       .from("forum_posts")
       .insert({ ...post, id: uid(), user_id, upvotes: 0, reply_count: 0 })
-      .select().single();
+      .select()
+      .single();
     if (error) throw error;
     return data as ForumPost;
   },
@@ -504,7 +533,9 @@ export const api = {
   },
   getForumReplies: async (post_id: string): Promise<ForumReply[]> => {
     const { data, error } = await supabase
-      .from("forum_replies").select("*").eq("post_id", post_id)
+      .from("forum_replies")
+      .select("*")
+      .eq("post_id", post_id)
       .order("created_at", { ascending: true });
     if (error) throw error;
     return (data as ForumReply[]) || [];
@@ -517,17 +548,28 @@ export const api = {
     const { data, error } = await supabase
       .from("forum_replies")
       .insert({ id: uid(), post_id, user_id, content, upvotes: 0, is_accepted: false })
-      .select().single();
+      .select()
+      .single();
     if (error) throw error;
     // Increment reply count by fetching current and adding 1
-    const { data: postRow } = await supabase.from("forum_posts").select("reply_count").eq("id", post_id).single();
+    const { data: postRow } = await supabase
+      .from("forum_posts")
+      .select("reply_count")
+      .eq("id", post_id)
+      .single();
     if (postRow) {
-      await supabase.from("forum_posts").update({ reply_count: (postRow.reply_count ?? 0) + 1 }).eq("id", post_id);
+      await supabase
+        .from("forum_posts")
+        .update({ reply_count: (postRow.reply_count ?? 0) + 1 })
+        .eq("id", post_id);
     }
     return data as ForumReply;
-
   },
   acceptReply: async (reply_id: string): Promise<void> => {
-    await supabase.from("forum_replies").update({ is_accepted: true }).eq("id", reply_id).throwOnError();
+    await supabase
+      .from("forum_replies")
+      .update({ is_accepted: true })
+      .eq("id", reply_id)
+      .throwOnError();
   },
 };

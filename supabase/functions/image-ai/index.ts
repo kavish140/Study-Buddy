@@ -87,7 +87,8 @@ Be thorough, accurate, and encouraging.`;
 
     // Extract the text response
     const responseText =
-      geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't analyze this image.";
+      geminiData.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "Sorry, I couldn't analyze this image.";
 
     return new Response(JSON.stringify({ response: responseText }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

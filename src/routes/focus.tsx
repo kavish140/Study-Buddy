@@ -30,10 +30,13 @@ export const Route = createFileRoute("/focus")({
 
 type Mode = "work" | "short_break" | "long_break";
 
-const MODES: Record<Mode, { label: string; minutes: number; color: string; icon: React.ElementType }> = {
-  work:        { label: "Focus",       minutes: 25, color: "text-primary",    icon: Flame },
-  short_break: { label: "Short Break", minutes: 5,  color: "text-emerald-400", icon: Coffee },
-  long_break:  { label: "Long Break",  minutes: 15, color: "text-amber-400",   icon: Coffee },
+const MODES: Record<
+  Mode,
+  { label: string; minutes: number; color: string; icon: React.ElementType }
+> = {
+  work: { label: "Focus", minutes: 25, color: "text-primary", icon: Flame },
+  short_break: { label: "Short Break", minutes: 5, color: "text-emerald-400", icon: Coffee },
+  long_break: { label: "Long Break", minutes: 15, color: "text-amber-400", icon: Coffee },
 };
 
 const SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "English", "Other"];
@@ -50,7 +53,9 @@ function FocusPage() {
   const [topic, setTopic] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [customMinutes, setCustomMinutes] = useState<Record<Mode, number>>({
-    work: 25, short_break: 5, long_break: 15,
+    work: 25,
+    short_break: 5,
+    long_break: 15,
   });
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -78,13 +83,16 @@ function FocusPage() {
   });
   const totalFocusMinutes = todaySessions.reduce((sum, s) => sum + s.duration_minutes, 0);
 
-  const switchMode = useCallback((newMode: Mode) => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setIsRunning(false);
-    setMode(newMode);
-    setSecondsLeft(customMinutes[newMode] * 60);
-    sessionStartRef.current = null;
-  }, [customMinutes]);
+  const switchMode = useCallback(
+    (newMode: Mode) => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setIsRunning(false);
+      setMode(newMode);
+      setSecondsLeft(customMinutes[newMode] * 60);
+      sessionStartRef.current = null;
+    },
+    [customMinutes],
+  );
 
   const handleSessionComplete = useCallback(async () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -103,7 +111,9 @@ function FocusPage() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.8);
-    } catch {}
+    } catch {
+      // AudioContext may be unavailable in some browser environments
+    }
 
     if (mode === "work") {
       const duration = customMinutes.work;
@@ -140,7 +150,9 @@ function FocusPage() {
         });
       }, 1000);
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [isRunning, handleSessionComplete]);
 
   // Update document title
@@ -148,7 +160,9 @@ function FocusPage() {
     document.title = isRunning
       ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")} · ${MODES[mode].label} · AcePrep`
       : "Focus Timer · AcePrep";
-    return () => { document.title = "AcePrep"; };
+    return () => {
+      document.title = "AcePrep";
+    };
   }, [isRunning, minutes, seconds, mode]);
 
   const handleToggle = () => {
@@ -189,7 +203,8 @@ function FocusPage() {
           onClick={() => setShowSettings((s) => !s)}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted/30 transition-colors"
         >
-          Settings {showSettings ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          Settings{" "}
+          {showSettings ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </button>
       </div>
 
@@ -200,10 +215,13 @@ function FocusPage() {
           <div className="grid grid-cols-3 gap-3">
             {(Object.entries(customMinutes) as [Mode, number][]).map(([k, v]) => (
               <div key={k}>
-                <label className="text-xs text-muted-foreground capitalize">{k.replace("_", " ")}</label>
+                <label className="text-xs text-muted-foreground capitalize">
+                  {k.replace("_", " ")}
+                </label>
                 <input
                   type="number"
-                  min={1} max={120}
+                  min={1}
+                  max={120}
                   value={v}
                   onChange={(e) => {
                     const val = Math.max(1, parseInt(e.target.value) || 1);
@@ -220,7 +238,7 @@ function FocusPage() {
 
       {/* Mode selector */}
       <div className="flex gap-2 mb-8 glass-card rounded-xl p-1">
-        {(Object.entries(MODES) as [Mode, typeof MODES[Mode]][]).map(([k, v]) => (
+        {(Object.entries(MODES) as [Mode, (typeof MODES)[Mode]][]).map(([k, v]) => (
           <button
             key={k}
             onClick={() => switchMode(k)}
@@ -228,7 +246,7 @@ function FocusPage() {
               "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all",
               mode === k
                 ? "bg-primary/15 text-primary border border-primary/20"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             {v.label}
@@ -240,9 +258,19 @@ function FocusPage() {
       <div className="flex flex-col items-center mb-8">
         <div className="relative">
           <svg width="240" height="240" className="-rotate-90">
-            <circle cx="120" cy="120" r={r} fill="none" stroke="currentColor" strokeWidth="6" className="text-muted/20" />
             <circle
-              cx="120" cy="120" r={r}
+              cx="120"
+              cy="120"
+              r={r}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="6"
+              className="text-muted/20"
+            />
+            <circle
+              cx="120"
+              cy="120"
+              r={r}
               fill="none"
               stroke="url(#timerGrad)"
               strokeWidth="6"
@@ -302,7 +330,7 @@ function FocusPage() {
                   "px-3 py-1 rounded-full text-xs border transition-all",
                   subject === s
                     ? "bg-primary/15 text-primary border-primary/30"
-                    : "glass-subtle text-muted-foreground hover:text-foreground"
+                    : "glass-subtle text-muted-foreground hover:text-foreground",
                 )}
               >
                 {s}
@@ -321,9 +349,24 @@ function FocusPage() {
       {/* Today's stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Sessions today", value: todaySessions.length, icon: CheckCircle2, color: "text-emerald-400" },
-          { label: "Focus time", value: `${totalFocusMinutes}m`, icon: Clock, color: "text-primary" },
-          { label: "Sessions done", value: sessionsCompleted, icon: Flame, color: "text-amber-400" },
+          {
+            label: "Sessions today",
+            value: todaySessions.length,
+            icon: CheckCircle2,
+            color: "text-emerald-400",
+          },
+          {
+            label: "Focus time",
+            value: `${totalFocusMinutes}m`,
+            icon: Clock,
+            color: "text-primary",
+          },
+          {
+            label: "Sessions done",
+            value: sessionsCompleted,
+            icon: Flame,
+            color: "text-amber-400",
+          },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="glass-card rounded-xl p-4 text-center">
             <Icon className={cn("h-4 w-4 mx-auto mb-1", color)} />
@@ -342,7 +385,10 @@ function FocusPage() {
               <div key={s.id} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>{s.subject || "General"}{s.topic ? ` · ${s.topic}` : ""}</span>
+                  <span>
+                    {s.subject || "General"}
+                    {s.topic ? ` · ${s.topic}` : ""}
+                  </span>
                 </div>
                 <span className="text-muted-foreground">{s.duration_minutes}m</span>
               </div>

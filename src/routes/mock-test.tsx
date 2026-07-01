@@ -46,7 +46,7 @@ function MockTestPage() {
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
   const { data: mockTests = [] } = useQuery({ queryKey: ["mockTests"], queryFn: api.getMockTests });
-  const examInfo = profile?.exam_id ? getExamById(profile.exam_id) : null;
+  const examInfo = profile?.exam_id ? getExamById(profile.exam_id) : undefined;
 
   const [screen, setScreen] = useState<Screen>("setup");
   const [currentTest, setCurrentTest] = useState<MockTest | null>(null);
@@ -103,7 +103,7 @@ function SetupScreen({
   onStart,
 }: {
   examInfo: ReturnType<typeof getExamById>;
-  profile: any;
+  profile: import("@/lib/storage").UserProfile | null | undefined;
   mockTests: MockTest[];
   onStart: (test: MockTest) => void;
 }) {
@@ -130,7 +130,7 @@ function SetupScreen({
       const res = await generateMockTest({ data: { examName: examInfo.name, sections } });
 
       const totalQuestions = (res.sections || []).reduce(
-        (sum: number, s: any) => sum + (s.questions?.length || 0),
+        (sum: number, s) => sum + (s.questions?.length || 0),
         0,
       );
       const timePerQ = examInfo.examPattern.totalTimeMinutes / examInfo.examPattern.totalQuestions;
@@ -140,10 +140,10 @@ function SetupScreen({
         id: uid(),
         exam_id: examInfo.id,
         exam_name: examInfo.name,
-        sections: (res.sections || []).map((s: any) => ({
+        sections: (res.sections || []).map((s) => ({
           name: s.name,
           timeMinutes: Math.round((s.questions?.length || 0) * timePerQ),
-          questions: (s.questions || []).map((q: any, idx: number) => ({
+          questions: (s.questions || []).map((q, idx) => ({
             id: q.id || `q${idx}`,
             question: q.question,
             options: q.options,
@@ -376,7 +376,6 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
     };
 
     onFinish(finishedTest);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers, test, onFinish, allQuestions]);
 
   const formatTime = (s: number) => {

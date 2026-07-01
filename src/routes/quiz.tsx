@@ -87,7 +87,13 @@ function QuizPage() {
     <div className="max-w-5xl mx-auto px-6 py-10">
       <h1 className="text-3xl font-bold tracking-tight font-heading">AI Quizzer</h1>
       <p className="text-muted-foreground mt-1">
-        Generate a {profile?.exam_name ? <span className="text-primary font-medium">{profile.exam_name}</span> : "competitive exam"}-level quiz on any syllabus topic.
+        Generate a{" "}
+        {profile?.exam_name ? (
+          <span className="text-primary font-medium">{profile.exam_name}</span>
+        ) : (
+          "competitive exam"
+        )}
+        -level quiz on any syllabus topic.
       </p>
 
       <div className="p-5 rounded-2xl glass-card mt-6">
@@ -98,7 +104,11 @@ function QuizPage() {
           <Input
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder={profile?.exam_name ? `${profile.exam_name} topic, e.g. Projectile Motion, p-Block Elements...` : "Topic, e.g. Newton's laws of motion"}
+            placeholder={
+              profile?.exam_name
+                ? `${profile.exam_name} topic, e.g. Projectile Motion, p-Block Elements...`
+                : "Topic, e.g. Newton's laws of motion"
+            }
             onKeyDown={(e) => e.key === "Enter" && !loading && handleGenerate()}
           />
           <Select value={count} onValueChange={setCount}>

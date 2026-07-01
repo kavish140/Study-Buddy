@@ -54,12 +54,15 @@ Deno.serve(async (req) => {
 
     let result;
     if (action === "generateQuiz") {
-      const examContext = data.examName ? `for ${data.examName}` : "for competitive exams (JEE/NEET level)";
-      const difficultyGuide = data.difficulty === "hard"
-        ? "Questions must be JEE Advanced level — require multi-step reasoning, formula derivation, numerical computation, or conceptual depth. No trivial or definition-based questions."
-        : data.difficulty === "medium"
-          ? "Questions should be JEE Main level — application-based, requiring formula application and moderate reasoning. Avoid purely definitional questions."
-          : "Questions should be NCERT concept-check level — clear but not trivial. Test understanding, not just recall.";
+      const examContext = data.examName
+        ? `for ${data.examName}`
+        : "for competitive exams (JEE/NEET level)";
+      const difficultyGuide =
+        data.difficulty === "hard"
+          ? "Questions must be JEE Advanced level — require multi-step reasoning, formula derivation, numerical computation, or conceptual depth. No trivial or definition-based questions."
+          : data.difficulty === "medium"
+            ? "Questions should be JEE Main level — application-based, requiring formula application and moderate reasoning. Avoid purely definitional questions."
+            : "Questions should be NCERT concept-check level — clear but not trivial. Test understanding, not just recall.";
       const system = `You are an expert question setter ${examContext}. Generate rigorous multiple-choice questions suitable for competitive exam preparation. ${difficultyGuide} Every question must be self-contained with 4 distinct options (only one correct), precise scientific language, and a detailed explanation citing the relevant formula or principle. Respond ONLY with valid JSON.`;
       const user = `Generate ${data.count} ${data.difficulty}-difficulty MCQ questions on the topic: "${data.topic}" ${examContext}.\n\nRules:\n- Questions must test deep understanding, not surface recall\n- Include numerical/calculation problems where appropriate\n- Options must be plausible (no obviously wrong distractors)\n- Explanation must cite the formula, law, or concept used\n\nReturn JSON:\n{"questions":[{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answerIndex":0,"explanation":"..."}]}\nanswerIndex is 0-3.`;
       result = await callGroq(system, user);
@@ -113,8 +116,8 @@ Deno.serve(async (req) => {
 - Bad example (FORBIDDEN): "A car goes 240km in 4hr, find speed" — this is grade 5 level
 - Good example: "A block of mass 2kg on a rough surface (μ=0.3) is pulled by F=20N at 30° to horizontal. Find acceleration." `
         : isNEET
-        ? `CRITICAL: All quiz questions MUST be at NEET difficulty — application-based biology/chemistry/physics, clinical reasoning, and formula application at 12th standard level.`
-        : `CRITICAL: All questions must be at competitive exam difficulty — application-based, not rote recall.`;
+          ? `CRITICAL: All quiz questions MUST be at NEET difficulty — application-based biology/chemistry/physics, clinical reasoning, and formula application at 12th standard level.`
+          : `CRITICAL: All questions must be at competitive exam difficulty — application-based, not rote recall.`;
 
       const systemPrompt = `You are AcePrep AI Tutor — an expert teacher specializing in ${examName} preparation. You only discuss topics relevant to ${examName} syllabus.
 
@@ -129,7 +132,6 @@ Rules you MUST follow at all times:
 - For chemistry: show mechanisms, electron configurations, or reaction equations where relevant
 - Never generate questions easier than ${examName} standard
 - Be concise but complete — avoid unnecessary filler text`;
-
 
       const messages = [
         { role: "system", content: systemPrompt },
