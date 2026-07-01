@@ -8,6 +8,9 @@ import {
   MockTest,
   PerformanceLog,
   ChatSession,
+  ReviewCard,
+  FocusSession,
+  sm2,
 } from "./storage";
 
 export const api = {
@@ -227,4 +230,93 @@ export const api = {
     const { error } = await supabase.from("chat_sessions").delete().eq("id", id);
     if (error) throw error;
   },
+
+  // ── Review Cards (Spaced Repetition) ──────────────────────────────
+  getReviewCards: async (): Promise<ReviewCard[]> => {
+    const { data, error } = await supabase
+      .from("review_cards")
+      .select("*")
+      .order("next_review", { ascending: true });
+    if (error) throw error;
+    return (data as ReviewCard[]) || [];
+  },
+  getDueReviewCards: async (): Promise<ReviewCard[]> => {
+    const today = new Date().toISOString().split("T")[0];
+    const { data, error } = await supabase
+      .from("review_cards")
+      .select("*")
+      .lte("next_review", today)
+      .order("next_review", { ascending: true });
+    if (error) throw error;
+    return (data as ReviewCard[]) || [];
+  },
+  saveReviewCard: async (card: Omit<ReviewCard, "id" | "user_id">): Promise<ReviewCard> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { uid } = await import("./storage");
+    const { data, error } = await supabase
+      .from("review_cards")
+      .insert({ ...card, id: uid(), user_id })
+      .select()
+      .single();
+    if (error) throw error;
+    return data as ReviewCard;
+  },
+  saveReviewCards: async (cards: Omit<ReviewCard, "id" | "user_id">[]): Promise<void> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { uid } = await import("./storage");
+    const rows = cards.map((c) => ({ ...c, id: uid(), user_id }));
+    const { error } = await supabase.from("review_cards").insert(rows);
+    if (error) throw error;
+  },
+  updateReviewCard: async (id: string, rating: 0 | 1 | 3 | 5): Promise<ReviewCard> => {
+    // First fetch the current card to apply SM-2
+    const { data: current, error: fetchErr } = await supabase
+      .from("review_cards")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (fetchErr) throw fetchErr;
+    const updates = sm2(current as ReviewCard, rating);
+    const { data, error } = await supabase
+      .from("review_cards")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as ReviewCard;
+  },
+  deleteReviewCard: async (id: string): Promise<void> => {
+    const { error } = await supabase.from("review_cards").delete().eq("id", id);
+    if (error) throw error;
+  },
+
+  // ── Focus Sessions (Pomodoro) ──────────────────────────────────────
+  getFocusSessions: async (): Promise<FocusSession[]> => {
+    const { data, error } = await supabase
+      .from("focus_sessions")
+      .select("*")
+      .order("started_at", { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    return (data as FocusSession[]) || [];
+  },
+  saveFocusSession: async (session: Omit<FocusSession, "id" | "user_id">): Promise<FocusSession> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { uid } = await import("./storage");
+    const { data, error } = await supabase
+      .from("focus_sessions")
+      .insert({ ...session, id: uid(), user_id })
+      .select()
+      .single();
+    if (error) throw error;
+    return data as FocusSession;
+  },
 };
+

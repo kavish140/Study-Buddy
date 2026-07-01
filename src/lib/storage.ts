@@ -125,3 +125,58 @@ export type ChatSession = {
   created_at?: string;
   updated_at?: string;
 };
+
+export type ReviewCard = {
+  id: string;
+  user_id?: string;
+  question: string;
+  answer: string;
+  explanation?: string;
+  subject?: string;
+  topic?: string;
+  source?: "quiz" | "mock_test" | "flashcard" | "manual";
+  ease_factor: number;      // SM-2 ease factor, starts at 2.5
+  interval_days: number;    // days until next review
+  repetitions: number;      // times reviewed successfully
+  next_review: string;      // ISO date string (YYYY-MM-DD)
+  last_reviewed?: string;
+  created_at?: string;
+};
+
+export type FocusSession = {
+  id: string;
+  user_id?: string;
+  subject?: string;
+  topic?: string;
+  duration_minutes: number;
+  completed: boolean;
+  started_at?: string;
+  ended_at?: string;
+};
+
+/**
+ * SM-2 Algorithm: compute next interval based on rating (0-5)
+ * rating: 0=Again, 1=Hard, 3=Good, 5=Easy
+ */
+export function sm2(card: ReviewCard, rating: 0 | 1 | 3 | 5): Partial<ReviewCard> {
+  let { ease_factor, interval_days, repetitions } = card;
+
+  if (rating < 3) {
+    // Failed — reset
+    repetitions = 0;
+    interval_days = 1;
+  } else {
+    if (repetitions === 0) interval_days = 1;
+    else if (repetitions === 1) interval_days = 6;
+    else interval_days = Math.round(interval_days * ease_factor);
+
+    ease_factor = Math.max(1.3, ease_factor + 0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02));
+    repetitions += 1;
+  }
+
+  const next = new Date();
+  next.setDate(next.getDate() + interval_days);
+  const next_review = next.toISOString().split("T")[0];
+
+  return { ease_factor, interval_days, repetitions, next_review, last_reviewed: new Date().toISOString() };
+}

@@ -11,6 +11,8 @@ import {
   Timer,
   BarChart3,
   Sparkles,
+  FlipHorizontal2,
+  Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -22,6 +24,8 @@ const nav = [
   { to: "/syllabus", label: "Syllabus", icon: BookOpen },
   { to: "/quiz", label: "Quizzes", icon: Brain },
   { to: "/mock-test", label: "Mock Test", icon: Timer },
+  { to: "/review", label: "Smart Review", icon: FlipHorizontal2 },
+  { to: "/focus", label: "Focus Timer", icon: Flame },
   { to: "/planner", label: "Planner", icon: Calendar },
   { to: "/notes", label: "Notes", icon: FileText },
   { to: "/chat", label: "AI Tutor", icon: Sparkles },
@@ -37,6 +41,13 @@ export function AppLayout() {
     queryKey: ["userProfile"],
     queryFn: api.getUserProfile,
     enabled: !!user,
+  });
+
+  const { data: dueCards = [] } = useQuery({
+    queryKey: ["reviewCards"],
+    queryFn: api.getDueReviewCards,
+    enabled: !!user,
+    refetchInterval: 60_000, // refresh every minute
   });
 
   useEffect(() => {
@@ -94,6 +105,7 @@ export function AppLayout() {
         <nav className="flex flex-col gap-1 relative">
           {nav.map(({ to, label, icon: Icon }) => {
             const active = to === "/" ? path === "/" : path.startsWith(to);
+            const dueCount = to === "/review" ? dueCards.length : 0;
             return (
               <Link
                 key={to}
@@ -107,7 +119,12 @@ export function AppLayout() {
               >
                 <Icon className={cn("h-4 w-4", active && "text-primary")} />
                 <span className={cn(active && "font-medium")}>{label}</span>
-                {active && (
+                {dueCount > 0 && (
+                  <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center">
+                    {dueCount > 99 ? "99+" : dueCount}
+                  </span>
+                )}
+                {active && dueCount === 0 && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shadow-glow-sm" />
                 )}
               </Link>

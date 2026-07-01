@@ -11,12 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SyllabusRouteImport } from './routes/syllabus'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ReviewRouteImport } from './routes/review'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MockTestRouteImport } from './routes/mock-test'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as FocusRouteImport } from './routes/focus'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
@@ -29,6 +31,11 @@ const SyllabusRoute = SyllabusRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewRoute = ReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuizRoute = QuizRouteImport.update({
@@ -61,6 +68,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FocusRoute = FocusRouteImport.update({
+  id: '/focus',
+  path: '/focus',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -81,12 +93,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
+  '/focus': typeof FocusRoute
   '/login': typeof LoginRoute
   '/mock-test': typeof MockTestRoute
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
   '/planner': typeof PlannerRoute
   '/quiz': typeof QuizRoute
+  '/review': typeof ReviewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/syllabus': typeof SyllabusRoute
 }
@@ -94,12 +108,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
+  '/focus': typeof FocusRoute
   '/login': typeof LoginRoute
   '/mock-test': typeof MockTestRoute
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
   '/planner': typeof PlannerRoute
   '/quiz': typeof QuizRoute
+  '/review': typeof ReviewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/syllabus': typeof SyllabusRoute
 }
@@ -108,12 +124,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
+  '/focus': typeof FocusRoute
   '/login': typeof LoginRoute
   '/mock-test': typeof MockTestRoute
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
   '/planner': typeof PlannerRoute
   '/quiz': typeof QuizRoute
+  '/review': typeof ReviewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/syllabus': typeof SyllabusRoute
 }
@@ -123,12 +141,14 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/chat'
+    | '/focus'
     | '/login'
     | '/mock-test'
     | '/notes'
     | '/onboarding'
     | '/planner'
     | '/quiz'
+    | '/review'
     | '/sitemap.xml'
     | '/syllabus'
   fileRoutesByTo: FileRoutesByTo
@@ -136,12 +156,14 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/chat'
+    | '/focus'
     | '/login'
     | '/mock-test'
     | '/notes'
     | '/onboarding'
     | '/planner'
     | '/quiz'
+    | '/review'
     | '/sitemap.xml'
     | '/syllabus'
   id:
@@ -149,12 +171,14 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/chat'
+    | '/focus'
     | '/login'
     | '/mock-test'
     | '/notes'
     | '/onboarding'
     | '/planner'
     | '/quiz'
+    | '/review'
     | '/sitemap.xml'
     | '/syllabus'
   fileRoutesById: FileRoutesById
@@ -163,12 +187,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
   ChatRoute: typeof ChatRoute
+  FocusRoute: typeof FocusRoute
   LoginRoute: typeof LoginRoute
   MockTestRoute: typeof MockTestRoute
   NotesRoute: typeof NotesRoute
   OnboardingRoute: typeof OnboardingRoute
   PlannerRoute: typeof PlannerRoute
   QuizRoute: typeof QuizRoute
+  ReviewRoute: typeof ReviewRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SyllabusRoute: typeof SyllabusRoute
 }
@@ -187,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review': {
+      id: '/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof ReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quiz': {
@@ -231,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/focus': {
+      id: '/focus'
+      path: '/focus'
+      fullPath: '/focus'
+      preLoaderRoute: typeof FocusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat': {
       id: '/chat'
       path: '/chat'
@@ -259,12 +299,14 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
   ChatRoute: ChatRoute,
+  FocusRoute: FocusRoute,
   LoginRoute: LoginRoute,
   MockTestRoute: MockTestRoute,
   NotesRoute: NotesRoute,
   OnboardingRoute: OnboardingRoute,
   PlannerRoute: PlannerRoute,
   QuizRoute: QuizRoute,
+  ReviewRoute: ReviewRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SyllabusRoute: SyllabusRoute,
 }
