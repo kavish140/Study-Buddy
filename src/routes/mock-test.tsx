@@ -59,6 +59,7 @@ function MockTestPage() {
 
   const saveMutation = useMutation({
     mutationFn: api.saveMockTest,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["mockTests"] }),
   });
 
@@ -69,8 +70,13 @@ function MockTestPage() {
 
   const handleFinishTest = async (test: MockTest) => {
     setCurrentTest(test);
-    await saveMutation.mutateAsync(test);
-    setScreen("result");
+    try {
+      await saveMutation.mutateAsync(test);
+      setScreen("result");
+    } catch (e) {
+      toast.error("Failed to save test result. Showing results without saving.");
+      setScreen("result"); // Still show the result screen so they can see their score
+    }
   };
 
   const handleBackToSetup = () => {
@@ -321,21 +327,32 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
   const [timeLeft, setTimeLeft] = useState(test.total_time_seconds);
   const [showConfirm, setShowConfirm] = useState(false);
   const startTimeRef = useRef(Date.now());
+  const handleSubmitRef = useRef<() => void>(() => {});
+  const [timeExpired, setTimeExpired] = useState(false);
 
-  // Countdown timer
+  // Countdown timer and beforeunload protection
   useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          handleSubmit();
+          setTimeExpired(true);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
   }, []);
 
   const allQuestions = test.sections.flatMap((s) => s.questions);
@@ -383,6 +400,18 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
 
     onFinish(finishedTest);
   }, [answers, test, onFinish, allQuestions]);
+
+  // Keep the ref up to date whenever handleSubmit recreates
+  useEffect(() => {
+    handleSubmitRef.current = handleSubmit;
+  });
+
+  // Trigger submit when timer expires (avoids side-effects inside setState)
+  useEffect(() => {
+    if (timeExpired) {
+      handleSubmitRef.current();
+    }
+  }, [timeExpired]);
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);

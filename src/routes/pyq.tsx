@@ -93,6 +93,7 @@ function PYQPage() {
 
   const saveMutation = useMutation({
     mutationFn: api.savePYQQuestions,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pyq"] }),
   });
 

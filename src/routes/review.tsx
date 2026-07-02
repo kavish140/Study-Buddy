@@ -91,6 +91,7 @@ function ReviewPage() {
 
   const deleteMutation = useMutation({
     mutationFn: api.deleteReviewCard,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reviewCards"] });
       qc.invalidateQueries({ queryKey: ["allReviewCards"] });
@@ -347,8 +348,13 @@ function ReviewPage() {
           <div className="flex justify-center gap-3">
             <button
               onClick={() => {
-                setCurrentIndex((i) => Math.min(i + 1, allCards.length - 1));
-                setIsFlipped(false);
+                const next = currentIndex + 1;
+                if (next >= allCards.length) {
+                  setSessionComplete(true);
+                } else {
+                  setCurrentIndex(next);
+                  setIsFlipped(false);
+                }
               }}
               className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted/30 transition-colors"
             >

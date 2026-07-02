@@ -57,6 +57,7 @@ function OnboardingPage() {
 
   const saveProfileMutation = useMutation({
     mutationFn: api.saveUserProfile,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: (data) => {
       queryClient.setQueryData(["userProfile"], data);
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
@@ -65,6 +66,7 @@ function OnboardingPage() {
 
   const saveSubjectMutation = useMutation({
     mutationFn: api.saveSubject,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subjects"] }),
   });
 

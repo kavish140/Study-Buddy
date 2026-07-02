@@ -1,6 +1,6 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { xpForNextLevel, BADGE_DEFS } from "@/lib/storage";
@@ -31,8 +31,15 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "@tanstack/react-router";
 import { useTutorial } from "./TutorialProvider";
 
+type NavItem = {
+  to: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  tourId?: string;
+};
+
 /** ── Navigation groups ───────────────────────────────────────────────── */
-const NAV_GROUPS = [
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Study",
     items: [
@@ -66,18 +73,18 @@ const NAV_GROUPS = [
       { to: "/leaderboard", label: "Leaderboard", icon: Trophy, tourId: "tour-nav-leaderboard" },
     ],
   },
-] as const;
+];
 
 /** Primary tabs shown in the mobile bottom bar (max 5) */
-const MOBILE_PRIMARY = [
+const MOBILE_PRIMARY: NavItem[] = [
   { to: "/", label: "Home", icon: LayoutDashboard },
   { to: "/quiz", label: "Quiz", icon: Brain },
   { to: "/chat", label: "AI Tutor", icon: Sparkles },
   { to: "/focus", label: "Focus", icon: Flame },
-] as const;
+];
 
 // Flatten all nav items for helpers
-const ALL_NAV = NAV_GROUPS.flatMap((g) => g.items);
+const ALL_NAV: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
 
 export function AppLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -111,12 +118,17 @@ export function AppLayout() {
           toast.success(`${badge.emoji} Badge unlocked: ${badge.name}!`, { duration: 5000 });
       });
     },
+    onError: (err) => {
+      console.warn("Failed to award daily login XP", err);
+    },
   });
 
-  // Award daily login XP once per day
+  // Award daily login XP once per day, scoped to the current user to avoid cross-user leakage
   useEffect(() => {
     if (!user) return;
-    const todayKey = `aceprep_login_${new Date().toISOString().split("T")[0]}`;
+    const today = new Date().toISOString().split("T")[0];
+    // Key includes user.id so two users on the same browser each get their XP
+    const todayKey = `aceprep_login_${user.id}_${today}`;
     if (!localStorage.getItem(todayKey)) {
       localStorage.setItem(todayKey, "1");
       awardMutation.mutate();
@@ -307,7 +319,13 @@ export function AppLayout() {
                   <div className="text-[11px] font-medium truncate">{user?.email}</div>
                 </div>
                 <button
-                  onClick={signOut}
+                  onClick={async () => {
+                    try {
+                      await signOut();
+                    } finally {
+                      navigate({ to: "/login" });
+                    }
+                  }}
                   title="Sign out"
                   className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
                 >
@@ -459,8 +477,12 @@ export function AppLayout() {
                   )}
                 </div>
                 <button
-                  onClick={() => {
-                    signOut();
+                  onClick={async () => {
+                    try {
+                      await signOut();
+                    } finally {
+                      navigate({ to: "/login" });
+                    }
                     setMoreOpen(false);
                   }}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground transition-colors"

@@ -249,11 +249,13 @@ function SyllabusPage() {
 
   const saveMutation = useMutation({
     mutationFn: api.saveSubject,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subjects"] }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: api.deleteSubject,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subjects"] }),
   });
 

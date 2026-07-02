@@ -49,6 +49,7 @@ function PlannerPage() {
 
   const saveMutation = useMutation({
     mutationFn: api.savePlanItems,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["plan"] }),
   });
 
@@ -59,6 +60,7 @@ function PlannerPage() {
 
   const deleteMutation = useMutation({
     mutationFn: api.deletePlanItem,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["plan"] }),
   });
   const [days, setDays] = useState("7");

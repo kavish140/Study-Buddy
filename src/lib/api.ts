@@ -17,6 +17,7 @@ import {
   sm2,
   xpToLevel,
   BADGE_DEFS,
+  uid,
 } from "./storage";
 
 export const api = {
@@ -260,7 +261,7 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { uid } = await import("./storage");
+
     const { data, error } = await supabase
       .from("review_cards")
       .insert({ ...card, id: uid(), user_id })
@@ -273,7 +274,7 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { uid } = await import("./storage");
+
     const rows = cards.map((c) => ({ ...c, id: uid(), user_id }));
     const { error } = await supabase.from("review_cards").insert(rows);
     if (error) throw error;
@@ -317,7 +318,7 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { uid } = await import("./storage");
+
     const { data, error } = await supabase
       .from("focus_sessions")
       .insert({ ...session, id: uid(), user_id })
@@ -371,19 +372,22 @@ export const api = {
       .eq("user_id", user_id)
       .maybeSingle();
 
-    const { uid } = await import("./storage");
     if (!existing) {
+      // Use upsert to prevent race condition when two tabs load simultaneously
       const { data: created } = await supabase
         .from("user_stats")
-        .insert({
-          id: uid(),
-          user_id,
-          xp: 0,
-          level: 1,
-          current_streak: 0,
-          longest_streak: 0,
-          badges: [],
-        })
+        .upsert(
+          {
+            id: uid(),
+            user_id,
+            xp: 0,
+            level: 1,
+            current_streak: 0,
+            longest_streak: 0,
+            badges: [],
+          },
+          { onConflict: "user_id" },
+        )
         .select()
         .single();
       existing = created;
@@ -428,7 +432,8 @@ export const api = {
     checkBadge("grinder", (context?.focusCount ?? 0) >= 10);
     checkBadge("reviewer", (context?.reviewCount ?? 0) >= 50);
     checkBadge("night_owl", hour >= 0 && hour < 4);
-    if (cur.badges.includes("first_steps") || cur.xp > 0) checkBadge("first_steps", true);
+    // Award first_steps on first ever XP — checkBadge already prevents duplicates
+    checkBadge("first_steps", true);
 
     const updates = {
       xp: newXp,
@@ -479,7 +484,6 @@ export const api = {
     return (data as PYQQuestion[]) || [];
   },
   savePYQQuestion: async (q: Omit<PYQQuestion, "id">): Promise<PYQQuestion> => {
-    const { uid } = await import("./storage");
     const { data, error } = await supabase
       .from("pyq_questions")
       .insert({ ...q, id: uid() })
@@ -489,7 +493,6 @@ export const api = {
     return data as PYQQuestion;
   },
   savePYQQuestions: async (questions: Omit<PYQQuestion, "id">[]): Promise<void> => {
-    const { uid } = await import("./storage");
     const rows = questions.map((q) => ({ ...q, id: uid() }));
     const { error } = await supabase.from("pyq_questions").insert(rows);
     if (error) throw error;
@@ -519,7 +522,7 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { uid } = await import("./storage");
+
     const { data, error } = await supabase
       .from("forum_posts")
       .insert({ ...post, id: uid(), user_id, upvotes: 0, reply_count: 0 })
@@ -544,25 +547,15 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { uid } = await import("./storage");
+
     const { data, error } = await supabase
       .from("forum_replies")
       .insert({ id: uid(), post_id, user_id, content, upvotes: 0, is_accepted: false })
       .select()
       .single();
     if (error) throw error;
-    // Increment reply count by fetching current and adding 1
-    const { data: postRow } = await supabase
-      .from("forum_posts")
-      .select("reply_count")
-      .eq("id", post_id)
-      .single();
-    if (postRow) {
-      await supabase
-        .from("forum_posts")
-        .update({ reply_count: (postRow.reply_count ?? 0) + 1 })
-        .eq("id", post_id);
-    }
+    // Use atomic RPC to avoid read-modify-write race when two users reply concurrently
+    await supabase.rpc("increment_reply_count", { post_id }).throwOnError();
     return data as ForumReply;
   },
   acceptReply: async (reply_id: string): Promise<void> => {

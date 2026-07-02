@@ -7,9 +7,17 @@ async function invokeEdgeFunction<T = Record<string, unknown>>(
   const { data: userData } = await supabase.auth.getSession();
   if (!userData?.session) throw new Error("Authentication required");
 
-  const { data: result, error } = await supabase.functions.invoke("study-ai", {
-    body: { action, data },
-  });
+  let result;
+  let error;
+  try {
+    const response = await supabase.functions.invoke("study-ai", {
+      body: { action, data },
+    });
+    result = response.data;
+    error = response.error;
+  } catch (err) {
+    throw new Error(err instanceof Error ? err.message : "Failed to reach AI service");
+  }
 
   if (error) {
     throw new Error(error.message || "Failed to invoke AI function");
@@ -75,24 +83,33 @@ export async function solveFromImage({
   mimeType,
   prompt,
   examName,
+  signal,
 }: {
   imageBase64: string;
   mimeType: string;
   prompt?: string;
   examName?: string;
+  signal?: AbortSignal;
 }): Promise<{ response: string }> {
   const { data: userData } = await supabase.auth.getSession();
   if (!userData?.session) throw new Error("Authentication required");
 
-  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-ai`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${userData.session.access_token}`,
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ imageBase64, mimeType, prompt, examName }),
-  });
+  let res;
+  try {
+    res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-ai`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userData.session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ imageBase64, mimeType, prompt, examName }),
+      signal,
+    });
+  } catch (err) {
+    if ((err as Error).name === "AbortError") throw err;
+    throw new Error("Network error: Failed to reach AI service");
+  }
 
   if (!res.ok) {
     const errText = await res.text();
@@ -107,26 +124,35 @@ export async function solveFromImage({
 export async function streamChat({
   messages,
   examName,
+  signal,
   onChunk,
   onDone,
 }: {
   messages: { role: string; content: string }[];
   examName?: string;
+  signal?: AbortSignal;
   onChunk: (text: string) => void;
   onDone: () => void;
 }) {
   const { data: userData } = await supabase.auth.getSession();
   if (!userData?.session) throw new Error("Authentication required");
 
-  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-ai`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${userData.session.access_token}`,
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ action: "chat", data: { messages, examName } }),
-  });
+  let res;
+  try {
+    res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-ai`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userData.session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ action: "chat", data: { messages, examName } }),
+      signal,
+    });
+  } catch (err) {
+    if ((err as Error).name === "AbortError") throw err;
+    throw new Error("Network error: Failed to reach chat service");
+  }
 
   if (!res.ok) {
     const errText = await res.text();

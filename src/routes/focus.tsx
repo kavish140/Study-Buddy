@@ -66,6 +66,8 @@ function FocusPage() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<Date | null>(null);
+  // Hold the latest callback in a ref so the interval doesn't need to re-run on every change
+  const handleSessionCompleteRef = useRef<() => Promise<void>>(async () => {});
 
   const totalSeconds = customMinutes[mode] * 60;
   const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
@@ -80,6 +82,7 @@ function FocusPage() {
 
   const saveMutation = useMutation({
     mutationFn: api.saveFocusSession,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["focusSessions"] }),
   });
 
@@ -143,13 +146,18 @@ function FocusPage() {
     }
   }, [mode, customMinutes, subject, topic, sessionsCompleted, saveMutation, switchMode]);
 
-  // Countdown tick
+  // Keep the ref in sync with the latest callback (runs after every render)
+  useEffect(() => {
+    handleSessionCompleteRef.current = handleSessionComplete;
+  });
+
+  // Countdown tick — only depends on isRunning; uses ref to avoid stale closures
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
         setSecondsLeft((s) => {
           if (s <= 1) {
-            handleSessionComplete();
+            handleSessionCompleteRef.current();
             return 0;
           }
           return s - 1;
@@ -159,7 +167,7 @@ function FocusPage() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, handleSessionComplete]);
+  }, [isRunning]);
 
   // Update document title
   useEffect(() => {

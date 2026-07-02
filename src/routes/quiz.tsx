@@ -43,6 +43,7 @@ function QuizPage() {
 
   const saveMutation = useMutation({
     mutationFn: api.saveQuiz,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["quizzes"] }),
   });
   const [topic, setTopic] = useState("");

@@ -94,11 +94,16 @@ Be thorough, accurate, and encouraging.`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error: any) {
-    console.error("Image AI Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Image AI Error:", message);
+
+    // Determine if it's a client error (missing data) or server error
+    const status = message.includes("missing") || message.includes("No image") ? 400 : 500;
+
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
+      status: status,
     });
   }
 });

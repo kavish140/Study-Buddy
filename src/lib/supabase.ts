@@ -5,7 +5,14 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Supabase URL and Anon Key are required to run this app in production.");
+  const msg =
+    "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY environment variables. " +
+    "Create a .env file at the project root with these values.";
+  if (import.meta.env.PROD) {
+    throw new Error(msg);
+  } else {
+    console.warn(msg);
+  }
 }
 
 export const supabase = createClient(

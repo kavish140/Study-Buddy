@@ -35,11 +35,13 @@ function NotesPage() {
 
   const saveMutation = useMutation({
     mutationFn: api.saveNote,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: api.deleteNote,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
   });
   const [topic, setTopic] = useState("");

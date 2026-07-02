@@ -63,11 +63,13 @@ function ChatPage() {
 
   const saveMutation = useMutation({
     mutationFn: api.saveChatSession,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chatSessions"] }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: api.deleteChatSession,
+    onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chatSessions"] }),
   });
 
@@ -93,9 +95,13 @@ function ChatPage() {
       exam_id: profile?.exam_id,
       messages: [],
     };
-    saveMutation.mutate(newSession);
+    // Set pendingFirstMsg AFTER the session is saved so ChatView can safely call onUpdate
+    saveMutation.mutate(newSession, {
+      onSuccess: () => {
+        setPendingFirstMsg(msg);
+      },
+    });
     setActiveSessionId(newSession.id);
-    setPendingFirstMsg(msg);
     setShowSidebar(false);
   };
 
@@ -105,7 +111,13 @@ function ChatPage() {
   };
 
   const handleUpdateSession = (session: ChatSession) => {
-    saveMutation.mutate(session);
+    // Strip imageUrl from messages before persisting — data-URLs can be hundreds of KB
+    // and bloat the Supabase row. The in-memory state retains the URL for display.
+    const sanitized: ChatSession = {
+      ...session,
+      messages: session.messages.map(({ imageUrl: _stripped, ...rest }) => rest),
+    };
+    saveMutation.mutate(sanitized);
   };
 
   return (

@@ -54,7 +54,7 @@ export type Note = {
   createdAt: number;
 };
 
-export const uid = () => Math.random().toString(36).slice(2, 10);
+export const uid = () => crypto.randomUUID();
 
 export type UserProfile = {
   id?: string;

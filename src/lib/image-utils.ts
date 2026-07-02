@@ -1,12 +1,32 @@
 // PDF.js is loaded lazily to avoid bundle size hit
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let pdfJsLib: any = null;
+interface PdfJs {
+  version: string;
+  GlobalWorkerOptions: { workerSrc: string };
+  getDocument: (args: { data: ArrayBuffer }) => { promise: Promise<PdfDocument> };
+}
+
+interface PdfDocument {
+  numPages: number;
+  getPage: (pageNumber: number) => Promise<PdfPage>;
+}
+
+interface PdfPage {
+  getTextContent: () => Promise<{ items: { str?: string }[] }>;
+}
+
+let pdfJsLib: PdfJs | null = null;
 
 async function getPdfJs() {
   if (!pdfJsLib) {
-    pdfJsLib = await import("pdfjs-dist");
-    // Use the CDN worker to avoid bundling issues
-    pdfJsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsLib.version}/pdf.worker.min.mjs`;
+    pdfJsLib = (await import("pdfjs-dist")) as unknown as PdfJs;
+    // Try the modern .mjs worker first; fall back to .js for older CDN builds
+    const cdnBase = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsLib.version}`;
+    try {
+      pdfJsLib.GlobalWorkerOptions.workerSrc = `${cdnBase}/pdf.worker.min.mjs`;
+    } catch {
+      console.warn("[PDF.js] Failed to set .mjs worker, falling back to .js");
+      pdfJsLib.GlobalWorkerOptions.workerSrc = `${cdnBase}/pdf.worker.min.js`;
+    }
   }
   return pdfJsLib;
 }
@@ -27,10 +47,7 @@ export async function extractPdfText(file: File): Promise<{ text: string; pageCo
   for (let i = 1; i <= maxPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const pageText = content.items
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((item: any) => item.str)
-      .join(" ");
+    const pageText = content.items.map((item) => item.str || "").join(" ");
     texts.push(`--- Page ${i} ---\n${pageText}`);
   }
 

@@ -40,8 +40,23 @@ async function callGroq(systemText: string, userText: string) {
   } catch (e) {
     const fenced = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
     const raw = fenced ? fenced[1] : rawText;
-    return JSON.parse(raw);
+    try {
+      return JSON.parse(raw);
+    } catch (parseError) {
+      throw new Error("Failed to parse AI response as JSON: " + raw);
+    }
   }
+}
+
+interface Section {
+  name: string;
+  questions: number;
+  topics: string[];
+}
+
+interface ChatMessage {
+  role: string;
+  content: string;
 }
 
 Deno.serve(async (req) => {
@@ -51,6 +66,13 @@ Deno.serve(async (req) => {
 
   try {
     const { action, data } = await req.json();
+
+    if (!action) {
+      return new Response(JSON.stringify({ error: "Missing action in request body" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, // Returning 200 with error payload for supabase SDK compatibility
+      });
+    }
 
     let result;
     if (action === "generateQuiz") {
@@ -94,7 +116,7 @@ Deno.serve(async (req) => {
       const system = `You are an elite question setter for ${data.examName || "competitive exams"}. ${difficultyNote} Every question must have exactly 4 options (A,B,C,D), one correct answer, and a detailed explanation citing the formula/principle. Generate questions that would genuinely appear in the actual exam. Respond ONLY with valid JSON.`;
       const sectionInstructions = (data.sections || [])
         .map(
-          (s: any) =>
+          (s: Section) =>
             `Section "${s.name}": ${s.questions} questions from topics: ${(s.topics || []).join(", ")}. Mix numerical, conceptual, and application questions.`,
         )
         .join("\n");
@@ -135,7 +157,7 @@ Rules you MUST follow at all times:
 
       const messages = [
         { role: "system", content: systemPrompt },
-        ...(data.messages || []).slice(-20).map((m: any) => ({
+        ...(data.messages || []).slice(-20).map((m: ChatMessage) => ({
           role: m.role,
           content: m.content,
         })),
@@ -166,6 +188,7 @@ Rules you MUST follow at all times:
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
         },
+        status: 200, // Explicitly return 200 for successful stream
       });
     } else {
       throw new Error(`Unknown action: ${action}`);
@@ -175,11 +198,16 @@ Rules you MUST follow at all times:
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error: any) {
-    console.error("Function Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("Function Error:", message);
+
+    // Check if it's the chat action (which uses fetch and respects HTTP codes)
+    // We don't have request body anymore, but we can return 500 for chat if it fails here
+    // However, for supabase.functions.invoke, we need to return 200 with an error object
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
+      status: 200, // Returning 200 for supabase SDK compatibility for non-chat endpoints
     });
   }
 });
