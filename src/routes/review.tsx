@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { type ReviewCard } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTutorial } from "@/components/TutorialProvider";
 import {
   Brain,
   Plus,
@@ -66,6 +67,11 @@ const RATINGS = [
 function ReviewPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("review");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: allCards = [], isLoading } = useQuery({
     queryKey: ["reviewCards"],
@@ -155,7 +161,7 @@ function ReviewPage() {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-3 gap-3 mt-6" data-tour="tour-review-cards">
           {[
             {
               label: "Due today",
@@ -307,6 +313,7 @@ function ReviewPage() {
 
           {/* Rating buttons — only shown after flip */}
           <div
+            data-tour="tour-review-rate"
             className={cn(
               "transition-all duration-300",
               isFlipped

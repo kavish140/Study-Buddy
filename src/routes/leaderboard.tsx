@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { xpForNextLevel, BADGE_DEFS, type UserStats } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { Trophy, Flame, Star, Crown, Zap } from "lucide-react";
+import { useTutorial } from "@/components/TutorialProvider";
 
 export const Route = createFileRoute("/leaderboard")({
   head: () => ({
@@ -48,6 +50,11 @@ function LeaderboardPage() {
     queryFn: api.getUserStats,
     enabled: !!user,
   });
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("leaderboard");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const myRank = board.findIndex((r) => r.user_id === user?.id) + 1;
 
@@ -64,7 +71,10 @@ function LeaderboardPage() {
 
       {/* My rank banner */}
       {myStats && myRank > 0 && (
-        <div className="glass-card rounded-2xl p-4 mb-6 flex items-center justify-between border border-primary/20">
+        <div
+          className="glass-card rounded-2xl p-4 mb-6 flex items-center justify-between border border-primary/20"
+          data-tour="tour-leaderboard-rank"
+        >
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary/15 grid place-items-center text-lg font-bold text-primary">
               #{myRank}

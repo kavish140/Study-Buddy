@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTutorial } from "@/components/TutorialProvider";
 import {
   Timer,
   Play,
@@ -43,6 +44,11 @@ const SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "English", "
 
 function FocusPage() {
   const qc = useQueryClient();
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("focus");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Timer state
   const [mode, setMode] = useState<Mode>("work");
@@ -255,7 +261,7 @@ function FocusPage() {
       </div>
 
       {/* Timer circle */}
-      <div className="flex flex-col items-center mb-8">
+      <div className="flex flex-col items-center mb-8" data-tour="tour-focus-timer">
         <div className="relative">
           <svg width="240" height="240" className="-rotate-90">
             <circle
@@ -308,6 +314,7 @@ function FocusPage() {
           <Button
             onClick={handleToggle}
             className="h-14 w-14 rounded-2xl bg-gradient-primary shadow-glow p-0 text-lg"
+            data-tour="tour-focus-start"
           >
             {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
           </Button>

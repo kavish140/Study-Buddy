@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, Trash2, RotateCw, BookOpen } from "lucide-react";
 import { uid, type Note } from "@/lib/storage";
@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTutorial } from "@/components/TutorialProvider";
 
 export const Route = createFileRoute("/notes")({
   head: () => ({
@@ -26,6 +27,11 @@ function NotesPage() {
   const queryClient = useQueryClient();
   const { data: notes = [] } = useQuery({ queryKey: ["notes"], queryFn: api.getNotes });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("notes");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveMutation = useMutation({
     mutationFn: api.saveNote,
@@ -73,7 +79,7 @@ function NotesPage() {
         )}
       </p>
 
-      <div className="p-5 rounded-2xl glass-card mt-6">
+      <div className="p-5 rounded-2xl glass-card mt-6" data-tour="tour-notes-topic">
         <div className="flex items-center gap-2 text-sm font-medium mb-3">
           <Sparkles className="h-4 w-4 text-primary" /> Generate
         </div>

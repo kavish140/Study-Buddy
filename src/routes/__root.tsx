@@ -14,6 +14,9 @@ import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppLayout } from "../components/AppLayout";
+import { TutorialProvider } from "../components/TutorialProvider";
+import { TutorialOverlay } from "../components/TutorialOverlay";
+import { HelpButton } from "../components/HelpButton";
 
 function NotFoundComponent() {
   return (
@@ -135,11 +138,20 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const isAuthPage = path === "/login" || path === "/onboarding";
 
   return (
     <QueryClientProvider client={queryClient}>
-      {path === "/login" || path === "/onboarding" ? <Outlet /> : <AppLayout />}
-      <Toaster richColors position="top-right" theme="dark" />
+      <TutorialProvider>
+        {isAuthPage ? <Outlet /> : <AppLayout />}
+        {!isAuthPage && (
+          <>
+            <TutorialOverlay />
+            <HelpButton />
+          </>
+        )}
+        <Toaster richColors position="top-right" theme="dark" />
+      </TutorialProvider>
     </QueryClientProvider>
   );
 }

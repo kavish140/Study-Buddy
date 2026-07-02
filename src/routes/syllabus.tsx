@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Plus, Sparkles, Trash2, Loader2, BookOpen, GraduationCap } from "lucide-react";
 import { uid, type Subject } from "@/lib/storage";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { useTutorial } from "@/components/TutorialProvider";
 
 export const Route = createFileRoute("/syllabus")({
   head: () => ({
@@ -35,6 +36,11 @@ function SyllabusPage() {
   const [loading, setLoading] = useState(false);
   const [newSubject, setNewSubject] = useState("");
   const [classFilter, setClassFilter] = useState<"11" | "12" | null>(null);
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("syllabus");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // JEE/NEET class-wise topic split
   const isJeeNeet =
@@ -378,7 +384,7 @@ function SyllabusPage() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-4 mt-6">
+      <div className="grid md:grid-cols-2 gap-4 mt-6" data-tour="tour-syllabus-add">
         <div className="p-5 rounded-2xl glass-card">
           <div className="flex items-center gap-2 text-sm font-medium mb-3">
             <Sparkles className="h-4 w-4 text-primary" /> AI parse syllabus
@@ -427,7 +433,7 @@ function SyllabusPage() {
         </div>
       </div>
 
-      <div className="mt-8 space-y-4">
+      <div className="mt-8 space-y-4" data-tour="tour-syllabus-progress">
         {subjects.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl">
             No subjects yet. Paste a syllabus or add one above.

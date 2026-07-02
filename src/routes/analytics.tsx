@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { api } from "@/lib/api";
 import { getExamById } from "@/lib/exam-catalog";
+import { useTutorial } from "@/components/TutorialProvider";
 import {
   BarChart3,
   TrendingUp,
@@ -157,6 +159,11 @@ function AnalyticsPage() {
     queryFn: api.getPerformanceLogs,
   });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("analytics");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const examInfo = profile?.exam_id ? getExamById(profile.exam_id) : null;
   const trendData = computeQuizTrend(quizzes, mockTests);
@@ -231,7 +238,10 @@ function AnalyticsPage() {
         ) : (
           <>
             {/* Stat cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+            <div
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8"
+              data-tour="tour-analytics-overview"
+            >
               <StatCard
                 label="Overall accuracy"
                 value={`${overallAccuracy}%`}
@@ -330,7 +340,10 @@ function AnalyticsPage() {
             {/* Topic mastery heatmap + Weak areas */}
             <div className="grid lg:grid-cols-3 gap-4 mt-6">
               {/* Heatmap */}
-              <div className="lg:col-span-2 glass-card p-6 rounded-2xl">
+              <div
+                className="lg:col-span-2 glass-card p-6 rounded-2xl"
+                data-tour="tour-analytics-subjects"
+              >
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="h-4 w-4 text-primary" />
                   <span className="font-semibold text-sm">Topic Mastery</span>

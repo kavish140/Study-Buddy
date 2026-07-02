@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, Plus, Trash2 } from "lucide-react";
 import { uid, type PlanItem, type Subject } from "@/lib/storage";
@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useTutorial } from "@/components/TutorialProvider";
 import {
   Select,
   SelectContent,
@@ -40,6 +41,11 @@ function PlannerPage() {
   const queryClient = useQueryClient();
   const { data: subjects = [] } = useQuery({ queryKey: ["subjects"], queryFn: api.getSubjects });
   const { data: plan = [] } = useQuery({ queryKey: ["plan"], queryFn: api.getPlan });
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("planner");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveMutation = useMutation({
     mutationFn: api.savePlanItems,
@@ -120,7 +126,7 @@ function PlannerPage() {
       </p>
 
       <div className="grid md:grid-cols-2 gap-4 mt-6">
-        <div className="p-5 rounded-2xl glass-card">
+        <div className="p-5 rounded-2xl glass-card" data-tour="tour-planner-generate">
           <div className="flex items-center gap-2 text-sm font-medium mb-3">
             <Sparkles className="h-4 w-4 text-primary" /> AI plan generator
           </div>
@@ -173,7 +179,7 @@ function PlannerPage() {
         </div>
       </div>
 
-      <div className="mt-8 space-y-4">
+      <div className="mt-8 space-y-4" data-tour="tour-planner-tasks">
         {byDay.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl">
             No tasks scheduled.

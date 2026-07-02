@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, RotateCcw, Check, X } from "lucide-react";
 import { uid, type SavedQuiz, type QuizQuestion } from "@/lib/storage";
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTutorial } from "@/components/TutorialProvider";
 
 export const Route = createFileRoute("/quiz")({
   head: () => ({
@@ -34,6 +35,11 @@ function QuizPage() {
   const queryClient = useQueryClient();
   const { data: quizzes = [] } = useQuery({ queryKey: ["quizzes"], queryFn: api.getQuizzes });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("quiz");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveMutation = useMutation({
     mutationFn: api.saveQuiz,
@@ -96,11 +102,14 @@ function QuizPage() {
         -level quiz on any syllabus topic.
       </p>
 
-      <div className="p-5 rounded-2xl glass-card mt-6">
+      <div className="p-5 rounded-2xl glass-card mt-6" data-tour="tour-quiz-topic">
         <div className="flex items-center gap-2 text-sm font-medium mb-4">
           <Sparkles className="h-4 w-4 text-primary" /> New quiz
         </div>
-        <div className="grid md:grid-cols-[1fr_120px_140px_auto] gap-2">
+        <div
+          className="grid md:grid-cols-[1fr_120px_140px_auto] gap-2"
+          data-tour="tour-quiz-settings"
+        >
           <Input
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
@@ -137,6 +146,7 @@ function QuizPage() {
             onClick={handleGenerate}
             disabled={loading || !topic.trim()}
             className="bg-gradient-primary"
+            data-tour="tour-quiz-generate"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate"}
           </Button>

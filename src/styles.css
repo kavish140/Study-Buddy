@@ -266,3 +266,460 @@
     background-position: 200% 0;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Tutorial Overlay System
+   ──────────────────────────────────────────────────────────────────────── */
+
+@keyframes tutorial-ring-pulse {
+  0% { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.12); }
+}
+
+@keyframes tutorial-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes tutorial-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes help-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+
+/* Root container — sits above everything */
+.tutorial-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  pointer-events: none;
+}
+
+/* Dark backdrop */
+.tutorial-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 20, 0.78);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  pointer-events: all;
+  animation: tutorial-fade-in 0.2s ease;
+}
+
+/* Spotlight hole — box-shadow trick creates the dim overlay with a transparent "hole" */
+.tutorial-spotlight {
+  position: fixed;
+  border-radius: 14px;
+  /* Huge spread radius = fills the entire screen as the dark overlay;
+     the element itself is transparent, creating the spotlight cutout */
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0),  /* override backdrop — element is clear */
+    0 0 0 2px rgba(59, 130, 246, 0.6);
+  pointer-events: none;
+  transition:
+    top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 9993;
+}
+
+/* Pulsing ring around the spotlight */
+.tutorial-ring {
+  position: fixed;
+  border-radius: 18px;
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  pointer-events: none;
+  animation: tutorial-ring-pulse 1.4s ease-out infinite;
+  z-index: 9992;
+  transition:
+    top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Tooltip card */
+.tutorial-tooltip {
+  position: fixed;
+  width: 320px;
+  background: rgba(10, 17, 40, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 18px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(59, 130, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  pointer-events: all;
+  z-index: 9995;
+  animation: tutorial-slide-in 0.25s ease;
+  transition: top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+/* Centered variant (welcome/done steps) */
+.tutorial-tooltip--center {
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%);
+  transition: none;
+}
+
+/* Tooltip header */
+.tutorial-tooltip__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.tutorial-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.tutorial-close {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: rgba(200, 208, 224, 0.5);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.tutorial-close:hover {
+  background: rgba(255,255,255,0.07);
+  color: #e8ecf4;
+}
+
+/* Tooltip body */
+.tutorial-tooltip__body {
+  padding: 14px 16px 12px;
+}
+
+.tutorial-title {
+  font-family: "Space Grotesk", "Inter", ui-sans-serif, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #e8ecf4;
+  margin: 0 0 6px;
+  line-height: 1.3;
+}
+
+.tutorial-body {
+  font-size: 13px;
+  color: rgba(200, 208, 224, 0.8);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Progress bar */
+.tutorial-progress-bar-wrap {
+  margin: 0 16px;
+  height: 3px;
+  background: rgba(59, 130, 246, 0.12);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.tutorial-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+  border-radius: 99px;
+  transition: width 0.35s ease;
+}
+
+/* Footer row */
+.tutorial-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 14px;
+}
+
+.tutorial-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.tutorial-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.2);
+  transition: all 0.2s;
+}
+
+.tutorial-dot--active {
+  background: #3b82f6;
+  width: 18px;
+  border-radius: 3px;
+}
+
+.tutorial-dot--done {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+/* Nav buttons */
+.tutorial-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tutorial-skip {
+  font-size: 12px;
+  color: rgba(200, 208, 224, 0.45);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 0.15s;
+  margin-right: 2px;
+}
+.tutorial-skip:hover { color: rgba(200, 208, 224, 0.75); }
+
+.tutorial-prev {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(59, 130, 246, 0.08);
+  color: #60a5fa;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.tutorial-prev:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.tutorial-next {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.tutorial-next:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Help FAB (Floating Action Button)
+   ──────────────────────────────────────────────────────────────────────── */
+
+.help-fab-container {
+  position: fixed;
+  bottom: 88px;
+  right: 20px;
+  z-index: 9980;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .help-fab-container {
+    bottom: 24px;
+    right: 24px;
+  }
+}
+
+.help-fab {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: help-bounce 3s ease-in-out infinite;
+}
+.help-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5), 0 0 0 1px rgba(59, 130, 246, 0.3);
+  animation: none;
+}
+
+.help-fab-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+
+/* Help menu card */
+.help-fab-menu {
+  background: rgba(10, 17, 40, 0.97);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(59,130,246,0.08);
+  padding: 12px;
+  width: 230px;
+  animation: tutorial-slide-in 0.2s ease;
+}
+
+.help-fab-menu__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(200, 208, 224, 0.6);
+  padding: 2px 4px 10px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.help-fab-menu__close {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(200, 208, 224, 0.4);
+  transition: color 0.15s, background 0.15s;
+}
+.help-fab-menu__close:hover {
+  color: #e8ecf4;
+  background: rgba(255,255,255,0.06);
+}
+
+.help-fab-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c8d0e0;
+  transition: background 0.15s;
+  text-align: left;
+  margin-bottom: 2px;
+}
+.help-fab-menu__item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #e8ecf4;
+}
+
+.help-fab-menu__item-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.help-fab-menu__item-hint {
+  font-size: 11px;
+  color: rgba(200, 208, 224, 0.45);
+}
+
+.help-fab-menu__footer {
+  margin-top: 10px;
+  padding: 8px 10px 2px;
+  border-top: 1px solid rgba(59, 130, 246, 0.08);
+  font-size: 11px;
+  color: rgba(200, 208, 224, 0.35);
+}
+
+.help-fab-menu__footer kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  font-size: 11px;
+  color: #60a5fa;
+  font-family: monospace;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Mobile "More" Sheet
+   ──────────────────────────────────────────────────────────────────────── */
+
+.mobile-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 20, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 30;
+  animation: tutorial-fade-in 0.2s ease;
+}
+
+.mobile-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: rgba(8, 14, 38, 0.97);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 24px 24px 0 0;
+  padding: 12px 18px 36px;
+  animation: mobile-sheet-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes mobile-sheet-slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.mobile-sheet__handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(59, 130, 246, 0.2);
+  margin: 0 auto 14px;
+}

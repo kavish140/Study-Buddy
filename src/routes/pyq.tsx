@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { type PYQQuestion } from "@/lib/storage";
@@ -20,6 +20,7 @@ import {
   Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTutorial } from "@/components/TutorialProvider";
 
 export const Route = createFileRoute("/pyq")({
   head: () => ({
@@ -72,6 +73,11 @@ function PYQPage() {
   const [practicing, setPracticing] = useState<PracticeState | null>(null);
   const [generating, setGenerating] = useState(false);
   const [topic, setTopic] = useState("");
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("pyq");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ["pyq", examId, subject, year, difficulty, search],
@@ -191,7 +197,10 @@ function PYQPage() {
       </div>
 
       {/* AI Generate strip */}
-      <div className="glass-card rounded-2xl p-4 mb-6 border border-primary/20">
+      <div
+        className="glass-card rounded-2xl p-4 mb-6 border border-primary/20"
+        data-tour="tour-pyq-generate"
+      >
         <p className="text-sm font-medium mb-3 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" /> Generate AI-powered PYQ-style questions
         </p>

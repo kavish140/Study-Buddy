@@ -27,6 +27,7 @@ import { compressImage, createImagePreview, extractPdfText, getFileType } from "
 import { uid, type ChatSession, type ChatMessage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTutorial } from "@/components/TutorialProvider";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -54,6 +55,11 @@ function ChatPage() {
   const [showSidebar, setShowSidebar] = useState(true);
   // Tracks a pending first message when creating a new session from empty state
   const [pendingFirstMsg, setPendingFirstMsg] = useState<string | null>(null);
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("chat");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveMutation = useMutation({
     mutationFn: api.saveChatSession,
@@ -113,9 +119,12 @@ function ChatPage() {
             : "-translate-x-full lg:translate-x-0 lg:w-0 lg:border-0 lg:overflow-hidden",
         )}
       >
-        <div className="p-4 border-b border-border flex items-center justify-between">
+        <div
+          className="p-4 border-b border-border flex items-center justify-between"
+          data-tour="tour-chat-new"
+        >
           <span className="font-semibold font-heading text-sm">Chat History</span>
-          <Button variant="ghost" size="sm" onClick={handleNewChat}>
+          <Button variant="ghost" size="sm" onClick={handleNewChat} data-tour="tour-chat-new">
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -809,7 +818,10 @@ function ChatView({
               }}
             />
           </label>
-          <div className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/30 transition-colors">
+          <div
+            className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/30 transition-colors"
+            data-tour="tour-chat-input"
+          >
             <textarea
               ref={inputRef}
               value={input}

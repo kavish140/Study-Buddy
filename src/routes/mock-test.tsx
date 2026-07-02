@@ -26,6 +26,7 @@ import { getExamById } from "@/lib/exam-catalog";
 import { uid, type MockTest, type MockTestSection, type MockTestQuestion } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTutorial } from "@/components/TutorialProvider";
 
 export const Route = createFileRoute("/mock-test")({
   head: () => ({
@@ -47,6 +48,11 @@ function MockTestPage() {
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
   const { data: mockTests = [] } = useQuery({ queryKey: ["mockTests"], queryFn: api.getMockTests });
   const examInfo = profile?.exam_id ? getExamById(profile.exam_id) : undefined;
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("mock-test");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [screen, setScreen] = useState<Screen>("setup");
   const [currentTest, setCurrentTest] = useState<MockTest | null>(null);
@@ -178,7 +184,7 @@ function SetupScreen({
       </p>
 
       {/* Generate card */}
-      <div className="glass-card p-6 rounded-2xl mt-8">
+      <div className="glass-card p-6 rounded-2xl mt-8" data-tour="tour-mock-new">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-11 w-11 rounded-xl bg-gradient-primary grid place-items-center text-white">
             <Sparkles className="h-5 w-5" />
@@ -259,7 +265,7 @@ function SetupScreen({
       {completedTests.length > 0 && (
         <div className="mt-8">
           <h2 className="text-lg font-semibold font-heading mb-4">Past Mock Tests</h2>
-          <div className="space-y-3">
+          <div className="space-y-3" data-tour="tour-mock-list">
             {completedTests.slice(0, 10).map((test) => {
               const pct = test.total_marks
                 ? Math.round(((test.score ?? 0) / test.total_marks) * 100)

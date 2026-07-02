@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { streamChat } from "@/lib/ai.functions";
@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTutorial } from "@/components/TutorialProvider";
 
 export const Route = createFileRoute("/community")({
   head: () => ({
@@ -60,6 +61,11 @@ function CommunityPage() {
   const [examFilter, setExamFilter] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const { triggerPageTour } = useTutorial();
+
+  useEffect(() => {
+    triggerPageTour("community");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["forumPosts", examFilter, subjectFilter],
@@ -87,7 +93,11 @@ function CommunityPage() {
             <p className="text-sm text-muted-foreground">Ask doubts · share solutions · discuss</p>
           </div>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="bg-gradient-primary gap-2">
+        <Button
+          onClick={() => setShowCreate(true)}
+          className="bg-gradient-primary gap-2"
+          data-tour="tour-community-post"
+        >
           <Plus className="h-4 w-4" /> New Post
         </Button>
       </div>
