@@ -57,7 +57,10 @@ function OnboardingPage() {
 
   const saveProfileMutation = useMutation({
     mutationFn: api.saveUserProfile,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["userProfile"], data);
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+    },
   });
 
   const saveSubjectMutation = useMutation({
