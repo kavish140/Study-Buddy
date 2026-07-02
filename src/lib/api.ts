@@ -495,16 +495,24 @@ export const api = {
     return (data as PYQQuestion[]) || [];
   },
   savePYQQuestion: async (q: Omit<PYQQuestion, "id">): Promise<PYQQuestion> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+
     const { data, error } = await supabase
       .from("pyq_questions")
-      .insert({ ...q, id: uid() })
+      .insert({ ...q, id: uid(), user_id })
       .select()
       .single();
     if (error) throw error;
     return data as PYQQuestion;
   },
   savePYQQuestions: async (questions: Omit<PYQQuestion, "id">[]): Promise<void> => {
-    const rows = questions.map((q) => ({ ...q, id: uid() }));
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+
+    const rows = questions.map((q) => ({ ...q, id: uid(), user_id }));
     const { error } = await supabase.from("pyq_questions").insert(rows);
     if (error) throw error;
   },

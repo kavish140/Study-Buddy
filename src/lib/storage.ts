@@ -325,6 +325,7 @@ export const BADGE_DEFS: BadgeDef[] = [
 
 export type PYQQuestion = {
   id: string;
+  user_id?: string;
   exam_id: string;
   year: number;
   subject: string;
