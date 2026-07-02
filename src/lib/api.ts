@@ -386,11 +386,22 @@ export const api = {
             longest_streak: 0,
             badges: [],
           },
-          { onConflict: "user_id" },
+          { onConflict: "user_id", ignoreDuplicates: true },
         )
         .select()
-        .single();
-      existing = created;
+        .maybeSingle();
+        
+      if (created) {
+        existing = created;
+      } else {
+        // It was ignored due to race condition, fetch the actual created row
+        const { data: refetched } = await supabase
+          .from("user_stats")
+          .select("*")
+          .eq("user_id", user_id)
+          .single();
+        existing = refetched;
+      }
     }
 
     const cur = existing as UserStats;

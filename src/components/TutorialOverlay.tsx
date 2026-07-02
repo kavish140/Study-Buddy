@@ -93,27 +93,32 @@ export function TutorialOverlay() {
       return;
     }
 
+    let t: NodeJS.Timeout | null = null;
+
     // If there's a target, scroll it into view first
     if (currentStep.target && currentStep.placement !== "center") {
       const el = document.querySelector(`[data-tour="${currentStep.target}"]`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
         // Wait for scroll animation then position
-        const t = setTimeout(() => updatePosition(), 350);
-        return () => clearTimeout(t);
+        t = setTimeout(() => updatePosition(), 350);
+      } else {
+        updatePosition();
       }
+    } else {
+      updatePosition();
     }
-
-    updatePosition();
 
     const handleResize = () => {
       if (animFrame.current) cancelAnimationFrame(animFrame.current);
       animFrame.current = requestAnimationFrame(updatePosition);
     };
     window.addEventListener("resize", handleResize);
+    
     return () => {
       window.removeEventListener("resize", handleResize);
       if (animFrame.current) cancelAnimationFrame(animFrame.current);
+      if (t) clearTimeout(t);
     };
   }, [isActive, currentStep, updatePosition]);
 
