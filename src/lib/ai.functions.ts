@@ -121,6 +121,60 @@ export async function solveFromImage({
   return result;
 }
 
+/**
+ * Sends a PDF file directly to Gemini via the image-ai edge function.
+ * Gemini natively reads scanned/image-based PDFs (up to ~1,000 pages) in one call.
+ */
+export async function solveFromPdf({
+  file,
+  prompt,
+  examName,
+  signal,
+}: {
+  file: File;
+  prompt?: string;
+  examName?: string;
+  signal?: AbortSignal;
+}): Promise<{ response: string }> {
+  const { data: userData } = await supabase.auth.getSession();
+  if (!userData?.session) throw new Error("Authentication required");
+
+  // Read the PDF as base64
+  const arrayBuffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const pdfBase64 = btoa(binary);
+
+  let res;
+  try {
+    res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/image-ai`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userData.session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ imageBase64: pdfBase64, mimeType: "application/pdf", prompt, examName }),
+      signal,
+    });
+  } catch (err) {
+    if ((err as Error).name === "AbortError") throw err;
+    throw new Error("Network error: Failed to reach AI service");
+  }
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || "PDF analysis failed");
+  }
+
+  const result = await res.json();
+  if (result?.error) throw new Error(result.error);
+  return result;
+}
+
 export async function streamChat({
   messages,
   examName,

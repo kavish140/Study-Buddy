@@ -14,15 +14,16 @@ import {
   BookOpen,
   User,
   Bot,
-  Camera,
-  ImageIcon,
   FileText,
   Upload,
   X,
+  Copy,
+  Check,
+  Paperclip,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { streamChat, solveFromImage } from "@/lib/ai.functions";
+import { streamChat, solveFromImage, solveFromPdf } from "@/lib/ai.functions";
 import { compressImage, createImagePreview, extractPdfText, getFileType } from "@/lib/image-utils";
 import { uid, type ChatSession, type ChatMessage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ import { useTutorial } from "@/components/TutorialProvider";
 export const Route = createFileRoute("/chat")({
   head: () => ({
     meta: [
-      { title: "AI Tutor — AcePrep" },
+      { title: "AI Tutor \u2014 AcePrep" },
       {
         name: "description",
         content:
@@ -87,11 +88,11 @@ function ChatPage() {
     setShowSidebar(false);
   };
 
-  // Called from EmptyState — creates session AND sends first message immediately
+  // Called from EmptyState \u2014 creates session AND sends first message immediately
   const handleSendFromEmpty = (msg: string) => {
     const newSession: ChatSession = {
       id: uid(),
-      title: msg.slice(0, 50) + (msg.length > 50 ? "…" : ""),
+      title: msg.slice(0, 50) + (msg.length > 50 ? "\u2026" : ""),
       exam_id: profile?.exam_id,
       messages: [],
     };
@@ -111,7 +112,7 @@ function ChatPage() {
   };
 
   const handleUpdateSession = (session: ChatSession) => {
-    // Strip imageUrl from messages before persisting — data-URLs can be hundreds of KB
+    // Strip imageUrl from messages before persisting \u2014 data-URLs can be hundreds of KB
     // and bloat the Supabase row. The in-memory state retains the URL for display.
     const sanitized: ChatSession = {
       ...session,
@@ -122,7 +123,7 @@ function ChatPage() {
 
   return (
     <div className="relative h-[calc(100vh-64px)] lg:h-screen flex overflow-hidden">
-      {/* Sidebar */}
+      {/* \u2500\u2500 Sidebar */}
       <aside
         className={cn(
           "w-72 border-r border-border flex flex-col bg-sidebar transition-all duration-300 absolute lg:relative z-20 h-full",
@@ -131,30 +132,45 @@ function ChatPage() {
             : "-translate-x-full lg:translate-x-0 lg:w-0 lg:border-0 lg:overflow-hidden",
         )}
       >
-        <div
-          className="p-4 border-b border-border flex items-center justify-between"
-          data-tour="tour-chat-new"
-        >
-          <span className="font-semibold font-heading text-sm">Chat History</span>
-          <Button variant="ghost" size="sm" onClick={handleNewChat} data-tour="tour-chat-new">
+        {/* Subtle top gradient shimmer */}
+        <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none" />
+
+        <div className="p-3 border-b border-border shrink-0 relative" data-tour="tour-chat-new">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <span className="font-semibold font-heading text-sm">Chat History</span>
+          </div>
+          {/* Full-width New Chat gradient button */}
+          <button
+            onClick={handleNewChat}
+            data-tour="tour-chat-new"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-primary text-white text-sm font-medium shadow-glow-sm hover:opacity-90 hover:shadow-glow active:scale-95 transition-all duration-200"
+          >
             <Plus className="h-4 w-4" />
-          </Button>
+            New Chat
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
           {sessions.length === 0 && (
-            <div className="text-xs text-muted-foreground text-center py-8 px-4">
-              No conversations yet. Start a new chat!
+            <div className="flex flex-col items-center justify-center py-12 px-4 gap-3 text-center">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
+                <MessageSquare className="h-5 w-5 text-primary/40" />
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                No conversations yet.
+                <br />
+                Start a new chat above!
+              </p>
             </div>
           )}
           {sessions.map((session) => (
             <div
               key={session.id}
               className={cn(
-                "group flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm",
+                "group relative flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm border-l-2",
                 activeSessionId === session.id
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                  ? "bg-primary/10 text-primary border-primary pl-[10px]"
+                  : "text-muted-foreground hover:bg-muted/30 hover:text-foreground border-transparent",
               )}
               onClick={() => {
                 setActiveSessionId(session.id);
@@ -168,7 +184,7 @@ function ChatPage() {
                   e.stopPropagation();
                   handleDeleteChat(session.id);
                 }}
-                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-all"
               >
                 <Trash2 className="h-3 w-3" />
               </button>
@@ -180,7 +196,7 @@ function ChatPage() {
       {/* Backdrop for mobile sidebar */}
       {showSidebar && (
         <div
-          className="fixed inset-0 bg-black/40 z-10 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-10 lg:hidden"
           onClick={() => setShowSidebar(false)}
         />
       )}
@@ -207,7 +223,7 @@ function ChatPage() {
   );
 }
 
-/* ─── Empty State ─── */
+/* \u2500\u2500\u2500 Empty State \u2500\u2500\u2500 */
 function EmptyState({
   onSend,
   onToggleSidebar,
@@ -241,10 +257,10 @@ function EmptyState({
   };
 
   const suggestedPrompts = [
-    { icon: HelpCircle, text: "Explain the concept of electronegativity" },
-    { icon: Lightbulb, text: "How do I solve projectile motion problems?" },
-    { icon: BookOpen, text: "Summarize the French Revolution" },
-    { icon: Sparkles, text: "What are the best strategies for JEE Math?" },
+    { icon: HelpCircle, text: "Explain electronegativity", sub: "Chemistry concept" },
+    { icon: Lightbulb, text: "Solve projectile motion", sub: "Physics problem" },
+    { icon: BookOpen, text: "Summarize French Revolution", sub: "History topic" },
+    { icon: Sparkles, text: "Best strategies for JEE Math", sub: "Exam tips" },
   ];
 
   return (
@@ -253,99 +269,136 @@ function EmptyState({
       <header className="glass border-b border-border px-4 py-3 flex items-center gap-3 shrink-0">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden text-muted-foreground hover:text-foreground"
+          className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center">
+        <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center shadow-glow-sm">
           <Sparkles className="h-4 w-4 text-white" />
         </div>
         <div>
           <div className="font-medium text-sm">AcePrep AI Tutor</div>
-          <div className="text-xs text-muted-foreground">Ready to help</div>
+          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
+            Ready to help
+          </div>
         </div>
       </header>
 
       {/* Hero area */}
-      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
-        <div className="text-center max-w-lg w-full">
-          <div className="h-16 w-16 rounded-2xl bg-gradient-primary grid place-items-center mx-auto mb-5 shadow-glow">
-            <Sparkles className="h-8 w-8 text-white" />
+      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto relative">
+        {/* Background radial glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 65% 55% at 50% 40%, rgba(59,130,246,0.09), transparent 70%)",
+          }}
+        />
+
+        <div className="text-center max-w-lg w-full relative">
+          {/* Animated orb */}
+          <div className="relative mx-auto mb-7 w-fit">
+            <div className="absolute -inset-4 rounded-3xl bg-gradient-primary opacity-[0.12] blur-2xl animate-pulse" />
+            <div className="h-20 w-20 rounded-2xl bg-gradient-primary grid place-items-center shadow-glow animate-orb-pulse relative">
+              <Sparkles className="h-9 w-9 text-white" />
+            </div>
           </div>
-          <h2 className="text-2xl font-bold font-heading mb-2">AcePrep AI Tutor</h2>
-          <p className="text-muted-foreground mb-8 text-sm">
+
+          <h2 className="text-3xl font-bold font-heading mb-3 text-gradient">
+            AcePrep AI Tutor
+          </h2>
+          <p className="text-muted-foreground mb-10 text-sm leading-relaxed max-w-sm mx-auto">
             Ask anything about your exam topics. Get step-by-step solutions, concept explanations,
             and exam strategies.
           </p>
 
-          <div className="grid grid-cols-2 gap-2 mb-8">
+          <div className="grid grid-cols-2 gap-3 mb-10">
             {suggestedPrompts.map((prompt, i) => (
               <button
                 key={i}
                 onClick={() => handleSend(prompt.text)}
-                className="glass-subtle p-3 rounded-xl text-left text-xs text-muted-foreground hover:text-foreground hover:border-primary/20 transition-all"
+                className="group glass-subtle p-4 rounded-2xl text-left hover:border-primary/30 hover:bg-primary/5 hover:-translate-y-0.5 hover:shadow-glow-sm transition-all duration-200"
               >
-                <prompt.icon className="h-3.5 w-3.5 mb-1.5 text-primary" />
-                {prompt.text}
+                <div className="h-7 w-7 rounded-lg bg-primary/10 grid place-items-center mb-2.5 group-hover:bg-primary/20 transition-colors">
+                  <prompt.icon className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <div className="text-xs font-medium text-foreground leading-snug mb-0.5">
+                  {prompt.text}
+                </div>
+                <div className="text-[11px] text-muted-foreground">{prompt.sub}</div>
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Input bar — always visible */}
-      <div className="border-t border-border p-4 shrink-0">
-        <div className="max-w-3xl mx-auto flex items-end gap-3">
-          {/* Camera / upload button */}
-          <label
-            className="h-11 w-11 shrink-0 rounded-xl glass-subtle grid place-items-center cursor-pointer hover:border-primary/30 transition-colors"
-            title="Upload image or take photo"
-          >
-            <Camera className="h-4 w-4 text-muted-foreground" />
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  // For empty state, delegate to ChatView after creation
-                  toast.info("Start a new chat to upload images");
-                }
-                e.target.value = "";
-              }}
-            />
-          </label>
-          <div className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/30 transition-colors">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask a question... (Enter to send)"
-              rows={1}
-              autoFocus
-              className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
-            />
+      {/* Input bar */}
+      <div className="border-t border-border p-4 shrink-0 glass">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-end gap-2">
+            <label
+              className="h-10 w-10 shrink-0 rounded-xl glass-subtle grid place-items-center cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-all"
+              title="Upload image or take photo"
+            >
+              <Paperclip className="h-4 w-4 text-muted-foreground" />
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // For empty state, delegate to ChatView after creation
+                    toast.info("Start a new chat to upload images");
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            <div className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask a question... (Enter to send)"
+                rows={1}
+                autoFocus
+                className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
+              />
+            </div>
+            <Button
+              onClick={() => handleSend()}
+              disabled={!input.trim()}
+              className="bg-gradient-primary h-10 w-10 shrink-0 rounded-xl p-0 shadow-glow-sm hover:shadow-glow transition-shadow disabled:opacity-40 disabled:shadow-none"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            onClick={() => handleSend()}
-            disabled={!input.trim()}
-            className="bg-gradient-primary h-11 w-11 shrink-0 rounded-xl p-0"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <p className="text-center text-[11px] text-muted-foreground/50 mt-2.5 flex items-center justify-center gap-3">
+            <span>
+              <kbd className="px-1.5 py-0.5 rounded bg-muted/30 border border-border text-[10px] font-mono">
+                Enter
+              </kbd>{" "}
+              send
+            </span>
+            <span>
+              <kbd className="px-1.5 py-0.5 rounded bg-muted/30 border border-border text-[10px] font-mono">
+                Shift+Enter
+              </kbd>{" "}
+              new line
+            </span>
+            <span>\ud83d\udcce attach file</span>
+          </p>
         </div>
-        <p className="text-center text-xs text-muted-foreground mt-2">
-          Press Enter to send · Shift+Enter for new line · 📷 Upload image
-        </p>
       </div>
     </div>
   );
 }
 
-/* ─── Chat View ─── */
+/* \u2500\u2500\u2500 Chat View \u2500\u2500\u2500 */
 function ChatView({
   session,
   examName,
@@ -400,7 +453,7 @@ function ChatView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMessage]);
 
-  // ── Drag & Drop handlers ──────────────────────────────────────────
+  // \u2500\u2500 Drag & Drop handlers
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     dragCounter.current++;
@@ -420,7 +473,7 @@ function ChatView({
     if (file) await handleFileSelect(file);
   };
 
-  // ── Unified file handler (images + PDFs) ─────────────────────────
+  // \u2500\u2500 Unified file handler (images + PDFs)
   const handleFileSelect = async (file: File) => {
     const type = getFileType(file);
     if (type === "unsupported") {
@@ -435,7 +488,7 @@ function ChatView({
       const previewUrl = await createImagePreview(file);
       setPendingImage({ file, previewUrl });
     } else {
-      // PDF — extract page count immediately for the preview badge
+      // PDF \u2014 extract page count immediately for the preview badge
       setPendingPdf({ file });
       try {
         const { pageCount } = await extractPdfText(file);
@@ -449,20 +502,20 @@ function ChatView({
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
 
-    // ── PDF flow ─────────────────────────────────────────────────────
+    // \u2500\u2500 PDF flow
     if (pendingPdf) {
       const pdfFile = pendingPdf.file;
-      const userMsg = msg || `Analyze this PDF: ${pdfFile.name}`;
+      const userMsg = msg || ("Analyze this PDF: " + pdfFile.name);
 
-      // Optimistic UI — show user message immediately
+      // Optimistic UI \u2014 show user message immediately
       const userMessage: ChatMessage = {
         role: "user",
-        content: `📄 **${pdfFile.name}** (${pendingPdf.pageCount ?? "?"} pages)\n\n${userMsg}`,
+        content: ("**" + pdfFile.name + "** (" + (pendingPdf.pageCount ?? "?") + " pages)\n\n" + userMsg),
         timestamp: new Date().toISOString(),
       };
       const updatedMessages = [...session.messages, userMessage];
       const title =
-        session.messages.length === 0 ? `📄 ${pdfFile.name.slice(0, 40)}` : session.title;
+        session.messages.length === 0 ? ("\ud83d\udcc4 " + pdfFile.name.slice(0, 40)) : session.title;
       const updatedSession: ChatSession = { ...session, messages: updatedMessages, title };
       onUpdate(updatedSession);
       setInput("");
@@ -472,34 +525,57 @@ function ChatView({
 
       try {
         const { text, pageCount } = await extractPdfText(pdfFile);
-        const contextMsg = `The student has uploaded a PDF: "${pdfFile.name}" (${pageCount} pages).\n\nPDF CONTENT:\n${text.slice(0, 12000)}${text.length > 12000 ? "\n\n[...content truncated to first 12,000 characters...]" : ""}\n\nStudent's question: ${userMsg}`;
+        const isScanned = text.trim().length === 0;
 
-        // Send as a chat message with the PDF content as context
-        const messagesWithPdf = [
-          ...updatedMessages.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
-          { role: "user" as const, content: contextMsg },
-        ];
+        if (isScanned) {
+          // Scanned / image-based PDF — send raw file to Gemini's native PDF reader
+          toast.info(`📷 Scanned PDF detected — Gemini is reading all ${pageCount} pages…`);
 
-        let fullResponse = "";
-        await streamChat({
-          messages: messagesWithPdf,
-          examName,
-          onChunk: (chunk) => {
-            fullResponse += chunk;
-            setStreamingContent(fullResponse);
-          },
-          onDone: () => {
-            onUpdate({
-              ...updatedSession,
-              messages: [
-                ...updatedMessages,
-                { role: "assistant", content: fullResponse, timestamp: new Date().toISOString() },
-              ],
-            });
-            setStreamingContent("");
-            setIsStreaming(false);
-          },
-        });
+          const result = await solveFromPdf({
+            file: pdfFile,
+            prompt: userMsg,
+            examName,
+          });
+
+          onUpdate({
+            ...updatedSession,
+            messages: [
+              ...updatedMessages,
+              { role: "assistant", content: result.response, timestamp: new Date().toISOString() },
+            ],
+          });
+          setIsStreaming(false);
+          setStreamingContent("");
+        } else {
+          // Digital PDF with a text layer — use existing streaming text flow
+          const contextMsg = `The student has uploaded a PDF: "${pdfFile.name}" (${pageCount} pages).\n\nPDF CONTENT:\n${text.slice(0, 12000)}${text.length > 12000 ? "\n\n[...content truncated to first 12,000 characters...]" : ""}\n\nStudent's question: ${userMsg}`;
+
+          const messagesWithPdf = [
+            ...updatedMessages.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
+            { role: "user" as const, content: contextMsg },
+          ];
+
+          let fullResponse = "";
+          await streamChat({
+            messages: messagesWithPdf,
+            examName,
+            onChunk: (chunk) => {
+              fullResponse += chunk;
+              setStreamingContent(fullResponse);
+            },
+            onDone: () => {
+              onUpdate({
+                ...updatedSession,
+                messages: [
+                  ...updatedMessages,
+                  { role: "assistant", content: fullResponse, timestamp: new Date().toISOString() },
+                ],
+              });
+              setStreamingContent("");
+              setIsStreaming(false);
+            },
+          });
+        }
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to read PDF");
         setIsStreaming(false);
@@ -508,7 +584,7 @@ function ChatView({
       return;
     }
 
-    // ── Image flow ───────────────────────────────────────────────────
+    // \u2500\u2500 Image flow
     if (pendingImage) {
       const imageFile = pendingImage;
       const userMsg = msg || "Solve this question from the image";
@@ -523,7 +599,7 @@ function ChatView({
       const updatedMessages = [...session.messages, userMessage];
       const title =
         session.messages.length === 0
-          ? "📷 " + userMsg.slice(0, 45) + (userMsg.length > 45 ? "…" : "")
+          ? ("\ud83d\udcf7 " + userMsg.slice(0, 45) + (userMsg.length > 45 ? "\u2026" : ""))
           : session.title;
 
       const updatedSession: ChatSession = {
@@ -579,7 +655,7 @@ function ChatView({
     // Update title on first message
     const title =
       session.messages.length === 0
-        ? msg.slice(0, 50) + (msg.length > 50 ? "…" : "")
+        ? msg.slice(0, 50) + (msg.length > 50 ? "\u2026" : "")
         : session.title;
 
     const updatedSession: ChatSession = {
@@ -657,10 +733,14 @@ function ChatView({
     <>
       {/* Drag & Drop overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-2 border-dashed border-primary rounded-2xl pointer-events-none">
-          <Upload className="h-12 w-12 text-primary mb-3 animate-bounce" />
-          <p className="text-lg font-semibold text-primary">Drop your image or PDF</p>
-          <p className="text-sm text-muted-foreground">Supports JPG, PNG, WEBP, PDF</p>
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/85 backdrop-blur-md pointer-events-none">
+          <div className="chat-dnd-border flex flex-col items-center justify-center gap-4 p-14 rounded-3xl">
+            <div className="h-16 w-16 rounded-2xl bg-primary/20 grid place-items-center">
+              <Upload className="h-8 w-8 text-primary animate-bounce" />
+            </div>
+            <p className="text-lg font-semibold text-primary">Drop your file here</p>
+            <p className="text-sm text-muted-foreground">Supports JPG, PNG, WEBP, PDF</p>
+          </div>
         </div>
       )}
 
@@ -674,22 +754,36 @@ function ChatView({
       >
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden text-muted-foreground hover:text-foreground"
+          className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center">
-          <Sparkles className="h-4 w-4 text-white" />
+        <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center shadow-glow-sm shrink-0">
+          <Bot className="h-4 w-4 text-white" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="font-medium text-sm truncate">{session.title}</div>
-          <div className="text-xs text-muted-foreground">
-            {examName ? `${examName} · ` : ""}AcePrep AI
+          <div className="text-xs flex items-center gap-1.5">
+            {isStreaming ? (
+              <span className="flex items-center gap-1 text-primary">
+                <span className="chat-typing-dot" />
+                <span className="chat-typing-dot" style={{ animationDelay: "0.15s" }} />
+                <span className="chat-typing-dot" style={{ animationDelay: "0.30s" }} />
+                <span className="ml-1 text-primary/80">
+                  {isAnalyzingImage ? "Analyzing image..." : "Thinking..."}
+                </span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
+                {examName ? (examName + " \u00b7 ") : ""}AcePrep AI
+              </span>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Messages — also a drop target */}
+      {/* Messages \u2014 also a drop target */}
       <div
         className="flex-1 overflow-y-auto relative"
         onDragEnter={handleDragEnter}
@@ -699,8 +793,10 @@ function ChatView({
       >
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
           {session.messages.length === 0 && !isStreaming && (
-            <div className="text-center py-12">
-              <Sparkles className="h-10 w-10 text-primary/30 mx-auto mb-3" />
+            <div className="text-center py-16">
+              <div className="h-12 w-12 rounded-2xl bg-primary/10 grid place-items-center mx-auto mb-3">
+                <Sparkles className="h-6 w-6 text-primary/40" />
+              </div>
               <p className="text-sm text-muted-foreground">Ask me anything about your studies!</p>
             </div>
           )}
@@ -717,18 +813,16 @@ function ChatView({
           )}
 
           {isStreaming && !streamingContent && (
-            <div className="flex items-start gap-3">
-              <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center shrink-0">
+            <div className="flex items-start gap-3 chat-message-enter">
+              <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center shrink-0 shadow-glow-sm">
                 <Bot className="h-4 w-4 text-white" />
               </div>
               <div className="glass-subtle px-4 py-3 rounded-2xl rounded-tl-sm">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {isAnalyzingImage ? (
-                    <span>Analyzing image with AI vision…</span>
-                  ) : (
-                    <span>Thinking...</span>
-                  )}
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  <span>
+                    {isAnalyzingImage ? "Analyzing image with AI vision..." : "Thinking..."}
+                  </span>
                 </div>
               </div>
             </div>
@@ -742,38 +836,48 @@ function ChatView({
       {session.messages.length > 0 &&
         session.messages[session.messages.length - 1]?.role === "assistant" &&
         !isStreaming && (
-          <div className="px-4 pb-2 flex gap-2 max-w-3xl mx-auto w-full">
-            {quickActions.map((action) => (
-              <button
-                key={action.label}
-                onClick={() => handleSend(action.prompt)}
-                className="text-xs px-3 py-1.5 rounded-full glass-subtle hover:border-primary/20 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5"
-              >
-                <action.icon className="h-3 w-3" />
-                {action.label}
-              </button>
-            ))}
+          <div className="px-4 pb-2 max-w-3xl mx-auto w-full overflow-x-auto">
+            <div className="flex gap-2 pb-1">
+              {quickActions.map((action) => (
+                <button
+                  key={action.label}
+                  onClick={() => handleSend(action.prompt)}
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-full glass-subtle hover:border-primary/30 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <action.icon className="h-3 w-3 text-primary" />
+                  {action.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
       {/* Image preview strip */}
       {pendingImage && (
         <div className="px-4 pb-2 max-w-3xl mx-auto w-full">
-          <div className="inline-flex items-center gap-2 glass-subtle p-2 rounded-xl">
-            <img
-              src={pendingImage.previewUrl}
-              alt="Upload preview"
-              className="h-16 w-16 object-cover rounded-lg"
-            />
-            <div className="text-xs text-muted-foreground">
-              <div className="font-medium text-foreground">{pendingImage.file.name}</div>
-              <div>{(pendingImage.file.size / 1024).toFixed(0)} KB · Image</div>
+          <div className="inline-flex items-center gap-3 glass-subtle p-2.5 rounded-2xl border border-primary/20">
+            <div className="relative h-16 w-16 rounded-xl overflow-hidden shrink-0">
+              <img
+                src={pendingImage.previewUrl}
+                alt="Upload preview"
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            </div>
+            <div className="text-xs min-w-0">
+              <div className="font-medium text-foreground truncate max-w-[160px]">
+                {pendingImage.file.name}
+              </div>
+              <div className="text-muted-foreground mt-0.5">
+                {(pendingImage.file.size / 1024).toFixed(0)} KB \u00b7 Image
+              </div>
+              <div className="text-primary/70 text-[11px] mt-0.5">Ready to send</div>
             </div>
             <button
               onClick={() => setPendingImage(null)}
-              className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+              className="ml-auto p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors shrink-0"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -782,93 +886,101 @@ function ChatView({
       {/* PDF preview strip */}
       {pendingPdf && (
         <div className="px-4 pb-2 max-w-3xl mx-auto w-full">
-          <div className="inline-flex items-center gap-2 glass-subtle p-2 rounded-xl border border-primary/20">
-            <div className="h-12 w-12 rounded-lg bg-primary/10 grid place-items-center shrink-0">
+          <div className="inline-flex items-center gap-3 glass-subtle p-2.5 rounded-2xl border border-primary/20">
+            <div className="h-12 w-12 rounded-xl bg-primary/15 grid place-items-center shrink-0">
               <FileText className="h-6 w-6 text-primary" />
             </div>
-            <div className="text-xs">
+            <div className="text-xs min-w-0">
               <div className="font-medium text-foreground truncate max-w-[180px]">
                 {pendingPdf.file.name}
               </div>
-              <div className="text-muted-foreground">
-                {pendingPdf.pageCount ? `${pendingPdf.pageCount} pages · ` : ""}
-                {(pendingPdf.file.size / 1024).toFixed(0)} KB · PDF
+              <div className="text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                {pendingPdf.pageCount && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
+                    {pendingPdf.pageCount}p
+                  </span>
+                )}
+                {(pendingPdf.file.size / 1024).toFixed(0)} KB \u00b7 PDF
               </div>
             </div>
             <button
               onClick={() => setPendingPdf(null)}
-              className="ml-2 p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+              className="ml-auto p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors shrink-0"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
       )}
 
       {/* Input area */}
-      <div className="border-t border-border p-4 shrink-0">
-        <div className="max-w-3xl mx-auto flex items-end gap-3">
-          {/* Camera / upload button */}
-          <label
-            className={cn(
-              "h-11 w-11 shrink-0 rounded-xl glass-subtle grid place-items-center cursor-pointer hover:border-primary/30 transition-colors",
-              isStreaming && "opacity-50 pointer-events-none",
-            )}
-            title="Upload image or take photo"
-          >
-            <Camera className="h-4 w-4 text-muted-foreground" />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,application/pdf"
-              className="hidden"
-              disabled={isStreaming}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileSelect(file);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          <div
-            className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/30 transition-colors"
-            data-tour="tour-chat-input"
-          >
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={
-                pendingImage
-                  ? "Add a message about this image... (optional)"
-                  : pendingPdf
-                    ? "Ask something about this PDF..."
-                    : "Ask a question, or drop an image / PDF here..."
-              }
-              rows={1}
-              className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
-              disabled={isStreaming}
-            />
+      <div className="border-t border-border p-4 shrink-0 glass">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-end gap-2">
+            {/* Attach button */}
+            <label
+              className={cn(
+                "h-10 w-10 shrink-0 rounded-xl glass-subtle grid place-items-center cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-all",
+                isStreaming && "opacity-40 pointer-events-none",
+              )}
+              title="Attach image or PDF"
+            >
+              <Paperclip className="h-4 w-4 text-muted-foreground" />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                disabled={isStreaming}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileSelect(file);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+
+            <div
+              className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200"
+              data-tour="tour-chat-input"
+            >
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  pendingImage
+                    ? "Add a message about this image... (optional)"
+                    : pendingPdf
+                      ? "Ask something about this PDF..."
+                      : "Ask a question, or drop an image / PDF here..."
+                }
+                rows={1}
+                className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
+                disabled={isStreaming}
+              />
+            </div>
+
+            <Button
+              onClick={() => handleSend()}
+              disabled={(!input.trim() && !pendingImage && !pendingPdf) || isStreaming}
+              className="bg-gradient-primary h-10 w-10 shrink-0 rounded-xl p-0 shadow-glow-sm hover:shadow-glow transition-shadow disabled:opacity-40 disabled:shadow-none"
+            >
+              {isStreaming ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-          <Button
-            onClick={() => handleSend()}
-            disabled={(!input.trim() && !pendingImage && !pendingPdf) || isStreaming}
-            className="bg-gradient-primary h-11 w-11 shrink-0 rounded-xl p-0"
-          >
-            {isStreaming ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
         </div>
       </div>
     </>
   );
 }
 
-/* ─── Message Bubble ─── */
+/* \u2500\u2500\u2500 Message Bubble \u2500\u2500\u2500 */
 function MessageBubble({
   message,
   isStreaming = false,
@@ -877,49 +989,122 @@ function MessageBubble({
   isStreaming?: boolean;
 }) {
   const isUser = message.role === "user";
+  const [showTime, setShowTime] = useState(false);
+
+  const timeStr = message.timestamp
+    ? new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
 
   return (
-    <div className={cn("flex items-start gap-3", isUser && "flex-row-reverse")}>
+    <div
+      className={cn("flex items-start gap-3 chat-message-enter", isUser && "flex-row-reverse")}
+      onMouseEnter={() => setShowTime(true)}
+      onMouseLeave={() => setShowTime(false)}
+    >
       <div
         className={cn(
           "h-8 w-8 rounded-lg grid place-items-center shrink-0",
-          isUser ? "bg-accent/10" : "bg-gradient-primary",
+          isUser ? "bg-accent/10" : "bg-gradient-primary shadow-glow-sm",
         )}
       >
-        {isUser ? <User className="h-4 w-4 text-accent" /> : <Bot className="h-4 w-4 text-white" />}
+        {isUser ? (
+          <User className="h-4 w-4 text-accent" />
+        ) : (
+          <Bot className="h-4 w-4 text-white" />
+        )}
       </div>
 
-      <div
-        className={cn(
-          "max-w-[80%] rounded-2xl text-sm leading-relaxed",
-          isUser ? "bg-primary/10 text-foreground rounded-tr-sm" : "glass-subtle rounded-tl-sm",
-          isStreaming && "animate-pulse-subtle",
-        )}
-      >
-        {/* Render image if present */}
-        {message.imageUrl && (
-          <div className="p-2 pb-0">
-            <img
-              src={message.imageUrl}
-              alt="Uploaded image"
-              className="max-w-full max-h-64 rounded-xl object-contain"
-            />
-          </div>
-        )}
-        <div className="px-4 py-3">
-          {isUser ? (
-            <p className="whitespace-pre-wrap">{message.content}</p>
-          ) : (
-            <MarkdownContent content={message.content} />
+      <div className={cn("flex flex-col gap-1 max-w-[80%]", isUser && "items-end")}>
+        <div
+          className={cn(
+            "rounded-2xl text-sm leading-relaxed",
+            isUser
+              ? "bg-primary/12 text-foreground rounded-tr-sm border border-primary/15"
+              : "glass-subtle rounded-tl-sm",
           )}
+        >
+          {/* Render image if present */}
+          {message.imageUrl && (
+            <div className="p-2 pb-0">
+              <img
+                src={message.imageUrl}
+                alt="Uploaded image"
+                className="max-w-full max-h-64 rounded-xl object-contain"
+              />
+            </div>
+          )}
+          <div className="px-4 py-3">
+            {isUser ? (
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            ) : (
+              <MarkdownContent content={message.content} isStreaming={isStreaming} />
+            )}
+          </div>
         </div>
+
+        {/* Timestamp on hover */}
+        {timeStr && (
+          <span
+            className={cn(
+              "text-[10px] text-muted-foreground/50 transition-opacity duration-150 px-1",
+              showTime ? "opacity-100" : "opacity-0",
+            )}
+          >
+            {timeStr}
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
-/* ─── Simple Markdown Renderer ─── */
-function MarkdownContent({ content }: { content: string }) {
+/* \u2500\u2500\u2500 Code Block with Copy button \u2500\u2500\u2500 */
+function CodeBlock({ lang, content }: { lang: string; content: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="my-3 rounded-xl overflow-hidden border border-primary/10">
+      <div className="flex items-center justify-between px-4 py-2 bg-primary/8 border-b border-primary/10">
+        <span className="text-[11px] font-mono text-primary/70 font-medium">{lang || "code"}</span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-0.5 rounded-md hover:bg-primary/10"
+        >
+          {copied ? (
+            <>
+              <Check className="h-3 w-3 text-emerald-400" />
+              <span className="text-emerald-400">Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="h-3 w-3" />
+              <span>Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+      <pre className="bg-muted/20 p-4 overflow-x-auto text-xs font-mono leading-relaxed text-foreground/90">
+        <code>{content}</code>
+      </pre>
+    </div>
+  );
+}
+
+/* \u2500\u2500\u2500 Simple Markdown Renderer \u2500\u2500\u2500 */
+function MarkdownContent({
+  content,
+  isStreaming = false,
+}: {
+  content: string;
+  isStreaming?: boolean;
+}) {
   // Simple markdown parsing for common patterns
   const renderMarkdown = (text: string) => {
     const blocks: React.ReactNode[] = [];
@@ -946,22 +1131,22 @@ function MarkdownContent({ content }: { content: string }) {
       const line = lines[i];
 
       // Code blocks
-      if (line.trim().startsWith("```")) {
+      if (line.trim().startsWith("\`\`\`")) {
         if (inCodeBlock) {
           blocks.push(
-            <pre
-              key={blocks.length}
-              className="bg-muted/30 rounded-lg p-3 mb-2 overflow-x-auto text-xs font-mono"
-            >
-              <code>{currentBlock.join("\n")}</code>
-            </pre>,
+            <CodeBlock
+              key={"cb-" + blocks.length}
+              lang={codeLang}
+              content={currentBlock.join("\n")}
+            />,
           );
           currentBlock = [];
           inCodeBlock = false;
+          codeLang = "";
         } else {
           flushParagraph();
           inCodeBlock = true;
-          codeLang = line.trim().slice(3);
+          codeLang = line.trim().slice(3).trim();
         }
         continue;
       }
@@ -975,7 +1160,7 @@ function MarkdownContent({ content }: { content: string }) {
       if (line.startsWith("### ")) {
         flushParagraph();
         blocks.push(
-          <h4 key={blocks.length} className="font-semibold text-sm mt-3 mb-1">
+          <h4 key={blocks.length} className="font-semibold text-sm mt-4 mb-1.5 text-foreground">
             {renderInline(line.slice(4))}
           </h4>,
         );
@@ -984,7 +1169,7 @@ function MarkdownContent({ content }: { content: string }) {
       if (line.startsWith("## ")) {
         flushParagraph();
         blocks.push(
-          <h3 key={blocks.length} className="font-bold text-sm mt-3 mb-1">
+          <h3 key={blocks.length} className="font-bold text-base mt-4 mb-1.5 text-foreground">
             {renderInline(line.slice(3))}
           </h3>,
         );
@@ -993,7 +1178,7 @@ function MarkdownContent({ content }: { content: string }) {
       if (line.startsWith("# ")) {
         flushParagraph();
         blocks.push(
-          <h2 key={blocks.length} className="font-bold mt-3 mb-1">
+          <h2 key={blocks.length} className="font-bold text-lg mt-4 mb-2 text-foreground">
             {renderInline(line.slice(2))}
           </h2>,
         );
@@ -1005,7 +1190,7 @@ function MarkdownContent({ content }: { content: string }) {
         flushParagraph();
         blocks.push(
           <div key={blocks.length} className="flex items-start gap-2 mb-1">
-            <span className="text-primary mt-1 shrink-0">•</span>
+            <span className="text-primary mt-0.5 shrink-0 text-xs">\u2022</span>
             <span>{renderInline(line.slice(2))}</span>
           </div>,
         );
@@ -1018,7 +1203,9 @@ function MarkdownContent({ content }: { content: string }) {
         flushParagraph();
         blocks.push(
           <div key={blocks.length} className="flex items-start gap-2 mb-1">
-            <span className="text-primary font-medium shrink-0">{numMatch[1]}.</span>
+            <span className="text-primary font-semibold shrink-0 text-xs min-w-[1.25rem]">
+              {numMatch[1]}.
+            </span>
             <span>{renderInline(line.slice(numMatch[0].length))}</span>
           </div>,
         );
@@ -1048,7 +1235,7 @@ function MarkdownContent({ content }: { content: string }) {
       // Bold
       const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
       // Inline code
-      const codeMatch = remaining.match(/`([^`]+)`/);
+      const codeMatch = remaining.match(/\x60([^\x60]+)\x60/);
 
       let firstMatch: { index: number; length: number; node: React.ReactNode } | null = null;
 
@@ -1056,7 +1243,11 @@ function MarkdownContent({ content }: { content: string }) {
         firstMatch = {
           index: boldMatch.index,
           length: boldMatch[0].length,
-          node: <strong key={key++}>{boldMatch[1]}</strong>,
+          node: (
+            <strong key={key++} className="font-semibold text-foreground">
+              {boldMatch[1]}
+            </strong>
+          ),
         };
       }
 
@@ -1065,7 +1256,10 @@ function MarkdownContent({ content }: { content: string }) {
           index: codeMatch.index,
           length: codeMatch[0].length,
           node: (
-            <code key={key++} className="bg-muted/40 px-1.5 py-0.5 rounded text-xs font-mono">
+            <code
+              key={key++}
+              className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-mono border border-primary/20"
+            >
               {codeMatch[1]}
             </code>
           ),
@@ -1088,5 +1282,7 @@ function MarkdownContent({ content }: { content: string }) {
     return parts.length === 1 ? parts[0] : <>{parts}</>;
   };
 
-  return <div>{renderMarkdown(content)}</div>;
+  return (
+    <div className={cn(isStreaming && "streaming-cursor")}>{renderMarkdown(content)}</div>
+  );
 }

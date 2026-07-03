@@ -20,14 +20,30 @@ Deno.serve(async (req) => {
     const { imageBase64, mimeType, prompt, examName } = await req.json();
 
     if (!imageBase64) {
-      throw new Error("No image provided. Please upload an image.");
+      throw new Error("No image provided. Please upload an image or PDF.");
     }
 
+    const isPdf = mimeType === "application/pdf";
     const examContext = examName
       ? `The student is preparing for ${examName}.`
       : "The student is preparing for a competitive exam.";
 
-    const systemPrompt = `You are AcePrep AI Tutor — an expert at reading and solving questions from images. ${examContext}
+    const systemPrompt = isPdf
+      ? `You are AcePrep AI Tutor — an expert at reading and solving problems from scanned notebooks and PDF documents. ${examContext}
+
+The student has uploaded a scanned PDF (which may be a handwritten notebook). Your task:
+1. Read through ALL pages of the PDF carefully.
+2. Accurately extract any handwritten or printed text, equations, and diagrams.
+3. Answer the student's question based on the full content of the notebook.
+4. For math/physics problems, show all working steps clearly.
+5. Use markdown formatting (headers, bold, lists, LaTeX-style notation where helpful).
+6. For math, use clear notation (e.g., x² for x squared, √ for square root).
+7. If pages contain diagrams or figures, describe and explain them.
+8. At the end, provide the final answer clearly highlighted.
+9. If applicable, relate content to relevant concepts from the exam syllabus.
+
+Be thorough, accurate, and encouraging. Cover the entire document, not just the first page.`
+      : `You are AcePrep AI Tutor — an expert at reading and solving questions from images. ${examContext}
 
 Your task:
 1. Read the question/problem shown in the image carefully.
@@ -43,8 +59,12 @@ Your task:
 Be thorough, accurate, and encouraging.`;
 
     const userPrompt = prompt
-      ? `${prompt}\n\nPlease analyze the attached image and respond accordingly.`
-      : "Please read the question in this image and solve it step by step.";
+      ? isPdf
+        ? `${prompt}\n\nPlease analyze the attached PDF document (all pages) and respond accordingly.`
+        : `${prompt}\n\nPlease analyze the attached image and respond accordingly.`
+      : isPdf
+        ? "Please read through this scanned PDF notebook and answer any questions or summarize its contents."
+        : "Please read the question in this image and solve it step by step.";
 
     // Call Gemini API with vision
     const model = "gemini-2.0-flash";
