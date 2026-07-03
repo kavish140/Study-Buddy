@@ -19,14 +19,12 @@ let pdfJsLib: PdfJs | null = null;
 async function getPdfJs() {
   if (!pdfJsLib) {
     pdfJsLib = (await import("pdfjs-dist")) as unknown as PdfJs;
-    // Try the modern .mjs worker first; fall back to .js for older CDN builds
-    const cdnBase = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsLib.version}`;
-    try {
-      pdfJsLib.GlobalWorkerOptions.workerSrc = `${cdnBase}/pdf.worker.min.mjs`;
-    } catch {
-      console.warn("[PDF.js] Failed to set .mjs worker, falling back to .js");
-      pdfJsLib.GlobalWorkerOptions.workerSrc = `${cdnBase}/pdf.worker.min.js`;
-    }
+    // Use the locally bundled worker to avoid CDN version-mismatch errors.
+    // Vite will resolve this to the correct asset URL at build time.
+    pdfJsLib.GlobalWorkerOptions.workerSrc = new URL(
+      "pdfjs-dist/build/pdf.worker.min.mjs",
+      import.meta.url,
+    ).toString();
   }
   return pdfJsLib;
 }
