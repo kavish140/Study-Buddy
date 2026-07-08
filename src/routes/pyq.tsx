@@ -142,7 +142,9 @@ function PYQPage() {
         question: q.question,
         question_type: "mcq",
         options: q.options,
-        answer: q.options?.[q.answerIndex ?? -1] || q.answer || "",
+        answer: q.answerIndex !== undefined && q.answerIndex >= 0
+          ? (q.options?.[q.answerIndex] ?? q.answer ?? "")
+          : (q.answer ?? ""),
         explanation: q.explanation,
         difficulty: (difficulty || "hard") as "easy" | "medium" | "hard",
         tags: [topic.trim(), subjectLabel],
@@ -470,7 +472,7 @@ function PracticeMode({
 
   const handleNext = () => {
     const next = state.current + 1;
-    if (next >= total) setState({ ...state, current: next, done: true });
+    if (next >= total) setState({ ...state, done: true });
     else setState({ ...state, current: next, selected: null, revealed: false });
   };
 
@@ -487,7 +489,7 @@ function PracticeMode({
         <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-primary rounded-full transition-all"
-            style={{ width: `${(state.current / total) * 100}%` }}
+            style={{ width: `${((state.current + 1) / total) * 100}%` }}
           />
         </div>
       </div>
