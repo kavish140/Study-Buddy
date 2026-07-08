@@ -160,9 +160,14 @@ export const api = {
 
   // Mock Tests
   getMockTests: async (): Promise<MockTest[]> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
+
     const { data, error } = await supabase
       .from("mock_tests")
       .select("*")
+      .eq("user_id", user_id)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return (data as MockTest[]) || [];

@@ -1223,11 +1223,7 @@ function MarkdownContent({
     // Flush any unclosed code block (can happen mid-stream)
     if (inCodeBlock && currentBlock.length > 0) {
       blocks.push(
-        <CodeBlock
-          key={"cb-" + blocks.length}
-          lang={codeLang}
-          content={currentBlock.join("\n")}
-        />,
+        <CodeBlock key={"cb-" + blocks.length} lang={codeLang} content={currentBlock.join("\n")} />,
       );
     } else {
       flushParagraph();

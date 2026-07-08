@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import {
   Clock,
@@ -17,7 +17,6 @@ import {
   Sparkles,
   Timer,
   CircleDot,
-  Pause,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -168,6 +167,7 @@ function SetupScreen({
         answers: {},
         total_time_seconds: totalTimeSeconds,
         status: "in_progress",
+        started_at: new Date().toISOString(),
       };
 
       onStart(test);
@@ -355,7 +355,7 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
     };
   }, []);
 
-  const allQuestions = test.sections.flatMap((s) => s.questions);
+  const allQuestions = useMemo(() => test.sections.flatMap((s) => s.questions), [test.sections]);
   const currentSection = test.sections[activeSection];
   const sectionQuestions = currentSection?.questions || [];
   const currentQ = sectionQuestions[activeQuestion];
@@ -391,13 +391,14 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
     const finishedTest: MockTest = {
       ...test,
       answers,
-      score: Math.max(0, score),
+      score,
       total_marks: totalMarks,
       time_taken_seconds: elapsedSeconds,
       status: "completed",
       completed_at: new Date().toISOString(),
     };
 
+    setShowConfirm(false);
     onFinish(finishedTest);
   }, [answers, test, onFinish, allQuestions]);
 
@@ -424,13 +425,6 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
 
   const answeredCount = Object.values(answers).filter((v) => v !== null && v !== undefined).length;
   const isTimeLow = timeLeft < 300;
-
-  // Flatten index for navigation
-  let globalIdx = 0;
-  for (let i = 0; i < activeSection; i++) {
-    globalIdx += test.sections[i].questions.length;
-  }
-  globalIdx += activeQuestion;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -722,7 +716,13 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
               <Button variant="ghost" className="flex-1" onClick={() => setShowConfirm(false)}>
                 Continue
               </Button>
-              <Button className="flex-1 bg-gradient-primary" onClick={handleSubmit}>
+              <Button
+                className="flex-1 bg-gradient-primary"
+                onClick={() => {
+                  setShowConfirm(false);
+                  handleSubmit();
+                }}
+              >
                 Submit
               </Button>
             </div>
@@ -738,6 +738,8 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
   const [reviewSection, setReviewSection] = useState(0);
   const [showReview, setShowReview] = useState(false);
   const pct = test.total_marks ? Math.round(((test.score ?? 0) / test.total_marks) * 100) : 0;
+  // displayPct is clamped to [0, 100] for the visual ring — the actual score text is still accurate
+  const displayPct = Math.max(0, Math.min(100, pct));
   const mins = test.time_taken_seconds ? Math.round(test.time_taken_seconds / 60) : 0;
 
   const allQuestions = test.sections.flatMap((s) => s.questions);
@@ -764,7 +766,7 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
                 : "bg-destructive/10 text-destructive",
           )}
         >
-          {pct}%
+          {displayPct}%
         </div>
         <h1 className="text-2xl font-bold font-heading mb-1">
           {pct >= 70 ? "Excellent!" : pct >= 40 ? "Good effort!" : "Keep practicing!"}
