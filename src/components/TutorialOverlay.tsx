@@ -114,7 +114,7 @@ export function TutorialOverlay() {
       animFrame.current = requestAnimationFrame(updatePosition);
     };
     window.addEventListener("resize", handleResize);
-    
+
     return () => {
       window.removeEventListener("resize", handleResize);
       if (animFrame.current) cancelAnimationFrame(animFrame.current);

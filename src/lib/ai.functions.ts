@@ -139,12 +139,14 @@ export async function solveFromPdf({
   const { data: userData } = await supabase.auth.getSession();
   if (!userData?.session) throw new Error("Authentication required");
 
-  // Read the PDF as base64
+  // Read the PDF as base64.
+  // Use chunked String.fromCharCode to avoid call-stack overflow on large files.
   const arrayBuffer = await file.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
+  const CHUNK = 8192;
   let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.byteLength; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
   }
   const pdfBase64 = btoa(binary);
 
@@ -157,7 +159,12 @@ export async function solveFromPdf({
         Authorization: `Bearer ${userData.session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ imageBase64: pdfBase64, mimeType: "application/pdf", prompt, examName }),
+      body: JSON.stringify({
+        imageBase64: pdfBase64,
+        mimeType: "application/pdf",
+        prompt,
+        examName,
+      }),
       signal,
     });
   } catch (err) {

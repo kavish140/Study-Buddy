@@ -96,14 +96,15 @@ function ChatPage() {
       exam_id: profile?.exam_id,
       messages: [],
     };
-    // Set pendingFirstMsg AFTER the session is saved so ChatView can safely call onUpdate
+    // Set activeSessionId AND pendingFirstMsg only AFTER the session is persisted,
+    // so ChatView never mounts before the session exists in the query cache.
     saveMutation.mutate(newSession, {
       onSuccess: () => {
+        setActiveSessionId(newSession.id);
+        setShowSidebar(false);
         setPendingFirstMsg(msg);
       },
     });
-    setActiveSessionId(newSession.id);
-    setShowSidebar(false);
   };
 
   const handleDeleteChat = (id: string) => {
@@ -305,9 +306,7 @@ function EmptyState({
             </div>
           </div>
 
-          <h2 className="text-3xl font-bold font-heading mb-3 text-gradient">
-            AcePrep AI Tutor
-          </h2>
+          <h2 className="text-3xl font-bold font-heading mb-3 text-gradient">AcePrep AI Tutor</h2>
           <p className="text-muted-foreground mb-10 text-sm leading-relaxed max-w-sm mx-auto">
             Ask anything about your exam topics. Get step-by-step solutions, concept explanations,
             and exam strategies.
@@ -502,20 +501,24 @@ function ChatView({
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
 
-    // \u2500\u2500 PDF flow
+    // Prevent concurrent AI requests
+    if (isStreaming) return;
+
+    // ── PDF flow
     if (pendingPdf) {
       const pdfFile = pendingPdf.file;
-      const userMsg = msg || ("Analyze this PDF: " + pdfFile.name);
+      const userMsg = msg || "Analyze this PDF: " + pdfFile.name;
 
-      // Optimistic UI \u2014 show user message immediately
+      // Optimistic UI — show user message immediately
       const userMessage: ChatMessage = {
         role: "user",
-        content: ("**" + pdfFile.name + "** (" + (pendingPdf.pageCount ?? "?") + " pages)\n\n" + userMsg),
+        content:
+          "**" + pdfFile.name + "** (" + (pendingPdf.pageCount ?? "?") + " pages)\n\n" + userMsg,
         timestamp: new Date().toISOString(),
       };
       const updatedMessages = [...session.messages, userMessage];
       const title =
-        session.messages.length === 0 ? ("\ud83d\udcc4 " + pdfFile.name.slice(0, 40)) : session.title;
+        session.messages.length === 0 ? "\ud83d\udcc4 " + pdfFile.name.slice(0, 40) : session.title;
       const updatedSession: ChatSession = { ...session, messages: updatedMessages, title };
       onUpdate(updatedSession);
       setInput("");
@@ -599,7 +602,7 @@ function ChatView({
       const updatedMessages = [...session.messages, userMessage];
       const title =
         session.messages.length === 0
-          ? ("\ud83d\udcf7 " + userMsg.slice(0, 45) + (userMsg.length > 45 ? "\u2026" : ""))
+          ? "\ud83d\udcf7 " + userMsg.slice(0, 45) + (userMsg.length > 45 ? "\u2026" : "")
           : session.title;
 
       const updatedSession: ChatSession = {
@@ -776,7 +779,7 @@ function ChatView({
             ) : (
               <span className="text-muted-foreground flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
-                {examName ? (examName + " \u00b7 ") : ""}AcePrep AI
+                {examName ? examName + " \u00b7 " : ""}AcePrep AI
               </span>
             )}
           </div>
@@ -1007,11 +1010,7 @@ function MessageBubble({
           isUser ? "bg-accent/10" : "bg-gradient-primary shadow-glow-sm",
         )}
       >
-        {isUser ? (
-          <User className="h-4 w-4 text-accent" />
-        ) : (
-          <Bot className="h-4 w-4 text-white" />
-        )}
+        {isUser ? <User className="h-4 w-4 text-accent" /> : <Bot className="h-4 w-4 text-white" />}
       </div>
 
       <div className={cn("flex flex-col gap-1 max-w-[80%]", isUser && "items-end")}>
@@ -1131,7 +1130,7 @@ function MarkdownContent({
       const line = lines[i];
 
       // Code blocks
-      if (line.trim().startsWith("\`\`\`")) {
+      if (line.trim().startsWith("```")) {
         if (inCodeBlock) {
           blocks.push(
             <CodeBlock
@@ -1221,19 +1220,32 @@ function MarkdownContent({
       currentBlock.push(line);
     }
 
-    flushParagraph();
+    // Flush any unclosed code block (can happen mid-stream)
+    if (inCodeBlock && currentBlock.length > 0) {
+      blocks.push(
+        <CodeBlock
+          key={"cb-" + blocks.length}
+          lang={codeLang}
+          content={currentBlock.join("\n")}
+        />,
+      );
+    } else {
+      flushParagraph();
+    }
     return blocks;
   };
 
-  // Inline markdown: bold, italic, code, links
+  // Inline markdown: bold, italic, code
   const renderInline = (text: string): React.ReactNode => {
     const parts: React.ReactNode[] = [];
     let remaining = text;
     let key = 0;
 
     while (remaining.length > 0) {
-      // Bold
+      // Bold (must be checked before italic so ** takes priority over *)
       const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+      // Italic — single asterisk not preceded/followed by another asterisk
+      const italicMatch = remaining.match(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/);
       // Inline code
       const codeMatch = remaining.match(/\x60([^\x60]+)\x60/);
 
@@ -1249,6 +1261,19 @@ function MarkdownContent({
             </strong>
           ),
         };
+      }
+
+      if (italicMatch?.index !== undefined) {
+        const candidate = {
+          index: italicMatch.index,
+          length: italicMatch[0].length,
+          node: (
+            <em key={key++} className="italic">
+              {italicMatch[1]}
+            </em>
+          ),
+        };
+        if (firstMatch === null || candidate.index < firstMatch.index) firstMatch = candidate;
       }
 
       if (codeMatch?.index !== undefined) {
@@ -1282,7 +1307,5 @@ function MarkdownContent({
     return parts.length === 1 ? parts[0] : <>{parts}</>;
   };
 
-  return (
-    <div className={cn(isStreaming && "streaming-cursor")}>{renderMarkdown(content)}</div>
-  );
+  return <div className={cn(isStreaming && "streaming-cursor")}>{renderMarkdown(content)}</div>;
 }

@@ -390,7 +390,7 @@ export const api = {
         )
         .select()
         .maybeSingle();
-        
+
       if (created) {
         existing = created;
       } else {
