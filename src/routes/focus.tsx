@@ -55,6 +55,8 @@ function FocusPage() {
   const [secondsLeft, setSecondsLeft] = useState(MODES.work.minutes * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
+  // Keep a ref in sync with sessionsCompleted so callbacks always see the latest value
+  const sessionsCompletedRef = useRef(0);
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
   const [showSettings, setShowSettings] = useState(false);
@@ -66,6 +68,8 @@ function FocusPage() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<Date | null>(null);
+  // Flag to guard against double-invocation of the completion handler (React StrictMode)
+  const completionFiredRef = useRef(false);
   // Hold the latest callback in a ref so the interval doesn't need to re-run on every change
   const handleSessionCompleteRef = useRef<() => Promise<void>>(async () => {});
 
@@ -99,11 +103,16 @@ function FocusPage() {
       setMode(newMode);
       setSecondsLeft(customMinutes[newMode] * 60);
       sessionStartRef.current = null;
+      completionFiredRef.current = false;
     },
     [customMinutes],
   );
 
   const handleSessionComplete = useCallback(async () => {
+    // Guard: prevent double-firing (React StrictMode or race conditions)
+    if (completionFiredRef.current) return;
+    completionFiredRef.current = true;
+
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsRunning(false);
 
@@ -134,17 +143,20 @@ function FocusPage() {
         started_at: sessionStartRef.current?.toISOString() || new Date().toISOString(),
         ended_at: new Date().toISOString(),
       });
-      setSessionsCompleted((n) => n + 1);
+      // Use the ref value (always up-to-date) instead of the stale closure value
+      const newCount = sessionsCompletedRef.current + 1;
+      sessionsCompletedRef.current = newCount;
+      setSessionsCompleted(newCount);
       toast.success(`🎉 Focus session complete! +${duration} minutes logged.`);
 
-      // Auto switch to break
-      const newMode: Mode = (sessionsCompleted + 1) % 4 === 0 ? "long_break" : "short_break";
+      // Auto switch to break — every 4th work session triggers a long break
+      const newMode: Mode = newCount % 4 === 0 ? "long_break" : "short_break";
       switchMode(newMode);
     } else {
       toast.success("Break over! Ready to focus?");
       switchMode("work");
     }
-  }, [mode, customMinutes, subject, topic, sessionsCompleted, saveMutation, switchMode]);
+  }, [mode, customMinutes, subject, topic, saveMutation, switchMode]);
 
   // Keep the ref in sync with the latest callback (runs after every render)
   useEffect(() => {
@@ -157,7 +169,9 @@ function FocusPage() {
       intervalRef.current = setInterval(() => {
         setSecondsLeft((s) => {
           if (s <= 1) {
-            handleSessionCompleteRef.current();
+            // Schedule completion outside the state setter to avoid side effects
+            // inside the updater function (which React may call multiple times).
+            setTimeout(() => handleSessionCompleteRef.current(), 0);
             return 0;
           }
           return s - 1;
@@ -169,11 +183,13 @@ function FocusPage() {
     };
   }, [isRunning]);
 
-  // Update document title
+  // Update document title while running; restore app title on unmount
   useEffect(() => {
-    document.title = isRunning
-      ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")} · ${MODES[mode].label} · AcePrep`
-      : "Focus Timer · AcePrep";
+    if (isRunning) {
+      document.title = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")} · ${MODES[mode].label} · AcePrep`;
+    } else {
+      document.title = "Focus Timer · AcePrep";
+    }
     return () => {
       document.title = "AcePrep";
     };
@@ -240,7 +256,9 @@ function FocusPage() {
                   onChange={(e) => {
                     const val = Math.max(1, parseInt(e.target.value) || 1);
                     setCustomMinutes((prev) => ({ ...prev, [k]: val }));
-                    if (mode === k) setSecondsLeft(val * 60);
+                    // Only reset the timer display if the timer is NOT running,
+                    // to avoid discarding progress mid-session.
+                    if (mode === k && !isRunning) setSecondsLeft(val * 60);
                   }}
                   className="w-full mt-1 glass-subtle rounded-lg px-3 py-2 text-sm bg-transparent outline-none"
                 />
