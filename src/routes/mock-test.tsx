@@ -71,6 +71,34 @@ function MockTestPage() {
     setCurrentTest(test);
     try {
       await saveMutation.mutateAsync(test);
+
+      // Auto-save wrong answers as spaced-repetition review cards
+      const allQuestions = test.sections.flatMap((s) => s.questions);
+      const wrongCards = allQuestions
+        .filter((q) => test.answers[q.id] !== q.answerIndex)
+        .map((q) => ({
+          question: q.question,
+          answer: q.options[q.answerIndex],
+          explanation: q.explanation || undefined,
+          subject: q.section,
+          topic: q.topic || undefined,
+          source: "mock_test" as const,
+          ease_factor: 2.5,
+          interval_days: 1,
+          repetitions: 0,
+          next_review: new Date().toISOString().split("T")[0],
+        }));
+      if (wrongCards.length > 0) {
+        api.saveReviewCards(wrongCards).catch(() => {});
+      }
+
+      // Award XP for completing the mock test (fire-and-forget)
+      api
+        .awardXP(50, {
+          mockCount: (queryClient.getQueryData<MockTest[]>(["mockTests"])?.length ?? 0) + 1,
+        })
+        .catch(() => {});
+
       setScreen("result");
     } catch (e) {
       toast.error("Failed to save test result. Showing results without saving.");

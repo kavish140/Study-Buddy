@@ -206,6 +206,24 @@ function QuizRunner({
   const handleSubmit = () => {
     setSubmitted(true);
     onFinish(score);
+
+    // Auto-save wrong answers as spaced-repetition review cards
+    const wrongCards = quiz.questions
+      .filter((q, i) => answers[i] !== q.answerIndex)
+      .map((q) => ({
+        question: q.question,
+        answer: q.options[q.answerIndex],
+        explanation: q.explanation || undefined,
+        subject: quiz.topic,
+        source: "quiz" as const,
+        ease_factor: 2.5,
+        interval_days: 1,
+        repetitions: 0,
+        next_review: new Date().toISOString().split("T")[0],
+      }));
+    if (wrongCards.length > 0) {
+      api.saveReviewCards(wrongCards).catch(() => {});
+    }
   };
 
   return (

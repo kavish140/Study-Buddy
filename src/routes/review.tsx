@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { type ReviewCard } from "@/lib/storage";
+import { type ReviewCard, XP_REWARDS } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTutorial } from "@/components/TutorialProvider";
@@ -13,8 +13,6 @@ import {
   CheckCircle2,
   RotateCcw,
   ChevronRight,
-  Star,
-  Flame,
   CalendarCheck,
   Sparkles,
   BookOpen,
@@ -86,7 +84,11 @@ function ReviewPage() {
   const updateMutation = useMutation({
     mutationFn: ({ id, rating }: { id: string; rating: 0 | 1 | 3 | 5 }) =>
       api.updateReviewCard(id, rating),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["reviewCards"] }),
+    onSuccess: () => {
+      // Bug fix: invalidate both query keys so "Total cards" stat stays in sync
+      qc.invalidateQueries({ queryKey: ["reviewCards"] });
+      qc.invalidateQueries({ queryKey: ["allReviewCards"] });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -103,25 +105,36 @@ function ReviewPage() {
   const [doneCount, setDoneCount] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
+  // Track the IDs we started the session with so query re-fetches
+  // (triggered by invalidateQueries after rating) don't reset the session.
+  const [sessionCardIds, setSessionCardIds] = useState<string[]>([]);
 
-  // Reset when cards load
+  // Reset only when a genuinely new set of cards loads (first load or after
+  // session completes / user explicitly restarts).
   useEffect(() => {
+    if (allCards.length === 0) return; // nothing to do
+    if (sessionCardIds.length > 0) return; // session already running
+    setSessionCardIds(allCards.map((c) => c.id));
     setCurrentIndex(0);
     setIsFlipped(false);
     setDoneCount(0);
     setSessionComplete(false);
-  }, [allCards.length]);
+  }, [allCards]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentCard = allCards[currentIndex];
-  const progress = allCards.length > 0 ? (doneCount / allCards.length) * 100 : 0;
+  const sessionTotal = sessionCardIds.length || allCards.length;
+  const progress = sessionTotal > 0 ? (doneCount / sessionTotal) * 100 : 0;
 
   const handleRate = async (rating: 0 | 1 | 3 | 5) => {
     if (!currentCard) return;
     await updateMutation.mutateAsync({ id: currentCard.id, rating });
+    // Award XP for reviewing a card (fire-and-forget)
+    api.awardXP(XP_REWARDS.review_card, { reviewCount: doneCount + 1 }).catch(() => {});
     const next = currentIndex + 1;
     setDoneCount((d) => d + 1);
-    if (next >= allCards.length) {
+    if (next >= sessionCardIds.length) {
       setSessionComplete(true);
+      setSessionCardIds([]); // clear so next load starts fresh
     } else {
       setCurrentIndex(next);
       setIsFlipped(false);
@@ -213,6 +226,8 @@ function ReviewPage() {
           <div className="flex gap-3 justify-center">
             <Button
               onClick={() => {
+                // Clear session IDs so the useEffect can reinitialize with current cards
+                setSessionCardIds([]);
                 setSessionComplete(false);
                 setCurrentIndex(0);
                 setIsFlipped(false);
@@ -348,9 +363,12 @@ function ReviewPage() {
           <div className="flex justify-center gap-3">
             <button
               onClick={() => {
+                // Bug fix: also increment doneCount on skip so progress bar is accurate
                 const next = currentIndex + 1;
-                if (next >= allCards.length) {
+                setDoneCount((d) => d + 1);
+                if (next >= sessionCardIds.length) {
                   setSessionComplete(true);
+                  setSessionCardIds([]);
                 } else {
                   setCurrentIndex(next);
                   setIsFlipped(false);
@@ -362,8 +380,26 @@ function ReviewPage() {
             </button>
             <button
               onClick={async () => {
+                // Bug fix: adjust index after deletion so we don't land on undefined
+                const deletedIndex = currentIndex;
                 await deleteMutation.mutateAsync(currentCard.id);
                 toast.success("Card deleted");
+                // Remove from session list
+                const newIds = sessionCardIds.filter((_, i) => i !== deletedIndex);
+                setSessionCardIds(newIds);
+                if (newIds.length === 0 || deletedIndex >= newIds.length) {
+                  // Deleted the last card in session
+                  if (newIds.length === 0) {
+                    setSessionComplete(true);
+                    setSessionCardIds([]);
+                  } else {
+                    // Stay at same index (now pointing to next card)
+                    setCurrentIndex(newIds.length - 1);
+                    setIsFlipped(false);
+                  }
+                } else {
+                  setIsFlipped(false);
+                }
               }}
               className="text-xs text-muted-foreground hover:text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors flex items-center gap-1"
             >
