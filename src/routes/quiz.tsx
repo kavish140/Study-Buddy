@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, RotateCcw, Check, X } from "lucide-react";
-import { uid, type SavedQuiz, type QuizQuestion } from "@/lib/storage";
+import { uid, XP_REWARDS, type SavedQuiz, type QuizQuestion } from "@/lib/storage";
 import { generateQuiz } from "@/lib/ai.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -75,16 +75,21 @@ function QuizPage() {
     }
   };
 
-  const saveScore = (id: string, score: number) => {
-    const q = quizzes.find((x) => x.id === id);
-    if (q) saveMutation.mutate({ ...q, score });
+  const saveScore = (quiz: SavedQuiz, score: number) => {
+    // Use the quiz object directly rather than looking it up from the cached list,
+    // since the cache may not have refreshed yet for newly-generated quizzes.
+    saveMutation.mutate({ ...quiz, score });
+
+    // Award XP for correct answers (fire-and-forget; non-blocking).
+    const isPerfect = score === quiz.questions.length;
+    api.awardXP(score * XP_REWARDS.quiz_correct, { quizPerfect: isPerfect }).catch(() => {});
   };
 
   if (active) {
     return (
       <QuizRunner
         quiz={active}
-        onFinish={(s) => saveScore(active.id, s)}
+        onFinish={(s) => saveScore(active, s)}
         onClose={() => setActive(null)}
       />
     );

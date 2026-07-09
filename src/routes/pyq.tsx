@@ -142,9 +142,10 @@ function PYQPage() {
         question: q.question,
         question_type: "mcq",
         options: q.options,
-        answer: q.answerIndex !== undefined && q.answerIndex >= 0
-          ? (q.options?.[q.answerIndex] ?? q.answer ?? "")
-          : (q.answer ?? ""),
+        answer:
+          q.answerIndex !== undefined && q.answerIndex >= 0
+            ? (q.options?.[q.answerIndex] ?? q.answer ?? "")
+            : (q.answer ?? ""),
         explanation: q.explanation,
         difficulty: (difficulty || "hard") as "easy" | "medium" | "hard",
         tags: [topic.trim(), subjectLabel],
