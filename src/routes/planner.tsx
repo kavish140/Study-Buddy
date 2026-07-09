@@ -34,7 +34,11 @@ export const Route = createFileRoute("/planner")({
 function dayKey(offsetDays: number) {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
+  // Use local date parts to avoid UTC vs local timezone mismatch
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 function PlannerPage() {
@@ -55,7 +59,21 @@ function PlannerPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, done }: { id: string; done: boolean }) => api.updatePlanItem(id, done),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["plan"] }),
+    // Optimistic update: flip the item immediately in the cache
+    onMutate: async ({ id, done }) => {
+      await queryClient.cancelQueries({ queryKey: ["plan"] });
+      const previous = queryClient.getQueryData<PlanItem[]>(["plan"]);
+      queryClient.setQueryData<PlanItem[]>(["plan"], (old) =>
+        (old ?? []).map((item) => (item.id === id ? { ...item, done } : item)),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      // Roll back on failure
+      if (context?.previous) queryClient.setQueryData(["plan"], context.previous);
+      toast.error("Failed to update task");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["plan"] }),
   });
 
   const deleteMutation = useMutation({
@@ -88,6 +106,10 @@ function PlannerPage() {
       const next: PlanItem[] = res.plan.flatMap((d) =>
         d.tasks.map((t) => ({ id: uid(), date: dayKey(d.day - 1), task: t, done: false })),
       );
+      // Bug fix: clear the existing plan before saving the new one so that
+      // re-generating does not accumulate duplicate tasks from previous runs.
+      await api.clearPlan();
+      queryClient.setQueryData(["plan"], []);
       await saveMutation.mutateAsync(next);
       toast.success(`Plan ready: ${next.length} tasks across ${res.plan.length} days`);
     } catch (e) {
@@ -212,7 +234,7 @@ function PlannerPage() {
                   {items.map((it) => (
                     <label
                       key={it.id}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 group"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 group cursor-pointer"
                     >
                       <Checkbox checked={it.done} onCheckedChange={() => toggle(it.id)} />
                       <span
@@ -220,9 +242,16 @@ function PlannerPage() {
                       >
                         {it.task}
                       </span>
+                      {/* Bug fix: stopPropagation prevents the label click from also
+                          triggering the checkbox toggle when the delete button is clicked */}
                       <button
-                        onClick={() => remove(it.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          remove(it.id);
+                        }}
                         className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                        aria-label="Delete task"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

@@ -102,6 +102,15 @@ export const api = {
     const { error } = await supabase.from("plan_items").delete().eq("id", id);
     if (error) throw error;
   },
+  // Clears all plan items for the current user — called before re-generating a plan
+  // so that existing tasks are not accumulated on top of the new AI-generated ones.
+  clearPlan: async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { error } = await supabase.from("plan_items").delete().eq("user_id", user_id);
+    if (error) throw error;
+  },
 
   // Notes
   getNotes: async () => {
