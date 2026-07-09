@@ -56,13 +56,20 @@ function NotesPage() {
         id: uid(),
         topic: topic.trim(),
         summary: res.summary,
-        flashcards: res.flashcards,
+        // Ensure flashcards is always an array even if the AI omits it
+        flashcards: Array.isArray(res.flashcards) ? res.flashcards : [],
         createdAt: Date.now(),
       };
-      await saveMutation.mutateAsync(note);
-      setTopic("");
-      toast.success("Notes generated");
+      // Use mutate (not mutateAsync) so the mutation's onError handler is the
+      // single place that shows the error toast — prevents duplicate toasts.
+      saveMutation.mutate(note, {
+        onSuccess: () => {
+          setTopic("");
+          toast.success("Notes generated");
+        },
+      });
     } catch (e) {
+      // Only AI-generation errors reach here (saveMutation errors are handled by onError)
       toast.error(e instanceof Error ? e.message : "Failed to generate notes");
     } finally {
       setLoading(false);
@@ -123,8 +130,11 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const total = note.flashcards.length;
-  const card = note.flashcards[idx];
+  const card = total > 0 ? note.flashcards[idx] : null;
+
+  // Reset revealed state whenever the active card index changes
   const next = () => {
+    if (total === 0) return;
     setRevealed(false);
     setIdx((i) => (i + 1) % total);
   };
@@ -142,24 +152,34 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
       </div>
 
       <div className="mt-5">
-        <div className="text-xs text-muted-foreground mb-2">
-          Flashcard {idx + 1} / {total}
-        </div>
-        <button
-          onClick={() => setRevealed((r) => !r)}
-          className="w-full text-left p-5 rounded-2xl glass-subtle hover:border-primary/30 transition-all min-h-32"
-        >
-          <div className="text-xs uppercase tracking-wide text-primary mb-2">
-            {revealed ? "Answer" : "Question"}
+        {total === 0 ? (
+          // Guard: render a placeholder if the AI returned no flashcards
+          <div className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl">
+            <BookOpen className="h-5 w-5 mx-auto mb-2 opacity-50" />
+            No flashcards available for this note.
           </div>
-          <div className="text-base">{revealed ? card.a : card.q}</div>
-          {!revealed && <div className="text-xs text-muted-foreground mt-3">Tap to reveal</div>}
-        </button>
-        <div className="flex justify-end mt-3">
-          <Button variant="secondary" size="sm" onClick={next}>
-            <RotateCw className="h-3.5 w-3.5 mr-1" /> Next
-          </Button>
-        </div>
+        ) : (
+          <>
+            <div className="text-xs text-muted-foreground mb-2">
+              Flashcard {idx + 1} / {total}
+            </div>
+            <button
+              onClick={() => setRevealed((r) => !r)}
+              className="w-full text-left p-5 rounded-2xl glass-subtle hover:border-primary/30 transition-all min-h-32"
+            >
+              <div className="text-xs uppercase tracking-wide text-primary mb-2">
+                {revealed ? "Answer" : "Question"}
+              </div>
+              <div className="text-base">{revealed ? card!.a : card!.q}</div>
+              {!revealed && <div className="text-xs text-muted-foreground mt-3">Tap to reveal</div>}
+            </button>
+            <div className="flex justify-end mt-3">
+              <Button variant="secondary" size="sm" onClick={next}>
+                <RotateCw className="h-3.5 w-3.5 mr-1" /> Next
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

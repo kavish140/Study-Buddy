@@ -117,7 +117,7 @@ export const api = {
     const { data, error } = await supabase
       .from("notes")
       .select("*")
-      .order("createdAt", { ascending: false });
+      .order("created_at", { ascending: false });
     if (error) throw error;
     return (data as Note[]) || [];
   },
@@ -135,7 +135,14 @@ export const api = {
     return data;
   },
   deleteNote: async (id: string) => {
-    const { error } = await supabase.from("notes").delete().eq("id", id);
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { error } = await supabase
+      .from("notes")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user_id);
     if (error) throw error;
   },
 
