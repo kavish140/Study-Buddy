@@ -242,9 +242,12 @@ function SyllabusPage() {
     },
   };
 
+  // jee-advanced shares the same broad topic list as jee-main
+  const resolvedExamId =
+    profile?.exam_id === "jee-advanced" ? "jee-main" : profile?.exam_id ?? "";
   const classTopics =
-    isJeeNeet && classFilter && CLASS_TOPICS[profile!.exam_id]
-      ? CLASS_TOPICS[profile!.exam_id][classFilter]
+    isJeeNeet && classFilter && CLASS_TOPICS[resolvedExamId]
+      ? CLASS_TOPICS[resolvedExamId][classFilter]
       : null;
 
   const saveMutation = useMutation({
@@ -414,16 +417,20 @@ function SyllabusPage() {
               placeholder="e.g. Calculus II"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  addSubject(newSubject);
-                  setNewSubject("");
+                  if (newSubject.trim()) {
+                    addSubject(newSubject);
+                    setNewSubject("");
+                  }
                 }
               }}
             />
             <Button
               variant="secondary"
               onClick={() => {
-                addSubject(newSubject);
-                setNewSubject("");
+                if (newSubject.trim()) {
+                  addSubject(newSubject);
+                  setNewSubject("");
+                }
               }}
             >
               <Plus className="h-4 w-4" />
@@ -500,9 +507,12 @@ function SubjectCard({
       </div>
       <div className="mt-4 space-y-1.5">
         {subject.topics.map((t) => (
-          <label
+          // Use div instead of label to prevent the trash-icon click from also
+          // triggering the implicit label→checkbox toggle (label+button interaction bug).
+          <div
             key={t.id}
             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 cursor-pointer group"
+            onClick={() => onToggle(subject.id, t.id)}
           >
             <Checkbox checked={t.done} onCheckedChange={() => onToggle(subject.id, t.id)} />
             <span className={t.done ? "line-through text-muted-foreground flex-1" : "flex-1"}>
@@ -510,14 +520,14 @@ function SubjectCard({
             </span>
             <button
               onClick={(e) => {
-                e.preventDefault();
+                e.stopPropagation();
                 onRemoveTopic(subject.id, t.id);
               }}
               className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
-          </label>
+          </div>
         ))}
       </div>
       <div className="flex gap-2 mt-3">
@@ -527,16 +537,20 @@ function SubjectCard({
           placeholder="Add a topic…"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              onAddTopic(subject.id, topic);
-              setTopic("");
+              if (topic.trim()) {
+                onAddTopic(subject.id, topic);
+                setTopic("");
+              }
             }
           }}
         />
         <Button
           variant="secondary"
           onClick={() => {
-            onAddTopic(subject.id, topic);
-            setTopic("");
+            if (topic.trim()) {
+              onAddTopic(subject.id, topic);
+              setTopic("");
+            }
           }}
         >
           <Plus className="h-4 w-4" />
