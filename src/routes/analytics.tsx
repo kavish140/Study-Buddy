@@ -14,12 +14,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -99,15 +96,18 @@ function computeTopicMastery(
     { subject: string; topic: string; correct: number; total: number }
   >();
 
-  // From performance logs (primary source)
+  // From performance logs (primary source) — accumulate, not overwrite
   perfLogs.forEach((log) => {
     const key = `${log.subject}::${log.topic}`;
-    topicMap.set(key, {
+    const existing = topicMap.get(key) || {
       subject: log.subject,
       topic: log.topic,
-      correct: log.correct_count,
-      total: log.question_count,
-    });
+      correct: 0,
+      total: 0,
+    };
+    existing.correct += log.correct_count;
+    existing.total += log.question_count;
+    topicMap.set(key, existing);
   });
 
   // From quizzes (topic-level)
@@ -176,25 +176,32 @@ function AnalyticsPage() {
 
   // Overall stats
   const completedMocks = mockTests.filter((t) => t.status === "completed");
-  const totalQuizzes = quizzes.length;
+  // Only count quizzes that have been attempted (have a score)
+  const attemptedQuizzes = quizzes.filter((q) => q.score !== undefined && q.score !== null);
+  const totalQuizzes = attemptedQuizzes.length;
   const totalMocks = completedMocks.length;
   const totalQuestions =
-    quizzes.reduce((s, q) => s + q.questions.length, 0) +
+    attemptedQuizzes.reduce((s, q) => s + q.questions.length, 0) +
     completedMocks.reduce(
       (s, t) => s + t.sections.reduce((ss, sec) => ss + sec.questions.length, 0),
       0,
     );
 
-  const overallAccuracy = topicData.length
-    ? Math.round(
-        (topicData.reduce((s, t) => s + t.correct, 0) /
-          Math.max(
-            1,
-            topicData.reduce((s, t) => s + t.total, 0),
-          )) *
-          100,
-      )
-    : 0;
+  // Compute overall accuracy from topicData if available, else fall back to quiz scores
+  const overallAccuracy = (() => {
+    if (topicData.length > 0) {
+      const totalCorrect = topicData.reduce((s, t) => s + t.correct, 0);
+      const totalAttempted = topicData.reduce((s, t) => s + t.total, 0);
+      return totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
+    }
+    // Fallback: compute from raw quiz scores
+    if (attemptedQuizzes.length > 0) {
+      const totalCorrect = attemptedQuizzes.reduce((s, q) => s + (q.score ?? 0), 0);
+      const totalAttempted = attemptedQuizzes.reduce((s, q) => s + q.questions.length, 0);
+      return totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0;
+    }
+    return 0;
+  })();
 
   const recentScores = trendData.slice(-5);
   const trend =
@@ -210,7 +217,7 @@ function AnalyticsPage() {
     subjectGroups.set(t.subject, arr);
   });
 
-  const hasData = totalQuizzes > 0 || totalMocks > 0;
+  const hasData = totalQuizzes > 0 || totalMocks > 0 || trendData.length > 0;
 
   return (
     <div className="relative min-h-full">
