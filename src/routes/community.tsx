@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { streamChat } from "@/lib/ai.functions";
@@ -43,6 +43,12 @@ const EXAMS = [
   { id: "upsc", label: "UPSC" },
   { id: "cat", label: "CAT" },
 ];
+
+/** Bug fix #3: Resolve a raw exam slug to its human-readable display label. */
+function examLabel(examId?: string): string {
+  if (!examId) return "";
+  return EXAMS.find((e) => e.id === examId)?.label ?? examId.toUpperCase();
+}
 
 function timeAgo(iso?: string) {
   if (!iso) return "";
@@ -175,7 +181,7 @@ function CommunityPage() {
                   <div className="flex flex-wrap gap-1.5 mb-1">
                     {post.exam_id && (
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                        {EXAMS.find((e) => e.id === post.exam_id)?.label || post.exam_id}
+                        {examLabel(post.exam_id)}
                       </span>
                     )}
                     {post.subject && (
@@ -228,8 +234,11 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiAnswer, setAiAnswer] = useState("");
+  // Bug fix #1: track upvote state to show interactive feedback
+  const [upvoted, setUpvoted] = useState(false);
+  const [upvoting, setUpvoting] = useState(false);
 
-  const { data: post } = useQuery({
+  const { data: post, isLoading: postLoading } = useQuery({
     queryKey: ["forumPost", postId],
     queryFn: () => api.getForumPost(postId),
   });
@@ -238,7 +247,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
     queryFn: () => api.getForumReplies(postId),
   });
 
-  const handleReply = async () => {
+  const handleReply = useCallback(async () => {
     if (!reply.trim()) return;
     setSubmitting(true);
     try {
@@ -246,10 +255,46 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
       setReply("");
       qc.invalidateQueries({ queryKey: ["forumReplies", postId] });
       qc.invalidateQueries({ queryKey: ["forumPosts"] });
+      qc.invalidateQueries({ queryKey: ["forumPost", postId] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to post reply");
     } finally {
       setSubmitting(false);
+    }
+  }, [reply, postId, qc]);
+
+  // Bug fix #4: Ctrl+Enter / Cmd+Enter submits the reply
+  const handleReplyKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      handleReply();
+    }
+  };
+
+  // Bug fix #1: upvote the post
+  const handleUpvote = async () => {
+    if (upvoted || upvoting || !post) return;
+    setUpvoting(true);
+    try {
+      await api.upvotePost(post.id);
+      setUpvoted(true);
+      qc.invalidateQueries({ queryKey: ["forumPost", postId] });
+      qc.invalidateQueries({ queryKey: ["forumPosts"] });
+    } catch (e) {
+      toast.error("Failed to upvote");
+    } finally {
+      setUpvoting(false);
+    }
+  };
+
+  // Bug fix #2: accept a reply as the correct answer
+  const handleAcceptReply = async (replyId: string) => {
+    try {
+      await api.acceptReply(replyId);
+      qc.invalidateQueries({ queryKey: ["forumReplies", postId] });
+      toast.success("Reply marked as accepted!");
+    } catch (e) {
+      toast.error("Failed to accept reply");
     }
   };
 
@@ -271,12 +316,26 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
     }
   };
 
-  if (!post)
+  // Bug fix #6: separate loading spinner from "post not found" state
+  if (postLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     );
+  }
+
+  if (!post) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <MessageSquare className="h-12 w-12 text-muted-foreground/30" />
+        <p className="text-muted-foreground">Post not found or has been deleted.</p>
+        <Button variant="outline" onClick={onBack}>
+          <ChevronLeft className="h-4 w-4 mr-1" /> Back to community
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto">
@@ -292,7 +351,8 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
         <div className="flex flex-wrap gap-1.5 mb-3">
           {post.exam_id && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-              {post.exam_id.toUpperCase()}
+              {/* Bug fix #3: use examLabel() instead of raw .toUpperCase() on the slug */}
+              {examLabel(post.exam_id)}
             </span>
           )}
           {post.subject && (
@@ -307,9 +367,25 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
           {post.content}
         </p>
         <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border">
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <ThumbsUp className="h-3.5 w-3.5" /> {post.upvotes} upvotes
-          </div>
+          {/* Bug fix #1: upvote button is now interactive */}
+          <button
+            onClick={handleUpvote}
+            disabled={upvoted || upvoting}
+            title={upvoted ? "Already upvoted" : "Upvote this post"}
+            className={cn(
+              "flex items-center gap-1.5 text-sm transition-colors",
+              upvoted
+                ? "text-primary cursor-default"
+                : "text-muted-foreground hover:text-primary cursor-pointer",
+            )}
+          >
+            {upvoting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ThumbsUp className={cn("h-3.5 w-3.5", upvoted && "fill-primary")} />
+            )}
+            {(post.upvotes ?? 0) + (upvoted ? 1 : 0)} upvotes
+          </button>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <MessageSquare className="h-3.5 w-3.5" /> {replies.length} replies
           </div>
@@ -370,6 +446,16 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
                 {r.upvotes}
               </span>
               <span>{timeAgo(r.created_at)}</span>
+              {/* Bug fix #2: Accept reply button */}
+              {!r.is_accepted && (
+                <button
+                  onClick={() => handleAcceptReply(r.id)}
+                  className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-emerald-400 transition-colors"
+                  title="Mark as accepted answer"
+                >
+                  <CheckCircle2 className="h-3 w-3" /> Accept
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -381,7 +467,8 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
         <textarea
           value={reply}
           onChange={(e) => setReply(e.target.value)}
-          placeholder="Share your solution or thoughts…"
+          onKeyDown={handleReplyKeyDown}
+          placeholder="Share your solution or thoughts… (Ctrl+Enter to submit)"
           rows={4}
           className="w-full glass-subtle rounded-xl px-4 py-3 text-sm bg-transparent outline-none resize-none placeholder:text-muted-foreground mb-3"
         />
