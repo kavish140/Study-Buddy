@@ -138,11 +138,7 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { error } = await supabase
-      .from("notes")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", user_id);
+    const { error } = await supabase.from("notes").delete().eq("id", id).eq("user_id", user_id);
     if (error) throw error;
   },
 
@@ -487,14 +483,22 @@ export const api = {
     return { stats: updated as UserStats, newBadges };
   },
 
-  getLeaderboard: async (): Promise<(UserStats & { display_name?: string })[]> => {
+  getLeaderboard: async (): Promise<UserStats[]> => {
     const { data, error } = await supabase
       .from("user_stats")
       .select("*")
       .order("xp", { ascending: false })
       .limit(50);
     if (error) throw error;
-    return (data as UserStats[]) || [];
+    // Normalise rows so xp/level are never undefined (DB may have NULLs)
+    return ((data as UserStats[]) || []).map((row) => ({
+      ...row,
+      xp: row.xp ?? 0,
+      level: row.level ?? 1,
+      current_streak: row.current_streak ?? 0,
+      longest_streak: row.longest_streak ?? 0,
+      badges: row.badges ?? [],
+    }));
   },
 
   // ── PYQ Bank ─────────────────────────────────────────────────────

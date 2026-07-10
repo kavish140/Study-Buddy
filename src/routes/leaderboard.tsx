@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
-import { xpForNextLevel, BADGE_DEFS, type UserStats } from "@/lib/storage";
+import { xpForNextLevel } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { Trophy, Flame, Star, Crown, Zap } from "lucide-react";
 import { useTutorial } from "@/components/TutorialProvider";
@@ -54,7 +54,7 @@ function LeaderboardPage() {
 
   useEffect(() => {
     triggerPageTour("leaderboard");
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [triggerPageTour]);
 
   const myRank = board.findIndex((r) => r.user_id === user?.id) + 1;
 
@@ -135,7 +135,7 @@ function LeaderboardPage() {
           : board.map((entry, idx) => {
               const rank = idx + 1;
               const isMe = entry.user_id === user?.id;
-              const { pct } = xpForNextLevel(entry.xp);
+              const { pct } = xpForNextLevel(entry.xp ?? 0);
               const badgeCount = entry.badges?.length ?? 0;
 
               return (
