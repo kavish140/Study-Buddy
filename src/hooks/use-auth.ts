@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
@@ -6,17 +6,27 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // Track whether the initial getSession call has already resolved so that
+  // the onAuthStateChange listener doesn't race with it and cause a flicker.
+  const initialLoadDone = useRef(false);
 
   useEffect(() => {
+    // Seed initial state from the persisted session.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      if (!initialLoadDone.current) {
+        initialLoadDone.current = true;
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      // If this fires before getSession resolves (race), it becomes the
+      // authoritative initial load result; mark it done so getSession skips.
+      initialLoadDone.current = true;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

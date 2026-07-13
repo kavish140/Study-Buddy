@@ -244,7 +244,7 @@ function SyllabusPage() {
 
   // jee-advanced shares the same broad topic list as jee-main
   const resolvedExamId =
-    profile?.exam_id === "jee-advanced" ? "jee-main" : profile?.exam_id ?? "";
+    profile?.exam_id === "jee-advanced" ? "jee-main" : (profile?.exam_id ?? "");
   const classTopics =
     isJeeNeet && classFilter && CLASS_TOPICS[resolvedExamId]
       ? CLASS_TOPICS[resolvedExamId][classFilter]

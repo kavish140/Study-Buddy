@@ -185,7 +185,7 @@ export function AppLayout() {
     );
   }
 
-  if (!user && path !== "/login") return null;
+  if (!user && path !== "/login" && path !== "/onboarding") return null;
 
   const isActive = (to: string) => (to === "/" ? path === "/" : path.startsWith(to));
 
@@ -479,12 +479,12 @@ export function AppLayout() {
                 </div>
                 <button
                   onClick={async () => {
+                    setMoreOpen(false);
                     try {
                       await signOut();
                     } finally {
                       navigate({ to: "/login" });
                     }
-                    setMoreOpen(false);
                   }}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
