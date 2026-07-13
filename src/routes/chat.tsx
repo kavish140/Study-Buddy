@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { formatTimeIST } from "@/lib/date-utils";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
@@ -994,9 +995,7 @@ function MessageBubble({
   const isUser = message.role === "user";
   const [showTime, setShowTime] = useState(false);
 
-  const timeStr = message.timestamp
-    ? new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    : null;
+  const timeStr = message.timestamp ? formatTimeIST(message.timestamp) : null;
 
   return (
     <div

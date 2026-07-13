@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { api } from "@/lib/api";
 import { getExamById } from "@/lib/exam-catalog";
+import { todayIST, formatDateIST, formatTimestampIST } from "@/lib/date-utils";
 import { useTutorial } from "@/components/TutorialProvider";
 import {
   BarChart3,
@@ -50,7 +51,7 @@ function computeQuizTrend(quizzes: SavedQuiz[], mockTests: MockTest[]) {
     if (!total) return;
     const pct = Math.round((q.score / total) * 100);
     entries.push({
-      date: new Date(q.createdAt).toISOString().slice(0, 10),
+      date: new Date(q.createdAt).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }),
       score: pct,
       type: "quiz",
     });
@@ -61,7 +62,9 @@ function computeQuizTrend(quizzes: SavedQuiz[], mockTests: MockTest[]) {
     .forEach((t) => {
       const pct = Math.round(((t.score ?? 0) / t.total_marks!) * 100);
       entries.push({
-        date: (t.created_at ?? new Date().toISOString()).slice(0, 10),
+        date: t.created_at
+          ? new Date(t.created_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" })
+          : todayIST(),
         score: pct,
         type: "mock",
       });
@@ -78,10 +81,7 @@ function computeQuizTrend(quizzes: SavedQuiz[], mockTests: MockTest[]) {
   });
 
   return Array.from(grouped.entries()).map(([date, scores]) => ({
-    date: new Date(date + "T00:00:00").toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    }),
+    date: formatDateIST(date, { month: "short", day: "numeric" }),
     score: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
   }));
 }
@@ -508,7 +508,13 @@ function AnalyticsPage() {
                           <div className="text-sm font-medium">{t.exam_name}</div>
                           <div className="text-xs text-muted-foreground">
                             {t.score}/{t.total_marks} · {mins}m ·{" "}
-                            {t.created_at ? new Date(t.created_at).toLocaleDateString() : ""}
+                            {t.created_at
+                              ? formatTimestampIST(t.created_at, {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : ""}
                           </div>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">

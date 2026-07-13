@@ -4,6 +4,7 @@ import { useEffect, useState, type ComponentType } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { xpForNextLevel, BADGE_DEFS } from "@/lib/storage";
+import { todayIST } from "@/lib/date-utils";
 import {
   BookOpen,
   Brain,
@@ -126,7 +127,7 @@ export function AppLayout() {
   // Award daily login XP once per day, scoped to the current user to avoid cross-user leakage
   useEffect(() => {
     if (!user) return;
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayIST();
     // Key includes user.id so two users on the same browser each get their XP
     const todayKey = `aceprep_login_${user.id}_${today}`;
     if (!localStorage.getItem(todayKey)) {

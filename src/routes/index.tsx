@@ -19,6 +19,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getExamById } from "@/lib/exam-catalog";
+import { daysUntilIST, todayIST } from "@/lib/date-utils";
 import { xpForNextLevel } from "@/lib/storage";
 import { useTutorial } from "@/components/TutorialProvider";
 import { useEffect } from "react";
@@ -61,12 +62,7 @@ function Dashboard() {
   }, [profile?.onboarding_completed]);
 
   const examInfo = profile?.exam_id ? getExamById(profile.exam_id) : null;
-  const daysRemaining = profile?.target_date
-    ? Math.max(
-        0,
-        Math.ceil((new Date(profile.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-      )
-    : null;
+  const daysRemaining = daysUntilIST(profile?.target_date);
 
   const totalTopics = subjects.reduce((s, x) => s + x.topics.length, 0);
   const doneTopics = subjects.reduce((s, x) => s + x.topics.filter((t) => t.done).length, 0);
@@ -75,7 +71,7 @@ function Dashboard() {
     ? Math.round((quizzes.reduce((s, q) => s + (q.score ?? 0), 0) / quizzes.length) * 100) / 100
     : 0;
 
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = todayIST();
   const todayItems = plan.filter((p) => p.date === todayKey);
   const todayDone = todayItems.filter((p) => p.done).length;
 

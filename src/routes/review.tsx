@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { todayIST } from "@/lib/date-utils";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -449,7 +450,7 @@ function AddCardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         ease_factor: 2.5,
         interval_days: 1,
         repetitions: 0,
-        next_review: new Date().toISOString().split("T")[0],
+        next_review: todayIST(),
       });
       toast.success("Card added!");
       onSaved();

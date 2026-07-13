@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { todayIST, yesterdayIST, currentHourIST } from "./date-utils";
 import {
   Subject,
   SavedQuiz,
@@ -265,7 +266,7 @@ export const api = {
     return (data as ReviewCard[]) || [];
   },
   getDueReviewCards: async (): Promise<ReviewCard[]> => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayIST();
     const { data, error } = await supabase
       .from("review_cards")
       .select("*")
@@ -379,8 +380,8 @@ export const api = {
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
-    const today = new Date().toISOString().split("T")[0];
-    const hour = new Date().getHours();
+    const today = todayIST();
+    const hour = currentHourIST();
 
     // Fetch or create current stats
     let { data: existing } = await supabase
@@ -424,9 +425,7 @@ export const api = {
     const cur = existing as UserStats;
 
     // Streak logic
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yStr = yesterday.toISOString().split("T")[0];
+    const yStr = yesterdayIST();
     let newStreak = cur.current_streak;
     if (cur.last_active_date === today) {
       newStreak = cur.current_streak; // already active today

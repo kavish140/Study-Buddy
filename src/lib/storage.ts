@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { todayIST } from "./date-utils";
 
 export function useLocalStorage<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(initial);
@@ -177,9 +178,9 @@ export function sm2(card: ReviewCard, rating: 0 | 1 | 3 | 5): Partial<ReviewCard
     repetitions += 1;
   }
 
-  const next = new Date();
+  const next = new Date(todayIST() + "T00:00:00");
   next.setDate(next.getDate() + interval_days);
-  const next_review = next.toISOString().split("T")[0];
+  const next_review = next.toLocaleDateString("en-CA"); // YYYY-MM-DD in IST
 
   return {
     ease_factor,

@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { todayIST, daysUntilIST, formatDateIST, minDateIST } from "@/lib/date-utils";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -57,7 +58,8 @@ function OnboardingPage() {
 
   const saveProfileMutation = useMutation({
     mutationFn: api.saveUserProfile,
-    onError: (error) => toast.error(error.message || "Operation failed"),
+    // No onError here: mutateAsync re-throws, so the outer catch in handleFinish
+    // handles the toast — avoiding a double-toast.
     onSuccess: (data) => {
       queryClient.setQueryData(["userProfile"], data);
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
@@ -66,7 +68,7 @@ function OnboardingPage() {
 
   const saveSubjectMutation = useMutation({
     mutationFn: api.saveSubject,
-    onError: (error) => toast.error(error.message || "Operation failed"),
+    // No onError here: errors propagate to handleFinish's outer catch.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subjects"] }),
   });
 
@@ -103,18 +105,19 @@ function OnboardingPage() {
         onboarding_completed: true,
       });
 
-      // 2. Create subjects from exam syllabus
+      // 2. Create subjects from exam syllabus — saved in parallel for speed.
       const examSubjects = selectedExam.subjects.filter((s) => selectedSubjects.includes(s.name));
-      for (let i = 0; i < examSubjects.length; i++) {
-        const es = examSubjects[i];
-        const subject: Subject = {
-          id: uid(),
-          name: es.name,
-          color: SUBJECT_COLORS[i % SUBJECT_COLORS.length],
-          topics: es.topics.map((t) => ({ id: uid(), name: t, done: false })),
-        };
-        await saveSubjectMutation.mutateAsync(subject);
-      }
+      await Promise.all(
+        examSubjects.map((es, i) => {
+          const subject: Subject = {
+            id: uid(),
+            name: es.name,
+            color: SUBJECT_COLORS[i % SUBJECT_COLORS.length],
+            topics: es.topics.map((t) => ({ id: uid(), name: t, done: false })),
+          };
+          return saveSubjectMutation.mutateAsync(subject);
+        }),
+      );
 
       // 3. Generate initial plan if target date is set
       if (targetDate) {
@@ -122,18 +125,15 @@ function OnboardingPage() {
           const topics = examSubjects
             .flatMap((s) => s.topics.map((t) => `${s.name}: ${t}`))
             .slice(0, 40);
-          const daysUntil = Math.max(
-            1,
-            Math.ceil((new Date(targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-          );
+          const daysUntil = Math.max(1, daysUntilIST(targetDate) ?? 1);
           const planDays = Math.min(daysUntil, 14);
           const res = await generatePlan({ data: { topics, days: planDays } });
           const planItems = res.plan.flatMap((d: { day: number; tasks: string[] }) => {
-            const date = new Date();
-            date.setDate(date.getDate() + d.day - 1);
+            const base = new Date(todayIST() + "T00:00:00");
+            base.setDate(base.getDate() + d.day - 1);
             return d.tasks.map((t: string) => ({
               id: uid(),
-              date: date.toISOString().slice(0, 10),
+              date: base.toLocaleDateString("en-CA"), // YYYY-MM-DD
               task: t,
               done: false,
             }));
@@ -156,9 +156,7 @@ function OnboardingPage() {
     }
   };
 
-  const daysRemaining = targetDate
-    ? Math.max(0, Math.ceil((new Date(targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : null;
+  const daysRemaining = daysUntilIST(targetDate);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-background">
@@ -360,7 +358,7 @@ function OnboardingPage() {
                 type="date"
                 value={targetDate}
                 onChange={(e) => setTargetDate(e.target.value)}
-                min={new Date().toISOString().slice(0, 10)}
+                min={minDateIST()}
                 className="text-base"
               />
 
@@ -403,7 +401,7 @@ function OnboardingPage() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Target date</span>
                     <span className="font-medium">
-                      {new Date(targetDate + "T00:00:00").toLocaleDateString(undefined, {
+                      {formatDateIST(targetDate, {
                         month: "long",
                         day: "numeric",
                         year: "numeric",

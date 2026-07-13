@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { todayIST } from "@/lib/date-utils";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -92,7 +93,7 @@ function FocusPage() {
 
   const todaySessions = allSessions.filter((s) => {
     const date = s.started_at?.split("T")[0];
-    return date === new Date().toISOString().split("T")[0] && s.completed;
+    return date === todayIST() && s.completed;
   });
   const totalFocusMinutes = todaySessions.reduce((sum, s) => sum + s.duration_minutes, 0);
 

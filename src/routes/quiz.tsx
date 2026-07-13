@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { todayIST } from "@/lib/date-utils";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, RotateCcw, Check, X } from "lucide-react";
@@ -219,7 +220,7 @@ function QuizRunner({
         ease_factor: 2.5,
         interval_days: 1,
         repetitions: 0,
-        next_review: new Date().toISOString().split("T")[0],
+        next_review: todayIST(),
       }));
     if (wrongCards.length > 0) {
       api.saveReviewCards(wrongCards).catch(() => {});

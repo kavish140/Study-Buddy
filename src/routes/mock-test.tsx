@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { todayIST, formatTimestampIST } from "@/lib/date-utils";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import {
@@ -86,7 +87,7 @@ function MockTestPage() {
           ease_factor: 2.5,
           interval_days: 1,
           repetitions: 0,
-          next_review: new Date().toISOString().split("T")[0],
+          next_review: todayIST(),
         }));
       if (wrongCards.length > 0) {
         api.saveReviewCards(wrongCards).catch(() => {});
@@ -331,9 +332,7 @@ function SetupScreen({
                         {mins}m
                       </span>
                       <span>·</span>
-                      <span>
-                        {test.created_at ? new Date(test.created_at).toLocaleDateString() : ""}
-                      </span>
+                      <span>{test.created_at ? formatTimestampIST(test.created_at) : ""}</span>
                     </div>
                   </div>
                 </div>
