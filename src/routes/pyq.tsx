@@ -343,7 +343,7 @@ function PYQPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3" data-tour="tour-pyq-results">
           <p className="text-sm text-muted-foreground">
             {questions.length} question{questions.length !== 1 ? "s" : ""} found
           </p>

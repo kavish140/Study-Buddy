@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
 import type { ReactNode } from "react";
 
 export interface TourStep {
@@ -369,6 +369,10 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const activeTour = activeTourId ? (ALL_TOURS.find((t) => t.id === activeTourId) ?? null) : null;
   const isActive = !!activeTour;
 
+  // Keep a ref so callbacks (nextStep etc.) always see the latest tour without re-creating
+  const activeTourRef = useRef(activeTour);
+  useEffect(() => { activeTourRef.current = activeTour; }, [activeTour]);
+
   const markCompleted = useCallback((tourId: string) => {
     setCompletedTours((prev) => {
       const next = [...new Set([...prev, tourId])];
@@ -383,15 +387,18 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const nextStep = useCallback(() => {
-    if (!activeTour) return;
-    if (currentStepIndex >= activeTour.steps.length - 1) {
-      markCompleted(activeTour.id);
-      setActiveTourId(null);
-      setCurrentStepIndex(0);
-    } else {
-      setCurrentStepIndex((i) => i + 1);
-    }
-  }, [activeTour, currentStepIndex, markCompleted]);
+    const tour = activeTourRef.current;
+    if (!tour) return;
+    setCurrentStepIndex((i) => {
+      if (i >= tour.steps.length - 1) {
+        // Last step — end the tour
+        markCompleted(tour.id);
+        setActiveTourId(null);
+        return 0;
+      }
+      return i + 1;
+    });
+  }, [markCompleted]);
 
   const prevStep = useCallback(() => {
     setCurrentStepIndex((i) => Math.max(0, i - 1));

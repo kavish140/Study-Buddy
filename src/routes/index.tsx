@@ -21,8 +21,6 @@ import { api } from "@/lib/api";
 import { getExamById } from "@/lib/exam-catalog";
 import { daysUntilIST, todayIST } from "@/lib/date-utils";
 import { xpForNextLevel } from "@/lib/storage";
-import { useTutorial } from "@/components/TutorialProvider";
-import { useEffect } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,8 +37,6 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const { triggerPageTour } = useTutorial();
-
   const { data: subjects = [] } = useQuery({ queryKey: ["subjects"], queryFn: api.getSubjects });
   const { data: quizzes = [] } = useQuery({ queryKey: ["quizzes"], queryFn: api.getQuizzes });
   const { data: plan = [] } = useQuery({ queryKey: ["plan"], queryFn: api.getPlan });
@@ -53,13 +49,6 @@ function Dashboard() {
     queryFn: api.getDueReviewCards,
   });
 
-  // Auto-trigger global tour on dashboard for new users
-  useEffect(() => {
-    if (profile?.onboarding_completed) {
-      triggerPageTour("global");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.onboarding_completed]);
 
   const examInfo = profile?.exam_id ? getExamById(profile.exam_id) : null;
   const daysRemaining = daysUntilIST(profile?.target_date);

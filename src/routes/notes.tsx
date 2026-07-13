@@ -151,7 +151,7 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
         </Button>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-5" data-tour="tour-notes-flashcard">
         {total === 0 ? (
           // Guard: render a placeholder if the AI returned no flashcards
           <div className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HelpCircle, RefreshCw, Map, X } from "lucide-react";
 import { useTutorial, ALL_TOURS } from "./TutorialProvider";
 import { useRouterState } from "@tanstack/react-router";
@@ -34,6 +34,21 @@ export function HelpButton() {
     // Small delay so the menu closes first
     setTimeout(() => startTour(tourId), 100);
   };
+
+  // Keyboard shortcut: press '?' to toggle the help menu
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Ignore when user is typing in an input or contenteditable
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
+      if (e.key === "?") {
+        e.preventDefault();
+        setOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <div className="help-fab-container" data-tour="tour-help-button">

@@ -9,6 +9,9 @@ interface Rect {
   height: number;
 }
 
+/** How long to wait (ms) before auto-advancing past a step whose target element is missing. */
+const ELEMENT_NOT_FOUND_ADVANCE_DELAY = 600;
+
 const TOOLTIP_W = 320;
 const TOOLTIP_H_EST = 200; // estimated height for positioning math
 const PAD = 12; // padding around the spotlit element
@@ -58,18 +61,23 @@ export function TutorialOverlay() {
 
   const currentStep = activeTour?.steps[currentStepIndex];
 
-  const updatePosition = useCallback(() => {
-    if (!currentStep) return;
+  // Keep a ref to the latest currentStep so scroll/resize handlers don't capture stale values
+  const currentStepRef = useRef(currentStep);
+  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
 
-    if (!currentStep.target || currentStep.placement === "center") {
+  const updatePosition = useCallback(() => {
+    const step = currentStepRef.current;
+    if (!step) return;
+
+    if (!step.target || step.placement === "center") {
       setSpotlightRect(null);
       setTooltipPos(null);
       return;
     }
 
-    const el = document.querySelector(`[data-tour="${currentStep.target}"]`);
+    const el = document.querySelector(`[data-tour="${step.target}"]`);
     if (!el) {
-      // Element not found — advance automatically
+      // Element not found — clear spotlight but don't stall (auto-advance handled in useEffect)
       setSpotlightRect(null);
       setTooltipPos(null);
       return;
@@ -83,8 +91,8 @@ export function TutorialOverlay() {
       height: rect.height + PAD * 2,
     };
     setSpotlightRect(sr);
-    setTooltipPos(calcTooltipPos(sr, currentStep.placement ?? "bottom"));
-  }, [currentStep]);
+    setTooltipPos(calcTooltipPos(sr, step.placement ?? "bottom"));
+  }, []);
 
   useEffect(() => {
     if (!isActive || !currentStep) {
@@ -93,7 +101,8 @@ export function TutorialOverlay() {
       return;
     }
 
-    let t: NodeJS.Timeout | null = null;
+    let scrollTimer: NodeJS.Timeout | null = null;
+    let advanceTimer: NodeJS.Timeout | null = null;
 
     // If there's a target, scroll it into view first
     if (currentStep.target && currentStep.placement !== "center") {
@@ -101,26 +110,31 @@ export function TutorialOverlay() {
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
         // Wait for scroll animation then position
-        t = setTimeout(() => updatePosition(), 350);
+        scrollTimer = setTimeout(() => updatePosition(), 350);
       } else {
+        // Target element doesn't exist — auto-advance after a short delay
+        advanceTimer = setTimeout(() => nextStep(), ELEMENT_NOT_FOUND_ADVANCE_DELAY);
         updatePosition();
       }
     } else {
       updatePosition();
     }
 
-    const handleResize = () => {
+    const rafUpdate = () => {
       if (animFrame.current) cancelAnimationFrame(animFrame.current);
       animFrame.current = requestAnimationFrame(updatePosition);
     };
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", rafUpdate);
+    window.addEventListener("scroll", rafUpdate, { capture: true, passive: true });
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", rafUpdate);
+      window.removeEventListener("scroll", rafUpdate, { capture: true });
       if (animFrame.current) cancelAnimationFrame(animFrame.current);
-      if (t) clearTimeout(t);
+      if (scrollTimer) clearTimeout(scrollTimer);
+      if (advanceTimer) clearTimeout(advanceTimer);
     };
-  }, [isActive, currentStep, updatePosition]);
+  }, [isActive, currentStep, updatePosition, nextStep]);
 
   if (!isActive || !currentStep) return null;
 
