@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { todayIST } from "@/lib/date-utils";
 import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, Plus, Trash2 } from "lucide-react";
@@ -32,13 +33,9 @@ export const Route = createFileRoute("/planner")({
 });
 
 function dayKey(offsetDays: number) {
-  const d = new Date();
+  const d = new Date(todayIST() + "T00:00:00");
   d.setDate(d.getDate() + offsetDays);
-  // Use local date parts to avoid UTC vs local timezone mismatch
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  return d.toLocaleDateString("en-CA");
 }
 
 function PlannerPage() {
@@ -106,10 +103,10 @@ function PlannerPage() {
       const next: PlanItem[] = res.plan.flatMap((d) =>
         d.tasks.map((t) => ({ id: uid(), date: dayKey(d.day - 1), task: t, done: false })),
       );
-      // Bug fix: clear the existing plan before saving the new one so that
-      // re-generating does not accumulate duplicate tasks from previous runs.
+      // Clear existing plan and save new one. If save fails after clear,
+      // show error but the new plan items are still available to retry.
       await api.clearPlan();
-      queryClient.setQueryData(["plan"], []);
+      queryClient.setQueryData(["plan"], next); // Optimistically update UI
       await saveMutation.mutateAsync(next);
       toast.success(`Plan ready: ${next.length} tasks across ${res.plan.length} days`);
     } catch (e) {

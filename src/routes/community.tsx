@@ -271,16 +271,26 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
     }
   };
 
-  // Bug fix #1: upvote the post
+  // Upvote the post using optimistic cache update
   const handleUpvote = async () => {
     if (upvoted || upvoting || !post) return;
     setUpvoting(true);
+    // Optimistically update the cache so the count reflects immediately
+    qc.setQueryData(["forumPost", postId], (old: ForumPost | null | undefined) =>
+      old ? { ...old, upvotes: (old.upvotes ?? 0) + 1 } : old
+    );
+    setUpvoted(true);
     try {
       await api.upvotePost(post.id);
-      setUpvoted(true);
+      // Refetch to sync with server (the optimistic +1 should match)
       qc.invalidateQueries({ queryKey: ["forumPost", postId] });
       qc.invalidateQueries({ queryKey: ["forumPosts"] });
     } catch (e) {
+      // Rollback optimistic update
+      qc.setQueryData(["forumPost", postId], (old: ForumPost | null | undefined) =>
+        old ? { ...old, upvotes: (old.upvotes ?? 0) - 1 } : old
+      );
+      setUpvoted(false);
       toast.error("Failed to upvote");
     } finally {
       setUpvoting(false);
@@ -384,7 +394,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
             ) : (
               <ThumbsUp className={cn("h-3.5 w-3.5", upvoted && "fill-primary")} />
             )}
-            {(post.upvotes ?? 0) + (upvoted ? 1 : 0)} upvotes
+            {post.upvotes ?? 0} upvotes
           </button>
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <MessageSquare className="h-3.5 w-3.5" /> {replies.length} replies
@@ -552,11 +562,12 @@ function CreatePostModal({
             <select
               value={examId}
               onChange={(e) => setExamId(e.target.value)}
-              className="glass-subtle rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border"
+              className="glass-subtle rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border text-foreground appearance-none cursor-pointer"
+              style={{ colorScheme: "dark" }}
             >
-              <option value="">Select exam</option>
+              <option value="" className="bg-background text-foreground">Select exam</option>
               {EXAMS.map((e) => (
-                <option key={e.id} value={e.id}>
+                <option key={e.id} value={e.id} className="bg-background text-foreground">
                   {e.label}
                 </option>
               ))}
@@ -564,11 +575,12 @@ function CreatePostModal({
             <select
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="glass-subtle rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border"
+              className="glass-subtle rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border text-foreground appearance-none cursor-pointer"
+              style={{ colorScheme: "dark" }}
             >
-              <option value="">Select subject</option>
+              <option value="" className="bg-background text-foreground">Select subject</option>
               {SUBJECTS.map((s) => (
-                <option key={s} value={s}>
+                <option key={s} value={s} className="bg-background text-foreground">
                   {s}
                 </option>
               ))}

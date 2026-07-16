@@ -514,7 +514,7 @@ function SubjectCard({
             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 cursor-pointer group"
             onClick={() => onToggle(subject.id, t.id)}
           >
-            <Checkbox checked={t.done} onCheckedChange={() => onToggle(subject.id, t.id)} />
+            <Checkbox checked={t.done} onCheckedChange={() => {}} onClick={(e) => e.stopPropagation()} />
             <span className={t.done ? "line-through text-muted-foreground flex-1" : "flex-1"}>
               {t.name}
             </span>

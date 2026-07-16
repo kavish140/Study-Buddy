@@ -51,6 +51,15 @@ function FocusPage() {
     triggerPageTour("focus");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Use user's actual subjects if configured, with fallback to defaults
+  const { data: userSubjects = [] } = useQuery({
+    queryKey: ["subjects"],
+    queryFn: api.getSubjects,
+  });
+  const subjectNames = userSubjects.length > 0
+    ? [...userSubjects.map((s) => s.name), "Other"]
+    : SUBJECTS;
+
   // Timer state
   const [mode, setMode] = useState<Mode>("work");
   const [secondsLeft, setSecondsLeft] = useState(MODES.work.minutes * 60);
@@ -71,6 +80,8 @@ function FocusPage() {
   const sessionStartRef = useRef<Date | null>(null);
   // Flag to guard against double-invocation of the completion handler (React StrictMode)
   const completionFiredRef = useRef(false);
+  // Reuse a single AudioContext to respect browser autoplay policies
+  const audioCtxRef = useRef<AudioContext | null>(null);
   // Hold the latest callback in a ref so the interval doesn't need to re-run on every change
   const handleSessionCompleteRef = useRef<() => Promise<void>>(async () => {});
 
@@ -92,13 +103,18 @@ function FocusPage() {
   });
 
   const todaySessions = allSessions.filter((s) => {
-    const date = s.started_at?.split("T")[0];
-    return date === todayIST() && s.completed;
+    if (!s.started_at || !s.completed) return false;
+    const date = new Date(s.started_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    return date === todayIST();
   });
   const totalFocusMinutes = todaySessions.reduce((sum, s) => sum + s.duration_minutes, 0);
 
   const switchMode = useCallback(
     (newMode: Mode) => {
+      // Confirm before discarding an active work session
+      if (isRunning && mode === "work" && sessionStartRef.current) {
+        if (!window.confirm("You have an active focus session. Discard progress?")) return;
+      }
       if (intervalRef.current) clearInterval(intervalRef.current);
       setIsRunning(false);
       setMode(newMode);
@@ -106,7 +122,7 @@ function FocusPage() {
       sessionStartRef.current = null;
       completionFiredRef.current = false;
     },
-    [customMinutes],
+    [customMinutes, isRunning, mode],
   );
 
   const handleSessionComplete = useCallback(async () => {
@@ -117,9 +133,11 @@ function FocusPage() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsRunning(false);
 
-    // Play sound notification (browser beep)
+    // Play sound notification (browser beep) — reuse AudioContext to respect browser policies
     try {
-      const ctx = new AudioContext();
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") await ctx.resume();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -130,6 +148,11 @@ function FocusPage() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.8);
+      // Close the AudioContext after the sound finishes to free resources
+      osc.onended = () => {
+        ctx.close().catch(() => {});
+        audioCtxRef.current = null;
+      };
     } catch {
       // AudioContext may be unavailable in some browser environments
     }
@@ -356,7 +379,7 @@ function FocusPage() {
         <div className="glass-card rounded-2xl p-5 mb-6 space-y-3">
           <p className="text-sm font-medium">What are you studying?</p>
           <div className="flex gap-2 flex-wrap">
-            {SUBJECTS.map((s) => (
+            {subjectNames.map((s) => (
               <button
                 key={s}
                 onClick={() => setSubject(subject === s ? "" : s)}

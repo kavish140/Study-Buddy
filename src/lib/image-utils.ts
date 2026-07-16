@@ -94,22 +94,25 @@ export async function compressImage(
 
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Determine output type
+        // Determine output type — start with the original format
         const outputType = file.type === "image/png" ? "image/png" : "image/jpeg";
+        let actualMimeType = outputType;
 
         // Try compressing with decreasing quality if needed
         let currentQuality = quality;
         let dataUrl = canvas.toDataURL(outputType, currentQuality);
 
         // Iteratively reduce quality if the image is too large
+        // Note: PNG doesn't support quality levels, so we switch to JPEG for compression
         while (dataUrl.length * 0.75 > maxSizeBytes && currentQuality > 0.1) {
           currentQuality -= 0.1;
+          actualMimeType = "image/jpeg"; // converted from original format
           dataUrl = canvas.toDataURL("image/jpeg", currentQuality);
         }
 
         // Extract base64 data (remove the data:image/...;base64, prefix)
         const base64 = dataUrl.split(",")[1];
-        const mimeType = dataUrl.split(";")[0].split(":")[1];
+        const mimeType = actualMimeType;
 
         resolve({ base64, mimeType });
       };
@@ -124,10 +127,30 @@ export async function compressImage(
 /**
  * Creates a small preview URL from a File for display purposes.
  */
-export function createImagePreview(file: File): Promise<string> {
+export function createImagePreview(file: File, maxSize = 320): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        // Scale down for preview to reduce memory usage
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          const ratio = Math.min(maxSize / width, maxSize / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { resolve(reader.result as string); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.onerror = () => resolve(reader.result as string); // fallback to full
+      img.src = reader.result as string;
+    };
     reader.onerror = () => reject(new Error("Failed to create preview"));
     reader.readAsDataURL(file);
   });

@@ -410,13 +410,24 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     setCurrentStepIndex(0);
   }, [activeTourId, markCompleted]);
 
+  const tourTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up tour timer on unmount
+  useEffect(() => {
+    return () => {
+      if (tourTimerRef.current) clearTimeout(tourTimerRef.current);
+    };
+  }, []);
+
   const triggerPageTour = useCallback(
     (tourId: string) => {
       // Re-read from storage to ensure freshest state
       const completed = loadCompleted();
       if (!completed.includes(tourId) && !activeTourId) {
+        // Clear any existing timer to prevent stale triggers
+        if (tourTimerRef.current) clearTimeout(tourTimerRef.current);
         // Small delay to let the page render first
-        setTimeout(() => startTour(tourId), 700);
+        tourTimerRef.current = setTimeout(() => startTour(tourId), 700);
       }
     },
     [activeTourId, startTour],

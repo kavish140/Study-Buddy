@@ -1,6 +1,10 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
@@ -8,6 +12,27 @@ const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // Verify JWT authentication
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Missing or invalid Authorization header" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 401,
+    });
+  }
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Invalid or expired authentication token" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 401,
+    });
   }
 
   try {
@@ -21,6 +46,15 @@ Deno.serve(async (req) => {
 
     if (!imageBase64) {
       throw new Error("No image provided. Please upload an image or PDF.");
+    }
+
+    // Validate image size (max ~10MB base64 ≈ ~7.5MB file)
+    const MAX_BASE64_SIZE = 10 * 1024 * 1024; // 10MB
+    if (imageBase64.length > MAX_BASE64_SIZE) {
+      return new Response(JSON.stringify({ error: "Image too large. Maximum size is ~7.5MB." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
 
     const isPdf = mimeType === "application/pdf";
@@ -68,7 +102,7 @@ Be thorough, accurate, and encouraging.`;
 
     // Call Gemini API with vision
     const model = "gemini-2.0-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     const body = {
       contents: [
@@ -93,7 +127,10 @@ Be thorough, accurate, and encouraging.`;
 
     const geminiRes = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY,
+      },
       body: JSON.stringify(body),
     });
 

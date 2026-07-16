@@ -57,7 +57,7 @@ function Login() {
           style={{ animationDelay: "-3s" }}
         />
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/3 blur-3xl animate-float"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/5 blur-3xl animate-float"
           style={{ animationDelay: "-1.5s" }}
         />
         {/* Grid overlay */}

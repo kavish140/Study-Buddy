@@ -24,7 +24,10 @@ import {
 export const api = {
   // Subjects
   getSubjects: async () => {
-    const { data, error } = await supabase.from("subjects").select("*");
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
+    const { data, error } = await supabase.from("subjects").select("*").eq("user_id", user_id);
     if (error) throw error;
     return (data as Subject[]) || [];
   },
@@ -42,16 +45,23 @@ export const api = {
     return data;
   },
   deleteSubject: async (id: string) => {
-    const { error } = await supabase.from("subjects").delete().eq("id", id);
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { error } = await supabase.from("subjects").delete().eq("id", id).eq("user_id", user_id);
     if (error) throw error;
   },
 
   // Quizzes
   getQuizzes: async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
     const { data, error } = await supabase
       .from("quizzes")
       .select("*")
-      .order("createdAt", { ascending: false });
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false });
     if (error) throw error;
     return (data as SavedQuiz[]) || [];
   },
@@ -69,13 +79,19 @@ export const api = {
     return data;
   },
   deleteQuiz: async (id: string) => {
-    const { error } = await supabase.from("quizzes").delete().eq("id", id);
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { error } = await supabase.from("quizzes").delete().eq("id", id).eq("user_id", user_id);
     if (error) throw error;
   },
 
   // Plan Items
   getPlan: async () => {
-    const { data, error } = await supabase.from("plan_items").select("*");
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
+    const { data, error } = await supabase.from("plan_items").select("*").eq("user_id", user_id);
     if (error) throw error;
     return (data as PlanItem[]) || [];
   },
@@ -90,17 +106,24 @@ export const api = {
     return data;
   },
   updatePlanItem: async (id: string, done: boolean) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
     const { data, error } = await supabase
       .from("plan_items")
       .update({ done })
       .eq("id", id)
+      .eq("user_id", user_id)
       .select()
       .single();
     if (error) throw error;
     return data;
   },
   deletePlanItem: async (id: string) => {
-    const { error } = await supabase.from("plan_items").delete().eq("id", id);
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { error } = await supabase.from("plan_items").delete().eq("id", id).eq("user_id", user_id);
     if (error) throw error;
   },
   // Clears all plan items for the current user — called before re-generating a plan
@@ -115,9 +138,13 @@ export const api = {
 
   // Notes
   getNotes: async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
     const { data, error } = await supabase
       .from("notes")
       .select("*")
+      .eq("user_id", user_id)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return (data as Note[]) || [];
@@ -199,15 +226,22 @@ export const api = {
     return data as MockTest;
   },
   deleteMockTest: async (id: string): Promise<void> => {
-    const { error } = await supabase.from("mock_tests").delete().eq("id", id);
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { error } = await supabase.from("mock_tests").delete().eq("id", id).eq("user_id", user_id);
     if (error) throw error;
   },
 
   // Performance Logs
   getPerformanceLogs: async (): Promise<PerformanceLog[]> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
     const { data, error } = await supabase
       .from("performance_logs")
       .select("*")
+      .eq("user_id", user_id)
       .order("last_attempted", { ascending: false });
     if (error) throw error;
     return (data as PerformanceLog[]) || [];
@@ -231,9 +265,13 @@ export const api = {
 
   // Chat Sessions
   getChatSessions: async (): Promise<ChatSession[]> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
     const { data, error } = await supabase
       .from("chat_sessions")
       .select("*")
+      .eq("user_id", user_id)
       .order("updated_at", { ascending: false });
     if (error) throw error;
     return (data as ChatSession[]) || [];
@@ -252,24 +290,35 @@ export const api = {
     return data as ChatSession;
   },
   deleteChatSession: async (id: string): Promise<void> => {
-    const { error } = await supabase.from("chat_sessions").delete().eq("id", id);
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { error } = await supabase.from("chat_sessions").delete().eq("id", id).eq("user_id", user_id);
     if (error) throw error;
   },
 
   // ── Review Cards (Spaced Repetition) ──────────────────────────────
   getReviewCards: async (): Promise<ReviewCard[]> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
     const { data, error } = await supabase
       .from("review_cards")
       .select("*")
+      .eq("user_id", user_id)
       .order("next_review", { ascending: true });
     if (error) throw error;
     return (data as ReviewCard[]) || [];
   },
   getDueReviewCards: async (): Promise<ReviewCard[]> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
     const today = todayIST();
     const { data, error } = await supabase
       .from("review_cards")
       .select("*")
+      .eq("user_id", user_id)
       .lte("next_review", today)
       .order("next_review", { ascending: true });
     if (error) throw error;
@@ -298,11 +347,15 @@ export const api = {
     if (error) throw error;
   },
   updateReviewCard: async (id: string, rating: 0 | 1 | 3 | 5): Promise<ReviewCard> => {
-    // First fetch the current card to apply SM-2
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    // First fetch the current card to apply SM-2 (also verifies ownership)
     const { data: current, error: fetchErr } = await supabase
       .from("review_cards")
       .select("*")
       .eq("id", id)
+      .eq("user_id", user_id)
       .single();
     if (fetchErr) throw fetchErr;
     const updates = sm2(current as ReviewCard, rating);
@@ -310,21 +363,29 @@ export const api = {
       .from("review_cards")
       .update(updates)
       .eq("id", id)
+      .eq("user_id", user_id)
       .select()
       .single();
     if (error) throw error;
     return data as ReviewCard;
   },
   deleteReviewCard: async (id: string): Promise<void> => {
-    const { error } = await supabase.from("review_cards").delete().eq("id", id);
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { error } = await supabase.from("review_cards").delete().eq("id", id).eq("user_id", user_id);
     if (error) throw error;
   },
 
   // ── Focus Sessions (Pomodoro) ──────────────────────────────────────
   getFocusSessions: async (): Promise<FocusSession[]> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) return [];
     const { data, error } = await supabase
       .from("focus_sessions")
       .select("*")
+      .eq("user_id", user_id)
       .order("started_at", { ascending: false })
       .limit(100);
     if (error) throw error;
@@ -374,6 +435,10 @@ export const api = {
       focusCount?: number;
       reviewCount?: number;
       quizPerfect?: boolean;
+      timeTakenSeconds?: number;
+      totalTimeSeconds?: number;
+      onboardingCompleted?: boolean;
+      quizId?: string;
     },
   ): Promise<{ stats: UserStats; newBadges: string[] }> => {
     const { data: userData } = await supabase.auth.getUser();
@@ -459,8 +524,9 @@ export const api = {
     checkBadge("grinder", (context?.focusCount ?? 0) >= 10);
     checkBadge("reviewer", (context?.reviewCount ?? 0) >= 50);
     checkBadge("night_owl", hour >= 0 && hour < 4);
+    checkBadge("speed_demon", (context?.timeTakenSeconds ?? Infinity) < (context?.totalTimeSeconds ?? 0));
     // Award first_steps on first ever XP — checkBadge already prevents duplicates
-    checkBadge("first_steps", true);
+    checkBadge("first_steps", !!context?.onboardingCompleted);
 
     const updates = {
       xp: newXp,
@@ -575,6 +641,21 @@ export const api = {
     return data as ForumPost;
   },
   upvotePost: async (id: string): Promise<void> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+
+    // Check if user already upvoted (best-effort client-side guard)
+    const { data: existing } = await supabase
+      .from("post_upvotes")
+      .select("id")
+      .eq("post_id", id)
+      .eq("user_id", user_id)
+      .maybeSingle();
+    if (existing) throw new Error("You have already upvoted this post");
+
+    // Record the upvote and increment count
+    await supabase.from("post_upvotes").insert({ id: uid(), post_id: id, user_id }).throwOnError();
     await supabase.rpc("increment_post_upvotes", { post_id: id }).throwOnError();
   },
   getForumReplies: async (post_id: string): Promise<ForumReply[]> => {
@@ -602,6 +683,28 @@ export const api = {
     return data as ForumReply;
   },
   acceptReply: async (reply_id: string): Promise<void> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+
+    // Fetch the reply to get the parent post_id
+    const { data: reply } = await supabase
+      .from("forum_replies")
+      .select("post_id")
+      .eq("id", reply_id)
+      .single();
+    if (!reply) throw new Error("Reply not found");
+
+    // Verify the current user owns the parent post
+    const { data: post } = await supabase
+      .from("forum_posts")
+      .select("user_id")
+      .eq("id", reply.post_id)
+      .single();
+    if (!post || post.user_id !== user_id) {
+      throw new Error("Only the post author can accept replies");
+    }
+
     await supabase
       .from("forum_replies")
       .update({ is_accepted: true })

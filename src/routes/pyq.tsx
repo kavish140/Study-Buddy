@@ -70,6 +70,11 @@ function PYQPage() {
   const [year, setYear] = useState<number | "">("");
   const [difficulty, setDifficulty] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
   const [practicing, setPracticing] = useState<PracticeState | null>(null);
   const [generating, setGenerating] = useState(false);
   const [topic, setTopic] = useState("");
@@ -80,14 +85,14 @@ function PYQPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: questions = [], isLoading } = useQuery({
-    queryKey: ["pyq", examId, subject, year, difficulty, search],
+    queryKey: ["pyq", examId, subject, year, difficulty, debouncedSearch],
     queryFn: () =>
       api.getPYQQuestions({
         exam_id: examId,
         subject: subject || undefined,
         year: year ? Number(year) : undefined,
         difficulty: difficulty || undefined,
-        search: search || undefined,
+        search: debouncedSearch || undefined,
       }),
   });
 
@@ -106,13 +111,17 @@ function PYQPage() {
       const yearLabel = year || new Date().getFullYear();
       const subjectLabel = subject || (SUBJECTS[examId]?.[0] ?? "General");
 
-      // Use study-ai generateQuiz action
+      // Use study-ai generateQuiz action with user's auth token
+      const { data: { session } } = await (await import("@/lib/supabase")).supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Please sign in to generate questions");
+      }
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-ai`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           action: "generateQuiz",
@@ -124,6 +133,10 @@ function PYQPage() {
           },
         }),
       });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `Request failed (${res.status})`);
+      }
       const result = await res.json();
       if (result.error) throw new Error(result.error);
 

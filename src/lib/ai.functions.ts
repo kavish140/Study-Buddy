@@ -4,8 +4,8 @@ async function invokeEdgeFunction<T = Record<string, unknown>>(
   action: string,
   data: unknown,
 ): Promise<T> {
-  const { data: userData } = await supabase.auth.getSession();
-  if (!userData?.session) throw new Error("Authentication required");
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Authentication required");
 
   let result;
   let error;
@@ -195,8 +195,8 @@ export async function streamChat({
   onChunk: (text: string) => void;
   onDone: () => void;
 }) {
-  const { data: userData } = await supabase.auth.getSession();
-  if (!userData?.session) throw new Error("Authentication required");
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Authentication required");
 
   let res;
   try {
@@ -204,7 +204,7 @@ export async function streamChat({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${userData.session.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({ action: "chat", data: { messages, examName } }),
@@ -248,6 +248,20 @@ export async function streamChat({
         if (content) onChunk(content);
       } catch {
         // Ignore malformed SSE JSON chunks (partial data)
+      }
+    }
+  }
+
+  // Process any remaining data left in the buffer after the stream ends
+  if (buffer.trim()) {
+    const trimmed = buffer.trim();
+    if (trimmed.startsWith("data: ") && trimmed.slice(6) !== "[DONE]") {
+      try {
+        const parsed = JSON.parse(trimmed.slice(6));
+        const content = parsed.choices?.[0]?.delta?.content;
+        if (content) onChunk(content);
+      } catch {
+        // Ignore malformed remnant
       }
     }
   }

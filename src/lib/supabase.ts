@@ -5,17 +5,10 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  const msg =
+  throw new Error(
     "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY environment variables. " +
-    "Create a .env file at the project root with these values.";
-  if (import.meta.env.PROD) {
-    throw new Error(msg);
-  } else {
-    console.warn(msg);
-  }
+    "Create a .env file at the project root with these values."
+  );
 }
 
-export const supabase = createClient(
-  supabaseUrl || "https://placeholder-project.supabase.co",
-  supabaseAnonKey || "placeholder-anon-key",
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

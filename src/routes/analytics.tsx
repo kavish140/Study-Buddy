@@ -110,37 +110,33 @@ function computeTopicMastery(
     topicMap.set(key, existing);
   });
 
-  // From quizzes (topic-level)
+  // From quizzes (topic-level) — only add if not already tracked by performance_logs
   quizzes.forEach((q) => {
     if (q.score === undefined || q.score === null) return;
     const key = `General::${q.topic}`;
-    const existing = topicMap.get(key) || {
+    if (topicMap.has(key)) return; // Already tracked by performance_logs
+    topicMap.set(key, {
       subject: "General",
       topic: q.topic,
-      correct: 0,
-      total: 0,
-    };
-    existing.correct += q.score;
-    existing.total += q.questions.length;
-    topicMap.set(key, existing);
+      correct: q.score,
+      total: q.questions.length,
+    });
   });
 
-  // From mock tests (section-level)
+  // From mock tests (section-level) — only add if not already tracked
   mockTests
     .filter((t) => t.status === "completed")
     .forEach((t) => {
       t.sections.forEach((section) => {
         section.questions.forEach((q) => {
           const key = `${section.name}::${q.topic}`;
-          const existing = topicMap.get(key) || {
+          if (topicMap.has(key)) return; // Already tracked by performance_logs
+          topicMap.set(key, {
             subject: section.name,
-            topic: q.topic,
-            correct: 0,
-            total: 0,
-          };
-          existing.total += 1;
-          if (t.answers[q.id] === q.answerIndex) existing.correct += 1;
-          topicMap.set(key, existing);
+            topic: q.topic || "General",
+            correct: t.answers[q.id] === q.answerIndex ? 1 : 0,
+            total: 1,
+          });
         });
       });
     });

@@ -58,6 +58,7 @@ export function TutorialOverlay() {
   const [spotlightRect, setSpotlightRect] = useState<Rect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
   const animFrame = useRef<number | null>(null);
+  const skipCountRef = useRef(0);
 
   const currentStep = activeTour?.steps[currentStepIndex];
 
@@ -101,8 +102,8 @@ export function TutorialOverlay() {
       return;
     }
 
-    let scrollTimer: NodeJS.Timeout | null = null;
-    let advanceTimer: NodeJS.Timeout | null = null;
+    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+    let advanceTimer: ReturnType<typeof setTimeout> | null = null;
 
     // If there's a target, scroll it into view first
     if (currentStep.target && currentStep.placement !== "center") {
@@ -111,8 +112,14 @@ export function TutorialOverlay() {
         el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
         // Wait for scroll animation then position
         scrollTimer = setTimeout(() => updatePosition(), 350);
+        skipCountRef.current = 0; // Reset skip counter since element was found
       } else {
-        // Target element doesn't exist — auto-advance after a short delay
+        // Target element doesn't exist — auto-advance, but limit consecutive skips
+        skipCountRef.current++;
+        if (skipCountRef.current >= 3) {
+          skipTour();
+          return;
+        }
         advanceTimer = setTimeout(() => nextStep(), ELEMENT_NOT_FOUND_ADVANCE_DELAY);
         updatePosition();
       }

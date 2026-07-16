@@ -77,14 +77,14 @@ function ChatPage() {
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
     const newSession: ChatSession = {
       id: uid(),
       title: "New chat",
       exam_id: profile?.exam_id,
       messages: [],
     };
-    saveMutation.mutate(newSession);
+    await saveMutation.mutateAsync(newSession);
     setActiveSessionId(newSession.id);
     setShowSidebar(false);
   };
@@ -93,7 +93,7 @@ function ChatPage() {
   const handleSendFromEmpty = (msg: string) => {
     const newSession: ChatSession = {
       id: uid(),
-      title: msg.slice(0, 50) + (msg.length > 50 ? "\u2026" : ""),
+      title: Array.from(msg).slice(0, 50).join("") + (Array.from(msg).length > 50 ? "\u2026" : ""),
       exam_id: profile?.exam_id,
       messages: [],
     };
@@ -480,6 +480,11 @@ function ChatView({
       toast.error("Only images (JPG, PNG, WEBP) and PDFs are supported.");
       return;
     }
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is 10MB.`);
+      return;
+    }
     // Clear the other pending type
     setPendingPdf(null);
     setPendingImage(null);
@@ -603,7 +608,7 @@ function ChatView({
       const updatedMessages = [...session.messages, userMessage];
       const title =
         session.messages.length === 0
-          ? "\ud83d\udcf7 " + userMsg.slice(0, 45) + (userMsg.length > 45 ? "\u2026" : "")
+          ? "\ud83d\udcf7 " + Array.from(userMsg).slice(0, 45).join("") + (Array.from(userMsg).length > 45 ? "\u2026" : "")
           : session.title;
 
       const updatedSession: ChatSession = {
@@ -659,7 +664,7 @@ function ChatView({
     // Update title on first message
     const title =
       session.messages.length === 0
-        ? msg.slice(0, 50) + (msg.length > 50 ? "\u2026" : "")
+        ? Array.from(msg).slice(0, 50).join("") + (Array.from(msg).length > 50 ? "\u2026" : "")
         : session.title;
 
     const updatedSession: ChatSession = {
@@ -1061,10 +1066,12 @@ function CodeBlock({ lang, content }: { lang: string; content: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(content).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    navigator.clipboard.writeText(content)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => toast.error("Failed to copy to clipboard"));
   };
 
   return (

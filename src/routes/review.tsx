@@ -106,39 +106,43 @@ function ReviewPage() {
   const [doneCount, setDoneCount] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
-  // Track the IDs we started the session with so query re-fetches
-  // (triggered by invalidateQueries after rating) don't reset the session.
-  const [sessionCardIds, setSessionCardIds] = useState<string[]>([]);
+  // Snapshot the full card objects at session start so query re-fetches
+  // (triggered by invalidateQueries after rating) don't reorder or remove cards mid-session.
+  const [sessionCards, setSessionCards] = useState<ReviewCard[]>([]);
 
   // Reset only when a genuinely new set of cards loads (first load or after
   // session completes / user explicitly restarts).
   useEffect(() => {
     if (allCards.length === 0) return; // nothing to do
-    if (sessionCardIds.length > 0) return; // session already running
-    setSessionCardIds(allCards.map((c) => c.id));
+    if (sessionCards.length > 0) return; // session already running
+    setSessionCards([...allCards]);
     setCurrentIndex(0);
     setIsFlipped(false);
     setDoneCount(0);
     setSessionComplete(false);
   }, [allCards]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const currentCard = allCards[currentIndex];
-  const sessionTotal = sessionCardIds.length || allCards.length;
+  const currentCard = sessionCards[currentIndex];
+  const sessionTotal = sessionCards.length || allCards.length;
   const progress = sessionTotal > 0 ? (doneCount / sessionTotal) * 100 : 0;
 
   const handleRate = async (rating: 0 | 1 | 3 | 5) => {
     if (!currentCard) return;
-    await updateMutation.mutateAsync({ id: currentCard.id, rating });
-    // Award XP for reviewing a card (fire-and-forget)
-    api.awardXP(XP_REWARDS.review_card, { reviewCount: doneCount + 1 }).catch(() => {});
-    const next = currentIndex + 1;
-    setDoneCount((d) => d + 1);
-    if (next >= sessionCardIds.length) {
-      setSessionComplete(true);
-      setSessionCardIds([]); // clear so next load starts fresh
-    } else {
-      setCurrentIndex(next);
-      setIsFlipped(false);
+    try {
+      await updateMutation.mutateAsync({ id: currentCard.id, rating });
+      // Award XP for reviewing a card (fire-and-forget)
+      api.awardXP(XP_REWARDS.review_card, { reviewCount: doneCount + 1 }).catch(() => {});
+      const next = currentIndex + 1;
+      setDoneCount((d) => d + 1);
+      if (next >= sessionCards.length) {
+        setSessionComplete(true);
+        setSessionCards([]); // clear so next load starts fresh
+      } else {
+        setCurrentIndex(next);
+        setIsFlipped(false);
+      }
+    } catch {
+      toast.error("Failed to save rating. Please try again.");
     }
   };
 
@@ -228,7 +232,7 @@ function ReviewPage() {
             <Button
               onClick={() => {
                 // Clear session IDs so the useEffect can reinitialize with current cards
-                setSessionCardIds([]);
+                setSessionCards([]);
                 setSessionComplete(false);
                 setCurrentIndex(0);
                 setIsFlipped(false);
@@ -367,9 +371,9 @@ function ReviewPage() {
                 // Bug fix: also increment doneCount on skip so progress bar is accurate
                 const next = currentIndex + 1;
                 setDoneCount((d) => d + 1);
-                if (next >= sessionCardIds.length) {
+                if (next >= sessionCards.length) {
                   setSessionComplete(true);
-                  setSessionCardIds([]);
+                  setSessionCards([]);
                 } else {
                   setCurrentIndex(next);
                   setIsFlipped(false);
@@ -386,16 +390,16 @@ function ReviewPage() {
                 await deleteMutation.mutateAsync(currentCard.id);
                 toast.success("Card deleted");
                 // Remove from session list
-                const newIds = sessionCardIds.filter((_, i) => i !== deletedIndex);
-                setSessionCardIds(newIds);
-                if (newIds.length === 0 || deletedIndex >= newIds.length) {
+                const newCards = sessionCards.filter((_: unknown, i: number) => i !== deletedIndex);
+                setSessionCards(newCards);
+                if (newCards.length === 0 || deletedIndex >= newCards.length) {
                   // Deleted the last card in session
-                  if (newIds.length === 0) {
+                  if (newCards.length === 0) {
                     setSessionComplete(true);
-                    setSessionCardIds([]);
+                    setSessionCards([]);
                   } else {
                     // Stay at same index (now pointing to next card)
-                    setCurrentIndex(newIds.length - 1);
+                    setCurrentIndex(newCards.length - 1);
                     setIsFlipped(false);
                   }
                 } else {
@@ -463,7 +467,13 @@ function AddCardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4"
+      role="dialog"
+      aria-modal="true"
+      onKeyDown={(e) => e.key === "Escape" && onClose()}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div className="glass-card rounded-2xl p-6 w-full max-w-md space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-lg">Add Review Card</h2>

@@ -583,7 +583,7 @@
 .help-fab-backdrop {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 9970;
 }
 
 /* Help menu card */
@@ -755,7 +755,8 @@
 }
 
 @keyframes dnd-dash {
-  to { stroke-dashoffset: -20; }
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
 }
 
 .chat-message-enter {
@@ -792,7 +793,6 @@
 .chat-dnd-border {
   border: 2px dashed rgba(59, 130, 246, 0.5);
   background: rgba(59, 130, 246, 0.04);
-  animation: dnd-dash 0.8s linear infinite;
-  background-image: none;
+  animation: dnd-dash 1.2s ease-in-out infinite;
 }
 

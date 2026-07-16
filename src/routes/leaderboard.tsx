@@ -132,8 +132,8 @@ function LeaderboardPage() {
           ? Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="h-16 glass-card rounded-xl animate-pulse" />
             ))
-          : board.map((entry, idx) => {
-              const rank = idx + 1;
+          : board.slice(3).map((entry, idx) => {
+              const rank = idx + 4;
               const isMe = entry.user_id === user?.id;
               const { pct } = xpForNextLevel(entry.xp ?? 0);
               const badgeCount = entry.badges?.length ?? 0;

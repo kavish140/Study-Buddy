@@ -140,13 +140,15 @@ function OnboardingPage() {
           });
           if (planItems.length > 0) {
             await api.savePlanItems(planItems);
-            queryClient.invalidateQueries({ queryKey: ["plan"] });
+            await queryClient.invalidateQueries({ queryKey: ["plan"] });
           }
         } catch {
-          // Plan generation is optional, don't block onboarding
+          toast.info("Study plan will be available once you visit the Planner page.");
         }
       }
 
+      await queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      await queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       toast.success("You're all set! Let's start studying.");
       navigate({ to: "/" });
     } catch (e) {

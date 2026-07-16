@@ -358,21 +358,23 @@ export function AppLayout() {
           {profile?.exam_name && (
             <span className="ml-1 text-xs text-muted-foreground">· {profile.exam_name}</span>
           )}
-          {dueCards.length > 0 && (
-            <Link
-              to="/review"
-              className="ml-auto flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/15 text-red-400 text-xs font-medium border border-red-500/20"
-            >
-              <FlipHorizontal2 size={11} />
-              {dueCards.length} due
-            </Link>
-          )}
-          {userStats && (
-            <div className="flex items-center gap-1 text-xs text-amber-400 ml-auto">
-              <Zap size={11} />
-              {userStats.xp}
-            </div>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            {dueCards.length > 0 && (
+              <Link
+                to="/review"
+                className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/15 text-red-400 text-xs font-medium border border-red-500/20"
+              >
+                <FlipHorizontal2 size={11} />
+                {dueCards.length} due
+              </Link>
+            )}
+            {userStats && (
+              <div className="flex items-center gap-1 text-xs text-amber-400">
+                <Zap size={11} />
+                {userStats.xp}
+              </div>
+            )}
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto pb-20 md:pb-0">

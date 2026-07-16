@@ -183,8 +183,8 @@ function SetupScreen({
         sections: (res.sections || []).map((s) => ({
           name: s.name,
           timeMinutes: Math.round((s.questions?.length || 0) * timePerQ),
-          questions: (s.questions || []).map((q, idx) => ({
-            id: q.id || `q${idx}`,
+          questions: (s.questions || []).map((q) => ({
+            id: uid(),
             question: q.question,
             options: q.options,
             answerIndex: q.answerIndex,
@@ -346,6 +346,13 @@ function SetupScreen({
 }
 
 /* ──────────── TEST SCREEN ──────────── */
+function parseMarkingScheme(scheme?: string): { correct: number; wrong: number } {
+  if (!scheme) return { correct: 4, wrong: -1 }; // JEE default
+  const match = scheme.match(/([+-]?\d+)\/([+-]?\d+)/);
+  if (!match) return { correct: 4, wrong: -1 };
+  return { correct: parseInt(match[1]), wrong: parseInt(match[2]) };
+}
+
 function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockTest) => void }) {
   const [activeSection, setActiveSection] = useState(0);
   const [activeQuestion, setActiveQuestion] = useState(0);
@@ -356,6 +363,8 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
   const startTimeRef = useRef(Date.now());
   const handleSubmitRef = useRef<() => void>(() => {});
   const [timeExpired, setTimeExpired] = useState(false);
+  const examInfo = getExamById(test.exam_id);
+  const markingScheme = examInfo?.examPattern?.markingScheme;
 
   // Countdown timer and beforeunload protection
   useEffect(() => {
@@ -405,14 +414,15 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
 
   const handleSubmit = useCallback(() => {
     const elapsedSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
+    const { correct: correctMarks, wrong: wrongMarks } = parseMarkingScheme(markingScheme);
     let score = 0;
     let totalMarks = 0;
 
     allQuestions.forEach((q) => {
-      totalMarks += 4;
+      totalMarks += correctMarks;
       const ans = answers[q.id];
-      if (ans === q.answerIndex) score += 4;
-      else if (ans !== null && ans !== undefined) score -= 1;
+      if (ans === q.answerIndex) score += correctMarks;
+      else if (ans !== null && ans !== undefined) score += wrongMarks;
     });
 
     const finishedTest: MockTest = {
@@ -427,7 +437,7 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
 
     setShowConfirm(false);
     onFinish(finishedTest);
-  }, [answers, test, onFinish, allQuestions]);
+  }, [answers, test, onFinish, allQuestions, markingScheme]);
 
   // Keep the ref up to date whenever handleSubmit recreates
   useEffect(() => {

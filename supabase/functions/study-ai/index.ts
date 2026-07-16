@@ -1,9 +1,20 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") || "";
+
+/** Strip characters/patterns that could be used for prompt injection */
+function sanitizeInput(input: string, maxLength = 500): string {
+  return input
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "") // control chars
+    .slice(0, maxLength);
+}
 
 async function callGroq(systemText: string, userText: string) {
   if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is missing! Check your Supabase Secrets.");
@@ -64,18 +75,48 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  // Verify JWT authentication
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Missing or invalid Authorization header" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 401,
+    });
+  }
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: "Invalid or expired authentication token" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 401,
+    });
+  }
+
   try {
     const { action, data } = await req.json();
 
     if (!action) {
       return new Response(JSON.stringify({ error: "Missing action in request body" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200, // Returning 200 with error payload for supabase SDK compatibility
+        status: 400,
+      });
+    }
+
+    if (!data) {
+      return new Response(JSON.stringify({ error: "Missing data in request body" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
       });
     }
 
     let result;
     if (action === "generateQuiz") {
+      const count = Math.max(1, Math.min(20, Number(data.count) || 5));
+      const topic = sanitizeInput(data.topic || "", 200);
       const examContext = data.examName
         ? `for ${data.examName}`
         : "for competitive exams (JEE/NEET level)";
@@ -86,24 +127,27 @@ Deno.serve(async (req) => {
             ? "Questions should be JEE Main level — application-based, requiring formula application and moderate reasoning. Avoid purely definitional questions."
             : "Questions should be NCERT concept-check level — clear but not trivial. Test understanding, not just recall.";
       const system = `You are an expert question setter ${examContext}. Generate rigorous multiple-choice questions suitable for competitive exam preparation. ${difficultyGuide} Every question must be self-contained with 4 distinct options (only one correct), precise scientific language, and a detailed explanation citing the relevant formula or principle. Respond ONLY with valid JSON.`;
-      const user = `Generate ${data.count} ${data.difficulty}-difficulty MCQ questions on the topic: "${data.topic}" ${examContext}.\n\nRules:\n- Questions must test deep understanding, not surface recall\n- Include numerical/calculation problems where appropriate\n- Options must be plausible (no obviously wrong distractors)\n- Explanation must cite the formula, law, or concept used\n\nReturn JSON:\n{"questions":[{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answerIndex":0,"explanation":"..."}]}\nanswerIndex is 0-3.`;
+      const user = `Generate ${count} ${data.difficulty}-difficulty MCQ questions on the topic: "${topic}" ${examContext}.\n\nRules:\n- Questions must test deep understanding, not surface recall\n- Include numerical/calculation problems where appropriate\n- Options must be plausible (no obviously wrong distractors)\n- Explanation must cite the formula, law, or concept used\n\nReturn JSON:\n{"questions":[{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answerIndex":0,"explanation":"..."}]}\nanswerIndex is 0-3.`;
       result = await callGroq(system, user);
     } else if (action === "generateNotes") {
       const examName = data.examName || "JEE/NEET";
+      const noteTopic = sanitizeInput(data.topic || "", 200);
       const system = `You are an expert study coach for ${examName} preparation. You ONLY generate notes for topics that are part of the ${examName} syllabus — Physics, Chemistry, Mathematics (and Biology for NEET). If the requested topic is NOT from the exam syllabus (e.g. random trivia, opinions, unrelated subjects), return {"error": "Topic not in ${examName} syllabus. Please enter a valid exam topic."}. For valid syllabus topics, produce concise exam-focused notes and flashcards. Respond ONLY with valid JSON.`;
-      const user = `Generate study notes for topic: "${data.topic}" for ${examName}.\n\nIf this is a valid ${examName} syllabus topic, return:\n{"summary":"3-5 sentence exam-focused summary with key formulas, important facts, and common exam traps","flashcards":[{"q":"...","a":"..."}]}\nGenerate 6 flashcards mixing: formula recall, conceptual understanding, and numerical application questions at ${examName} level.\nIf NOT a valid exam syllabus topic, return: {"error": "Topic not in ${examName} syllabus. Please enter a valid exam topic."}`;
+      const user = `Generate study notes for topic: "${noteTopic}" for ${examName}.\n\nIf this is a valid ${examName} syllabus topic, return:\n{"summary":"3-5 sentence exam-focused summary with key formulas, important facts, and common exam traps","flashcards":[{"q":"...","a":"..."}]}\nGenerate 6 flashcards mixing: formula recall, conceptual understanding, and numerical application questions at ${examName} level.\nIf NOT a valid exam syllabus topic, return: {"error": "Topic not in ${examName} syllabus. Please enter a valid exam topic."}`;
       result = await callGroq(system, user);
       if (result?.error) {
         throw new Error(result.error);
       }
     } else if (action === "parseSyllabus") {
+      const syllabusText = sanitizeInput(data.text || "", 2000);
       const system =
         "You convert raw syllabus text into structured subjects and topics. Respond ONLY with valid JSON.";
-      const user = `Syllabus text:\n${data.text}\n\nReturn JSON:\n{"subjects":[{"name":"Subject","topics":["Topic 1","Topic 2"]}]}\nGroup related items. Keep topic names short and concrete.`;
+      const user = `Syllabus text:\n${syllabusText}\n\nReturn JSON:\n{"subjects":[{"name":"Subject","topics":["Topic 1","Topic 2"]}]}\nGroup related items. Keep topic names short and concrete.`;
       result = await callGroq(system, user);
     } else if (action === "generatePlan") {
+      const planTopics = (data.topics || []).map((t: string) => sanitizeInput(t, 200));
       const system = "You create realistic study schedules. Respond ONLY with valid JSON.";
-      const user = `Create a ${data.days}-day study plan for these topics: ${data.topics.join(", ")}.\nReturn JSON:\n{"plan":[{"day":1,"tasks":["Task 1","Task 2"]}]}\nBalance review and new material. 2-4 tasks per day.`;
+      const user = `Create a ${data.days}-day study plan for these topics: ${planTopics.join(", ")}.\nReturn JSON:\n{"plan":[{"day":1,"tasks":["Task 1","Task 2"]}]}\nBalance review and new material. 2-4 tasks per day.`;
       result = await callGroq(system, user);
     } else if (action === "generateMockTest") {
       const isJEE = (data.examName || "").toLowerCase().includes("jee");
@@ -117,7 +161,7 @@ Deno.serve(async (req) => {
       const sectionInstructions = (data.sections || [])
         .map(
           (s: Section) =>
-            `Section "${s.name}": ${s.questions} questions from topics: ${(s.topics || []).join(", ")}. Mix numerical, conceptual, and application questions.`,
+            `Section "${sanitizeInput(s.name, 200)}": ${s.questions} questions from topics: ${(s.topics || []).map((t: string) => sanitizeInput(t, 200)).join(", ")}. Mix numerical, conceptual, and application questions.`,
         )
         .join("\n");
       const user = `Generate a mock test for ${data.examName} with these sections:\n${sectionInstructions}\n\nReturn JSON in this exact shape:\n{"sections":[{"name":"Section Name","questions":[{"id":"q1","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answerIndex":0,"explanation":"Step-by-step explanation citing formula","section":"Section Name","topic":"Topic Name"}]}]}\nEach question must have exactly 4 options. answerIndex is 0-3. Give each question a unique id like q1, q2, etc.`;
@@ -202,12 +246,9 @@ Rules you MUST follow at all times:
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Function Error:", message);
 
-    // Check if it's the chat action (which uses fetch and respects HTTP codes)
-    // We don't have request body anymore, but we can return 500 for chat if it fails here
-    // However, for supabase.functions.invoke, we need to return 200 with an error object
     return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200, // Returning 200 for supabase SDK compatibility for non-chat endpoints
+      status: 500,
     });
   }
 });

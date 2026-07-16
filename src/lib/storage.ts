@@ -180,7 +180,7 @@ export function sm2(card: ReviewCard, rating: 0 | 1 | 3 | 5): Partial<ReviewCard
 
   const next = new Date(todayIST() + "T00:00:00");
   next.setDate(next.getDate() + interval_days);
-  const next_review = next.toLocaleDateString("en-CA"); // YYYY-MM-DD in IST
+  const next_review = next.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
   return {
     ease_factor,
@@ -232,10 +232,12 @@ export function xpToLevel(xp: number): number {
 export function xpForNextLevel(xp: number): { current: number; needed: number; pct: number } {
   const level = xpToLevel(xp);
   const idx = level - 1;
+  // Max level reached — show 100% progress
+  if (idx + 1 >= LEVEL_THRESHOLDS.length) {
+    return { current: 0, needed: 1, pct: 100 };
+  }
   const current = xp - (LEVEL_THRESHOLDS[idx] ?? 0);
-  const needed =
-    (LEVEL_THRESHOLDS[idx + 1] ?? LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]) -
-    (LEVEL_THRESHOLDS[idx] ?? 0);
+  const needed = LEVEL_THRESHOLDS[idx + 1] - (LEVEL_THRESHOLDS[idx] ?? 0);
   return { current, needed, pct: Math.min(100, Math.round((current / needed) * 100)) };
 }
 

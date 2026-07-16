@@ -23,9 +23,10 @@ export function todayIST(): string {
  * Returns yesterday's date as a YYYY-MM-DD string in IST.
  */
 export function yesterdayIST(): string {
-  const d = new Date();
+  const todayStr = todayIST();
+  const d = new Date(todayStr + "T00:00:00");
   d.setDate(d.getDate() - 1);
-  return d.toLocaleDateString("en-CA", { timeZone: IST_TZ });
+  return d.toLocaleDateString("en-CA");
 }
 
 /**
@@ -50,7 +51,10 @@ export function formatDateIST(
   options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric" },
 ): string {
   // Append T00:00:00 so the date is parsed as local midnight, not UTC midnight.
-  return new Date(dateStr + "T00:00:00").toLocaleDateString(IST_LOCALE, options);
+  return new Date(dateStr + "T00:00:00").toLocaleDateString(IST_LOCALE, {
+    ...options,
+    timeZone: IST_TZ,
+  });
 }
 
 /**
