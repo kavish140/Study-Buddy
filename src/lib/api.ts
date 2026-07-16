@@ -123,7 +123,11 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { error } = await supabase.from("plan_items").delete().eq("id", id).eq("user_id", user_id);
+    const { error } = await supabase
+      .from("plan_items")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user_id);
     if (error) throw error;
   },
   // Clears all plan items for the current user — called before re-generating a plan
@@ -229,7 +233,11 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { error } = await supabase.from("mock_tests").delete().eq("id", id).eq("user_id", user_id);
+    const { error } = await supabase
+      .from("mock_tests")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user_id);
     if (error) throw error;
   },
 
@@ -293,7 +301,11 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { error } = await supabase.from("chat_sessions").delete().eq("id", id).eq("user_id", user_id);
+    const { error } = await supabase
+      .from("chat_sessions")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user_id);
     if (error) throw error;
   },
 
@@ -373,7 +385,11 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
-    const { error } = await supabase.from("review_cards").delete().eq("id", id).eq("user_id", user_id);
+    const { error } = await supabase
+      .from("review_cards")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user_id);
     if (error) throw error;
   },
 
@@ -524,7 +540,10 @@ export const api = {
     checkBadge("grinder", (context?.focusCount ?? 0) >= 10);
     checkBadge("reviewer", (context?.reviewCount ?? 0) >= 50);
     checkBadge("night_owl", hour >= 0 && hour < 4);
-    checkBadge("speed_demon", (context?.timeTakenSeconds ?? Infinity) < (context?.totalTimeSeconds ?? 0));
+    checkBadge(
+      "speed_demon",
+      (context?.timeTakenSeconds ?? Infinity) < (context?.totalTimeSeconds ?? 0),
+    );
     // Award first_steps on first ever XP — checkBadge already prevents duplicates
     checkBadge("first_steps", !!context?.onboardingCompleted);
 

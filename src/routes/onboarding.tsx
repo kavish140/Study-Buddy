@@ -127,7 +127,9 @@ function OnboardingPage() {
             .slice(0, 40);
           const daysUntil = Math.max(1, daysUntilIST(targetDate) ?? 1);
           const planDays = Math.min(daysUntil, 14);
-          const res = await generatePlan({ data: { topics, days: planDays } });
+          const res = await generatePlan({
+            data: { topics, days: planDays, source: "onboarding" },
+          });
           const planItems = res.plan.flatMap((d: { day: number; tasks: string[] }) => {
             const base = new Date(todayIST() + "T00:00:00");
             base.setDate(base.getDate() + d.day - 1);

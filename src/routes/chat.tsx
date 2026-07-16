@@ -544,6 +544,7 @@ function ChatView({
             file: pdfFile,
             prompt: userMsg,
             examName,
+            source: "chat",
           });
 
           onUpdate({
@@ -568,6 +569,7 @@ function ChatView({
           await streamChat({
             messages: messagesWithPdf,
             examName,
+            source: "chat",
             onChunk: (chunk) => {
               fullResponse += chunk;
               setStreamingContent(fullResponse);
@@ -608,7 +610,9 @@ function ChatView({
       const updatedMessages = [...session.messages, userMessage];
       const title =
         session.messages.length === 0
-          ? "\ud83d\udcf7 " + Array.from(userMsg).slice(0, 45).join("") + (Array.from(userMsg).length > 45 ? "\u2026" : "")
+          ? "\ud83d\udcf7 " +
+            Array.from(userMsg).slice(0, 45).join("") +
+            (Array.from(userMsg).length > 45 ? "\u2026" : "")
           : session.title;
 
       const updatedSession: ChatSession = {
@@ -629,6 +633,7 @@ function ChatView({
           mimeType,
           prompt: userMsg,
           examName,
+          source: "chat",
         });
 
         const assistantMessage: ChatMessage = {
@@ -683,6 +688,7 @@ function ChatView({
       await streamChat({
         messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
         examName,
+        source: "chat",
         onChunk: (chunk) => {
           fullResponse += chunk;
           setStreamingContent(fullResponse);
@@ -1066,7 +1072,8 @@ function CodeBlock({ lang, content }: { lang: string; content: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(content)
+    navigator.clipboard
+      .writeText(content)
       .then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);

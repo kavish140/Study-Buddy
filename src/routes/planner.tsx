@@ -99,7 +99,9 @@ function PlannerPage() {
     }
     setLoading(true);
     try {
-      const res = await generatePlan({ data: { topics: topics.slice(0, 40), days: Number(days) } });
+      const res = await generatePlan({
+        data: { topics: topics.slice(0, 40), days: Number(days), source: "planner" },
+      });
       const next: PlanItem[] = res.plan.flatMap((d) =>
         d.tasks.map((t) => ({ id: uid(), date: dayKey(d.day - 1), task: t, done: false })),
       );

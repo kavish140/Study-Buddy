@@ -144,7 +144,10 @@ export function createImagePreview(file: File, maxSize = 320): Promise<string> {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
-        if (!ctx) { resolve(reader.result as string); return; }
+        if (!ctx) {
+          resolve(reader.result as string);
+          return;
+        }
         ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL("image/jpeg", 0.7));
       };

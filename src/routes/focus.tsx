@@ -56,9 +56,8 @@ function FocusPage() {
     queryKey: ["subjects"],
     queryFn: api.getSubjects,
   });
-  const subjectNames = userSubjects.length > 0
-    ? [...userSubjects.map((s) => s.name), "Other"]
-    : SUBJECTS;
+  const subjectNames =
+    userSubjects.length > 0 ? [...userSubjects.map((s) => s.name), "Other"] : SUBJECTS;
 
   // Timer state
   const [mode, setMode] = useState<Mode>("work");

@@ -472,7 +472,9 @@ function AddCardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       role="dialog"
       aria-modal="true"
       onKeyDown={(e) => e.key === "Escape" && onClose()}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="glass-card rounded-2xl p-6 w-full max-w-md space-y-4">
         <div className="flex items-center justify-between">

@@ -11,9 +11,12 @@ const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") || "";
 
 /** Strip characters/patterns that could be used for prompt injection */
 function sanitizeInput(input: string, maxLength = 500): string {
-  return input
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "") // control chars
-    .slice(0, maxLength);
+  return (
+    input
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "") // control chars
+      .slice(0, maxLength)
+  );
 }
 
 async function callGroq(systemText: string, userText: string) {
@@ -86,9 +89,12 @@ Deno.serve(async (req) => {
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    { global: { headers: { Authorization: authHeader } } }
+    { global: { headers: { Authorization: authHeader } } },
   );
-  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabaseClient.auth.getUser();
   if (authError || !user) {
     return new Response(JSON.stringify({ error: "Invalid or expired authentication token" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -126,7 +132,10 @@ Deno.serve(async (req) => {
           : data.difficulty === "medium"
             ? "Questions should be JEE Main level — application-based, requiring formula application and moderate reasoning. Avoid purely definitional questions."
             : "Questions should be NCERT concept-check level — clear but not trivial. Test understanding, not just recall.";
-      const system = `You are an expert question setter ${examContext}. Generate rigorous multiple-choice questions suitable for competitive exam preparation. ${difficultyGuide} Every question must be self-contained with 4 distinct options (only one correct), precise scientific language, and a detailed explanation citing the relevant formula or principle. Respond ONLY with valid JSON.`;
+      const system =
+        data.source === "pyq"
+          ? `You are an expert examiner curating Previous Year Questions (PYQs) ${examContext}. ${difficultyGuide} Generate questions that PERFECTLY mimic the style, rigor, and format of actual past ${data.examName || "competitive exam"} papers. They must feel like real exam questions. Respond ONLY with valid JSON.`
+          : `You are an expert question setter ${examContext}. Generate rigorous multiple-choice questions suitable for competitive exam preparation. ${difficultyGuide} Every question must be self-contained with 4 distinct options (only one correct), precise scientific language, and a detailed explanation citing the relevant formula or principle. Respond ONLY with valid JSON.`;
       const user = `Generate ${count} ${data.difficulty}-difficulty MCQ questions on the topic: "${topic}" ${examContext}.\n\nRules:\n- Questions must test deep understanding, not surface recall\n- Include numerical/calculation problems where appropriate\n- Options must be plausible (no obviously wrong distractors)\n- Explanation must cite the formula, law, or concept used\n\nReturn JSON:\n{"questions":[{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answerIndex":0,"explanation":"..."}]}\nanswerIndex is 0-3.`;
       result = await callGroq(system, user);
     } else if (action === "generateNotes") {
@@ -146,7 +155,10 @@ Deno.serve(async (req) => {
       result = await callGroq(system, user);
     } else if (action === "generatePlan") {
       const planTopics = (data.topics || []).map((t: string) => sanitizeInput(t, 200));
-      const system = "You create realistic study schedules. Respond ONLY with valid JSON.";
+      const system =
+        data.source === "onboarding"
+          ? "You are an expert academic counselor creating an initial foundational study schedule for a new student. Keep it encouraging, realistic, and highly structured. Balance review and new material. Respond ONLY with valid JSON."
+          : "You create realistic study schedules. Respond ONLY with valid JSON.";
       const user = `Create a ${data.days}-day study plan for these topics: ${planTopics.join(", ")}.\nReturn JSON:\n{"plan":[{"day":1,"tasks":["Task 1","Task 2"]}]}\nBalance review and new material. 2-4 tasks per day.`;
       result = await callGroq(system, user);
     } else if (action === "generateMockTest") {
@@ -185,7 +197,20 @@ Deno.serve(async (req) => {
           ? `CRITICAL: All quiz questions MUST be at NEET difficulty — application-based biology/chemistry/physics, clinical reasoning, and formula application at 12th standard level.`
           : `CRITICAL: All questions must be at competitive exam difficulty — application-based, not rote recall.`;
 
-      const systemPrompt = `You are AcePrep AI Tutor — an expert teacher specializing in ${examName} preparation. You only discuss topics relevant to ${examName} syllabus.
+      const systemPrompt =
+        data.source === "community"
+          ? `You are AcePrep AI — an expert educator answering a student's question on a community forum for ${examName}.
+
+${difficultyMandate}
+
+Rules you MUST follow at all times:
+- Provide a direct, highly detailed, and authoritative answer to the forum post.
+- Act like a helpful expert on a forum, not an interactive chatbot. Do not ask follow-up questions.
+- Use markdown formatting: **bold** for key terms, code blocks for equations, numbered lists for steps.
+- For math/physics: show every step, name every formula used.
+- For chemistry: show mechanisms, electron configurations, or reaction equations where relevant.
+- Be concise but complete — avoid unnecessary filler text.`
+          : `You are AcePrep AI Tutor — an expert teacher specializing in ${examName} preparation. You only discuss topics relevant to ${examName} syllabus.
 
 ${difficultyMandate}
 

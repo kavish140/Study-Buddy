@@ -167,7 +167,9 @@ function SetupScreen({
           topics: s.topics.slice(0, 8),
         }));
 
-      const res = await generateMockTest({ data: { examName: examInfo.name, sections } });
+      const res = await generateMockTest({
+        data: { examName: examInfo.name, sections, source: "mock-test" },
+      });
 
       const totalQuestions = (res.sections || []).reduce(
         (sum: number, s) => sum + (s.questions?.length || 0),

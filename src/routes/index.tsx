@@ -49,7 +49,6 @@ function Dashboard() {
     queryFn: api.getDueReviewCards,
   });
 
-
   const examInfo = profile?.exam_id ? getExamById(profile.exam_id) : null;
   const daysRemaining = daysUntilIST(profile?.target_date);
 

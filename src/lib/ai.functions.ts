@@ -4,7 +4,9 @@ async function invokeEdgeFunction<T = Record<string, unknown>>(
   action: string,
   data: unknown,
 ): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session) throw new Error("Authentication required");
 
   let result;
@@ -33,35 +35,47 @@ async function invokeEdgeFunction<T = Record<string, unknown>>(
 export const generateQuiz = async ({
   data,
 }: {
-  data: { topic: string; count: number; difficulty: string; examName?: string };
+  data: { topic: string; count: number; difficulty: string; examName?: string; source?: string };
 }) => {
   return invokeEdgeFunction<{
     questions: { question: string; options: string[]; answerIndex: number; explanation: string }[];
   }>("generateQuiz", data);
 };
 
-export const generateNotes = async ({ data }: { data: { topic: string; examName?: string } }) => {
+export const generateNotes = async ({
+  data,
+}: {
+  data: { topic: string; examName?: string; source?: string };
+}) => {
   return invokeEdgeFunction<{ summary: string; flashcards: { q: string; a: string }[] }>(
     "generateNotes",
     data,
   );
 };
 
-export const parseSyllabus = async ({ data }: { data: { text: string } }) => {
+export const parseSyllabus = async ({ data }: { data: { text: string; source?: string } }) => {
   return invokeEdgeFunction<{ subjects: { name: string; topics: string[] }[] }>(
     "parseSyllabus",
     data,
   );
 };
 
-export const generatePlan = async ({ data }: { data: { topics: string[]; days: number } }) => {
+export const generatePlan = async ({
+  data,
+}: {
+  data: { topics: string[]; days: number; source?: string };
+}) => {
   return invokeEdgeFunction<{ plan: { day: number; tasks: string[] }[] }>("generatePlan", data);
 };
 
 export const generateMockTest = async ({
   data,
 }: {
-  data: { examName: string; sections: { name: string; questions: number; topics: string[] }[] };
+  data: {
+    examName: string;
+    sections: { name: string; questions: number; topics: string[] }[];
+    source?: string;
+  };
 }) => {
   return invokeEdgeFunction<{
     sections: {
@@ -83,12 +97,14 @@ export async function solveFromImage({
   mimeType,
   prompt,
   examName,
+  source,
   signal,
 }: {
   imageBase64: string;
   mimeType: string;
   prompt?: string;
   examName?: string;
+  source?: string;
   signal?: AbortSignal;
 }): Promise<{ response: string }> {
   const { data: userData } = await supabase.auth.getSession();
@@ -103,7 +119,7 @@ export async function solveFromImage({
         Authorization: `Bearer ${userData.session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ imageBase64, mimeType, prompt, examName }),
+      body: JSON.stringify({ imageBase64, mimeType, prompt, examName, source }),
       signal,
     });
   } catch (err) {
@@ -129,11 +145,13 @@ export async function solveFromPdf({
   file,
   prompt,
   examName,
+  source,
   signal,
 }: {
   file: File;
   prompt?: string;
   examName?: string;
+  source?: string;
   signal?: AbortSignal;
 }): Promise<{ response: string }> {
   const { data: userData } = await supabase.auth.getSession();
@@ -164,6 +182,7 @@ export async function solveFromPdf({
         mimeType: "application/pdf",
         prompt,
         examName,
+        source,
       }),
       signal,
     });
@@ -185,17 +204,21 @@ export async function solveFromPdf({
 export async function streamChat({
   messages,
   examName,
+  source,
   signal,
   onChunk,
   onDone,
 }: {
   messages: { role: string; content: string }[];
   examName?: string;
+  source?: string;
   signal?: AbortSignal;
   onChunk: (text: string) => void;
   onDone: () => void;
 }) {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session) throw new Error("Authentication required");
 
   let res;
@@ -207,7 +230,7 @@ export async function streamChat({
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ action: "chat", data: { messages, examName } }),
+      body: JSON.stringify({ action: "chat", data: { messages, examName, source } }),
       signal,
     });
   } catch (err) {

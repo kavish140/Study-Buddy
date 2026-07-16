@@ -371,7 +371,9 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
   // Keep a ref so callbacks (nextStep etc.) always see the latest tour without re-creating
   const activeTourRef = useRef(activeTour);
-  useEffect(() => { activeTourRef.current = activeTour; }, [activeTour]);
+  useEffect(() => {
+    activeTourRef.current = activeTour;
+  }, [activeTour]);
 
   const markCompleted = useCallback((tourId: string) => {
     setCompletedTours((prev) => {

@@ -277,7 +277,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
     setUpvoting(true);
     // Optimistically update the cache so the count reflects immediately
     qc.setQueryData(["forumPost", postId], (old: ForumPost | null | undefined) =>
-      old ? { ...old, upvotes: (old.upvotes ?? 0) + 1 } : old
+      old ? { ...old, upvotes: (old.upvotes ?? 0) + 1 } : old,
     );
     setUpvoted(true);
     try {
@@ -288,7 +288,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
     } catch (e) {
       // Rollback optimistic update
       qc.setQueryData(["forumPost", postId], (old: ForumPost | null | undefined) =>
-        old ? { ...old, upvotes: (old.upvotes ?? 0) - 1 } : old
+        old ? { ...old, upvotes: (old.upvotes ?? 0) - 1 } : old,
       );
       setUpvoted(false);
       toast.error("Failed to upvote");
@@ -317,6 +317,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
       await streamChat({
         messages: [{ role: "user", content: prompt }],
         examName: post.exam_id || "JEE Main",
+        source: "community",
         onChunk: (chunk) => setAiAnswer((a) => a + chunk),
         onDone: () => setAiLoading(false),
       });
@@ -565,7 +566,9 @@ function CreatePostModal({
               className="glass-subtle rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border text-foreground appearance-none cursor-pointer"
               style={{ colorScheme: "dark" }}
             >
-              <option value="" className="bg-background text-foreground">Select exam</option>
+              <option value="" className="bg-background text-foreground">
+                Select exam
+              </option>
               {EXAMS.map((e) => (
                 <option key={e.id} value={e.id} className="bg-background text-foreground">
                   {e.label}
@@ -578,7 +581,9 @@ function CreatePostModal({
               className="glass-subtle rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border text-foreground appearance-none cursor-pointer"
               style={{ colorScheme: "dark" }}
             >
-              <option value="" className="bg-background text-foreground">Select subject</option>
+              <option value="" className="bg-background text-foreground">
+                Select subject
+              </option>
               {SUBJECTS.map((s) => (
                 <option key={s} value={s} className="bg-background text-foreground">
                   {s}

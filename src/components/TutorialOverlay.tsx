@@ -64,7 +64,9 @@ export function TutorialOverlay() {
 
   // Keep a ref to the latest currentStep so scroll/resize handlers don't capture stale values
   const currentStepRef = useRef(currentStep);
-  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+  }, [currentStep]);
 
   const updatePosition = useCallback(() => {
     const step = currentStepRef.current;
@@ -141,7 +143,7 @@ export function TutorialOverlay() {
       if (scrollTimer) clearTimeout(scrollTimer);
       if (advanceTimer) clearTimeout(advanceTimer);
     };
-  }, [isActive, currentStep, updatePosition, nextStep]);
+  }, [isActive, currentStep, updatePosition, nextStep, skipTour]);
 
   if (!isActive || !currentStep) return null;
 

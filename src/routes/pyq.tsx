@@ -112,7 +112,9 @@ function PYQPage() {
       const subjectLabel = subject || (SUBJECTS[examId]?.[0] ?? "General");
 
       // Use study-ai generateQuiz action with user's auth token
-      const { data: { session } } = await (await import("@/lib/supabase")).supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await (await import("@/lib/supabase")).supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error("Please sign in to generate questions");
       }
@@ -130,6 +132,7 @@ function PYQPage() {
             count: 5,
             difficulty: difficulty || "hard",
             examName: examLabel,
+            source: "pyq",
           },
         }),
       });

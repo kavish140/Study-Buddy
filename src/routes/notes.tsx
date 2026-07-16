@@ -51,7 +51,9 @@ function NotesPage() {
     if (!topic.trim()) return;
     setLoading(true);
     try {
-      const res = await generateNotes({ data: { topic, examName: profile?.exam_name } });
+      const res = await generateNotes({
+        data: { topic, examName: profile?.exam_name, source: "notes" },
+      });
       const note: Note = {
         id: uid(),
         topic: topic.trim(),

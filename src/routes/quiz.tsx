@@ -58,7 +58,13 @@ function QuizPage() {
     setLoading(true);
     try {
       const res = await generateQuiz({
-        data: { topic, count: Number(count), difficulty, examName: profile?.exam_name },
+        data: {
+          topic,
+          count: Number(count),
+          difficulty,
+          examName: profile?.exam_name,
+          source: "quiz",
+        },
       });
       const quiz: SavedQuiz = {
         id: uid(),
