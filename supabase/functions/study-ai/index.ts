@@ -132,51 +132,83 @@ Deno.serve(async (req) => {
           : data.difficulty === "medium"
             ? "Questions should be JEE Main level — application-based, requiring formula application and moderate reasoning. Avoid purely definitional questions."
             : "Questions should be NCERT concept-check level — clear but not trivial. Test understanding, not just recall.";
-      const system =
+      const sourceContext =
         data.source === "pyq"
-          ? `You are an expert examiner curating Previous Year Questions (PYQs) ${examContext}. ${difficultyGuide} Generate questions that PERFECTLY mimic the style, rigor, and format of actual past ${data.examName || "competitive exam"} papers. They must feel like real exam questions. Respond ONLY with valid JSON.`
-          : `You are an expert question setter ${examContext}. Generate rigorous multiple-choice questions suitable for competitive exam preparation. ${difficultyGuide} Every question must be self-contained with 4 distinct options (only one correct), precise scientific language, and a detailed explanation citing the relevant formula or principle. Respond ONLY with valid JSON.`;
-      const user = `Generate ${count} ${data.difficulty}-difficulty MCQ questions on the topic: "${topic}" ${examContext}.\n\nRules:\n- Questions must test deep understanding, not surface recall\n- Include numerical/calculation problems where appropriate\n- Options must be plausible (no obviously wrong distractors)\n- Explanation must cite the formula, law, or concept used\n\nReturn JSON:\n{"questions":[{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answerIndex":0,"explanation":"..."}]}\nanswerIndex is 0-3.`;
+          ? `You are an expert examiner curating Previous Year Questions (PYQs) ${examContext}. ${difficultyGuide} Generate questions that PERFECTLY mimic the style, rigor, and format of actual past ${data.examName || "competitive exam"} papers. They must feel like real exam questions.`
+          : data.source === "notes"
+            ? `You are an expert question setter ${examContext} creating questions directly based on the student's own notes. ${difficultyGuide} Questions should test exactly what a student studying these notes needs to know — application, not memorisation.`
+            : `You are an expert question setter ${examContext}. Generate rigorous multiple-choice questions suitable for competitive exam preparation. ${difficultyGuide} Every question must be self-contained with 4 distinct options (only one correct), precise scientific language, and a detailed explanation.`;
+      const system = `${sourceContext} In your explanation field, use markdown formatting: **bold** key terms and formulas, use numbered steps for multi-step solutions. Respond ONLY with valid JSON.`;
+      const user = `Generate ${count} ${data.difficulty}-difficulty MCQ questions on the topic: "${topic}" ${examContext}.
+
+Rules:
+- Questions must test deep understanding, not surface recall
+- Include numerical/calculation problems where appropriate
+- Options must be plausible (no obviously wrong distractors)
+- Explanation: show every step, cite the formula/law/concept, **bold** the final answer
+
+Return JSON:
+{"questions":[{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answerIndex":0,"explanation":"..."}]}
+answerIndex is 0-3.`;
       result = await callGroq(system, user);
     } else if (action === "generateNotes") {
       const examName = data.examName || "JEE/NEET";
       const noteTopic = sanitizeInput(data.topic || "", 200);
-      const system = `You are an expert study coach for ${examName} preparation. You ONLY generate notes for topics that are part of the ${examName} syllabus — Physics, Chemistry, Mathematics (and Biology for NEET). If the requested topic is NOT from the exam syllabus (e.g. random trivia, opinions, unrelated subjects), return {"error": "Topic not in ${examName} syllabus. Please enter a valid exam topic."}. For valid syllabus topics, produce concise exam-focused notes and flashcards. Respond ONLY with valid JSON.`;
-      const user = `Generate study notes for topic: "${noteTopic}" for ${examName}.\n\nIf this is a valid ${examName} syllabus topic, return:\n{"summary":"3-5 sentence exam-focused summary with key formulas, important facts, and common exam traps","flashcards":[{"q":"...","a":"..."}]}\nGenerate 6 flashcards mixing: formula recall, conceptual understanding, and numerical application questions at ${examName} level.\nIf NOT a valid exam syllabus topic, return: {"error": "Topic not in ${examName} syllabus. Please enter a valid exam topic."}`;
+      const system = `You are an expert study coach for ${examName} preparation. You ONLY generate notes for topics that are part of the ${examName} syllabus — Physics, Chemistry, Mathematics (and Biology for NEET). If the requested topic is NOT from the exam syllabus (e.g. random trivia, opinions, unrelated subjects), return {"error": "Topic not in ${examName} syllabus. Please enter a valid exam topic."}.
+
+For valid syllabus topics:
+- Write a concise exam-focused summary: highlight key formulas in **bold**, mention common exam traps, and list the most important facts.
+- Use markdown in the summary: **bold** formulas and key terms, numbered lists for steps.
+- Generate 6 high-quality flashcards mixing: formula recall, conceptual understanding, and numerical application at ${examName} level.
+Respond ONLY with valid JSON.`;
+      const user = `Generate study notes for topic: "${noteTopic}" for ${examName}.
+
+If this is a valid ${examName} syllabus topic, return:
+{"summary":"3-5 sentence exam-focused summary. Use **bold** for key formulas and terms. Include common exam traps and important facts.","flashcards":[{"q":"...","a":"..."}]}
+Flashcards: mix formula recall (e.g. Q: State Newton's 2nd law A: F=ma), conceptual (why/how), and numerical (solve for X given Y) questions at ${examName} standard.
+If NOT a valid exam syllabus topic, return: {"error": "Topic not in ${examName} syllabus. Please enter a valid exam topic."}`;
       result = await callGroq(system, user);
       if (result?.error) {
         throw new Error(result.error);
       }
     } else if (action === "parseSyllabus") {
       const syllabusText = sanitizeInput(data.text || "", 2000);
-      const system =
-        "You convert raw syllabus text into structured subjects and topics. Respond ONLY with valid JSON.";
-      const user = `Syllabus text:\n${syllabusText}\n\nReturn JSON:\n{"subjects":[{"name":"Subject","topics":["Topic 1","Topic 2"]}]}\nGroup related items. Keep topic names short and concrete.`;
+      const examName = data.examName ? sanitizeInput(data.examName, 100) : null;
+      const examCtx = examName
+        ? `You are converting a ${examName} syllabus into a structured subject/topic map.`
+        : "You convert raw syllabus text into structured subjects and topics.";
+      const system = `${examCtx} Group logically related topics under their correct subject headings. Keep topic names short, concrete, and consistent with how they appear in official exam syllabi. Respond ONLY with valid JSON.`;
+      const user = `Syllabus text:\n${syllabusText}\n\nReturn JSON:\n{"subjects":[{"name":"Subject","topics":["Topic 1","Topic 2"]}]}\nGroup related items. Keep topic names short and concrete. Do not invent topics not present in the text.`;
       result = await callGroq(system, user);
     } else if (action === "generatePlan") {
       const planTopics = (data.topics || []).map((t: string) => sanitizeInput(t, 200));
+      const examName = data.examName ? sanitizeInput(data.examName, 100) : null;
+      const examCtx = examName ? `for ${examName} preparation` : "for competitive exam preparation";
       const system =
         data.source === "onboarding"
-          ? "You are an expert academic counselor creating an initial foundational study schedule for a new student. Keep it encouraging, realistic, and highly structured. Balance review and new material. Respond ONLY with valid JSON."
-          : "You create realistic study schedules. Respond ONLY with valid JSON.";
-      const user = `Create a ${data.days}-day study plan for these topics: ${planTopics.join(", ")}.\nReturn JSON:\n{"plan":[{"day":1,"tasks":["Task 1","Task 2"]}]}\nBalance review and new material. 2-4 tasks per day.`;
+          ? `You are an expert academic counselor creating an initial foundational study schedule for a new student ${examCtx}. Keep it encouraging, realistic, and highly structured. Prioritise weaker/foundational topics early, gradually increase difficulty. Balance revision and new material. Respond ONLY with valid JSON.`
+          : `You are an expert academic planner creating a targeted study schedule ${examCtx}. Structure the plan so that prerequisites are covered before advanced topics. Allocate more days to complex/high-weightage topics. Include dedicated revision sessions. Be realistic — 2-4 focused tasks per day. Respond ONLY with valid JSON.`;
+      const user = `Create a ${data.days}-day study plan for these topics: ${planTopics.join(", ")}.
+Return JSON:
+{"plan":[{"day":1,"tasks":["Task 1","Task 2"]}]}
+Balance review and new material. 2-4 tasks per day. Tasks must be specific and actionable (e.g. "Solve 10 problems on Newton's 3rd Law" not just "Study Newton's Laws").`;
       result = await callGroq(system, user);
     } else if (action === "generateMockTest") {
       const isJEE = (data.examName || "").toLowerCase().includes("jee");
       const isNEET = (data.examName || "").toLowerCase().includes("neet");
       const difficultyNote = isJEE
-        ? "Questions MUST be at JEE Main/Advanced difficulty: multi-step reasoning, numerical computation, formula application, conceptual depth. Avoid NCERT-level trivial questions."
+        ? "Questions MUST be at JEE Main/Advanced difficulty: multi-step reasoning, numerical computation, formula application, conceptual depth. Avoid NCERT-level trivial questions. Include integer-type and multi-correct style questions where appropriate."
         : isNEET
-          ? "Questions must be at NEET level: application-based, clinical reasoning for biology, formula-based for physics/chemistry."
-          : "Questions should be challenging and application-based, suitable for competitive exam preparation.";
-      const system = `You are an elite question setter for ${data.examName || "competitive exams"}. ${difficultyNote} Every question must have exactly 4 options (A,B,C,D), one correct answer, and a detailed explanation citing the formula/principle. Generate questions that would genuinely appear in the actual exam. Respond ONLY with valid JSON.`;
+          ? "Questions must be at NEET level: application-based, clinical reasoning for biology, formula-based for physics/chemistry. Questions should reflect actual NEET exam difficulty and style."
+          : "Questions should be challenging and application-based, suitable for competitive exam preparation. Avoid trivial recall questions.";
+      const system = `You are an elite question setter for ${data.examName || "competitive exams"}. ${difficultyNote} Every question must have exactly 4 options (A,B,C,D), one correct answer, and a detailed step-by-step explanation citing the formula/principle used. In the explanation field, use markdown: **bold** key formulas and the final answer, use numbered steps for multi-step solutions. Generate questions that would genuinely appear in the actual exam. Respond ONLY with valid JSON.`;
       const sectionInstructions = (data.sections || [])
         .map(
           (s: Section) =>
             `Section "${sanitizeInput(s.name, 200)}": ${s.questions} questions from topics: ${(s.topics || []).map((t: string) => sanitizeInput(t, 200)).join(", ")}. Mix numerical, conceptual, and application questions.`,
         )
         .join("\n");
-      const user = `Generate a mock test for ${data.examName} with these sections:\n${sectionInstructions}\n\nReturn JSON in this exact shape:\n{"sections":[{"name":"Section Name","questions":[{"id":"q1","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answerIndex":0,"explanation":"Step-by-step explanation citing formula","section":"Section Name","topic":"Topic Name"}]}]}\nEach question must have exactly 4 options. answerIndex is 0-3. Give each question a unique id like q1, q2, etc.`;
+      const user = `Generate a mock test for ${data.examName} with these sections:\n${sectionInstructions}\n\nReturn JSON in this exact shape:\n{"sections":[{"name":"Section Name","questions":[{"id":"q1","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answerIndex":0,"explanation":"Step-by-step explanation with **bold** formulas and final answer","section":"Section Name","topic":"Topic Name"}]}]}\nEach question must have exactly 4 options. answerIndex is 0-3. Give each question a unique id like q1, q2, etc.`;
       result = await callGroq(system, user);
     } else if (action === "chat") {
       if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is missing!");

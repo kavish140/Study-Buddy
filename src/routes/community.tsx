@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTutorial } from "@/components/TutorialProvider";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 export const Route = createFileRoute("/community")({
   head: () => ({
@@ -475,8 +476,12 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
               <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-auto" />
             )}
           </div>
-          <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap prose prose-sm max-w-none">
-            {aiAnswer || <span className="animate-pulse">Thinking…</span>}
+          <div className="text-sm leading-relaxed">
+            {aiAnswer ? (
+              <MarkdownContent content={aiAnswer} />
+            ) : (
+              <span className="animate-pulse text-muted-foreground">Thinking…</span>
+            )}
           </div>
         </div>
       )}

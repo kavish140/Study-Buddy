@@ -27,6 +27,7 @@ import { uid, type MockTest, type MockTestSection, type MockTestQuestion } from 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTutorial } from "@/components/TutorialProvider";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 export const Route = createFileRoute("/mock-test")({
   head: () => ({
@@ -980,7 +981,10 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
                       opacity: 0.7,
                     }}
                   >
-                    <strong>Explanation:</strong> {q.explanation}
+                    <span className="text-xs font-semibold text-foreground uppercase tracking-wide block mb-1">
+                      Explanation
+                    </span>
+                    <MarkdownContent content={q.explanation || ""} />
                   </div>
                 </div>
               );

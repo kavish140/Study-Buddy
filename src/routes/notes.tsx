@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTutorial } from "@/components/TutorialProvider";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 export const Route = createFileRoute("/notes")({
   head: () => ({
@@ -149,7 +150,9 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="font-semibold">{note.topic}</div>
-          <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{note.summary}</p>
+          <div className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            <MarkdownContent content={note.summary} />
+          </div>
         </div>
         <Button size="icon" variant="ghost" onClick={onRemove}>
           <Trash2 className="h-4 w-4" />

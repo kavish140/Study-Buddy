@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Theme = "light" | "dark" | "system";
 
@@ -23,6 +23,10 @@ export function useTheme() {
     return (localStorage.getItem("aceprep-theme") as Theme) ?? "system";
   });
 
+  // A counter that forces React to re-derive effectiveTheme when the OS
+  // preference flips while the user is in "system" mode.
+  const [, setOsTick] = useState(0);
+
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
@@ -31,7 +35,11 @@ export function useTheme() {
   useEffect(() => {
     if (theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => applyTheme("system");
+    const handler = () => {
+      applyTheme("system");
+      // Bump tick so React re-renders and effectiveTheme recalculates
+      setOsTick((n) => n + 1);
+    };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, [theme]);
@@ -42,16 +50,21 @@ export function useTheme() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setTheme = (t: Theme) => {
+  const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
     localStorage.setItem("aceprep-theme", t);
     applyTheme(t);
-  };
+  }, []);
 
-  const toggle = () => {
-    const effective = theme === "system" ? getSystemTheme() : theme;
-    setTheme(effective === "dark" ? "light" : "dark");
-  };
+  const toggle = useCallback(() => {
+    setThemeState((prev) => {
+      const effective = prev === "system" ? getSystemTheme() : prev;
+      const next = effective === "dark" ? "light" : "dark";
+      localStorage.setItem("aceprep-theme", next);
+      applyTheme(next);
+      return next;
+    });
+  }, []);
 
   const effectiveTheme: "light" | "dark" = theme === "system" ? getSystemTheme() : theme;
 

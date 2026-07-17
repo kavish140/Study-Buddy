@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useTutorial } from "@/components/TutorialProvider";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 export const Route = createFileRoute("/quiz")({
   head: () => ({
@@ -297,9 +298,13 @@ function QuizRunner({
               })}
             </div>
             {submitted && (
-              <div className="mt-3 text-sm text-muted-foreground border-t border-border pt-3">
-                <span className="font-medium text-foreground">Explanation: </span>
-                {q.explanation}
+              <div className="mt-3 border-t border-border pt-3">
+                <span className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                  Explanation
+                </span>
+                <div className="mt-1.5 text-sm text-muted-foreground">
+                  <MarkdownContent content={q.explanation || ""} />
+                </div>
               </div>
             )}
           </div>

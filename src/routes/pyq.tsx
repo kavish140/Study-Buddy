@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTutorial } from "@/components/TutorialProvider";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 export const Route = createFileRoute("/pyq")({
   head: () => ({
@@ -448,12 +449,12 @@ function QuestionCard({ question: q, index }: { question: PYQQuestion; index: nu
                 </div>
               ))}
               {q.explanation && (
-                <p
-                  className="text-xs text-muted-foreground mt-2 p-3 rounded-lg"
-                  style={{ background: "var(--muted)" }}
-                >
-                  {q.explanation}
-                </p>
+                <div className="mt-2 p-3 rounded-lg text-xs" style={{ background: "var(--muted)" }}>
+                  <span className="font-semibold text-foreground uppercase tracking-wide text-[10px] block mb-1">
+                    Explanation
+                  </span>
+                  <MarkdownContent content={q.explanation} className="text-muted-foreground" />
+                </div>
               )}
             </div>
           )}
@@ -615,11 +616,15 @@ function PracticeMode({
         </div>
         {state.revealed && q.explanation && (
           <div
-            className="p-4 rounded-xl text-sm text-muted-foreground border border-border"
+            className="p-4 rounded-xl border border-border"
             style={{ background: "var(--muted)" }}
           >
-            <span className="font-medium text-foreground">Explanation: </span>
-            {q.explanation}
+            <span className="text-xs font-semibold text-foreground uppercase tracking-wide block mb-1.5">
+              Explanation
+            </span>
+            <div className="text-sm text-muted-foreground">
+              <MarkdownContent content={q.explanation} />
+            </div>
           </div>
         )}
         {state.revealed && (

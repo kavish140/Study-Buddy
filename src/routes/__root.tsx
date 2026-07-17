@@ -17,6 +17,7 @@ import { AppLayout } from "../components/AppLayout";
 import { TutorialProvider } from "../components/TutorialProvider";
 import { TutorialOverlay } from "../components/TutorialOverlay";
 import { HelpButton } from "../components/HelpButton";
+import { useTheme } from "../hooks/use-theme";
 
 function NotFoundComponent() {
   return (
@@ -111,7 +112,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap",
       },
       {
         rel: "stylesheet",
@@ -139,6 +140,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isAuthPage = path === "/login" || path === "/onboarding";
+  const { effectiveTheme } = useTheme();
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -150,7 +152,7 @@ function RootComponent() {
             <HelpButton />
           </>
         )}
-        <Toaster richColors position="top-right" theme="dark" />
+        <Toaster richColors position="top-right" theme={effectiveTheme} />
       </TutorialProvider>
     </QueryClientProvider>
   );
