@@ -124,15 +124,19 @@ function ChatPage() {
   };
 
   return (
-    <div className="relative h-[calc(100vh-64px)] lg:h-screen flex overflow-hidden">
+    <div
+      className="relative h-[calc(100vh-64px)] lg:h-screen flex overflow-hidden animate-fade-up"
+      style={{ background: "var(--background)" }}
+    >
       {/* \u2500\u2500 Sidebar */}
       <aside
         className={cn(
-          "w-72 border-r border-border flex flex-col bg-sidebar transition-all duration-300 absolute lg:relative z-20 h-full",
+          "w-72 border-r border-border flex flex-col transition-all duration-300 absolute lg:relative z-20 h-full",
           showSidebar
             ? "translate-x-0"
             : "-translate-x-full lg:translate-x-0 lg:w-0 lg:border-0 lg:overflow-hidden",
         )}
+        style={{ background: "var(--sidebar)" }}
       >
         {/* Subtle top gradient shimmer */}
         <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none" />
@@ -171,9 +175,18 @@ function ChatPage() {
               className={cn(
                 "group relative flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all text-sm border-l-2",
                 activeSessionId === session.id
-                  ? "bg-primary/10 text-primary border-primary pl-[10px]"
+                  ? "pl-[10px]"
                   : "text-muted-foreground hover:bg-muted/30 hover:text-foreground border-transparent",
               )}
+              style={
+                activeSessionId === session.id
+                  ? {
+                      background: "var(--feat-chat-bg)",
+                      color: "var(--feat-chat)",
+                      borderColor: "var(--feat-chat)",
+                    }
+                  : undefined
+              }
               onClick={() => {
                 setActiveSessionId(session.id);
                 setShowSidebar(false);
@@ -198,7 +211,8 @@ function ChatPage() {
       {/* Backdrop for mobile sidebar */}
       {showSidebar && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-10 lg:hidden"
+          className="fixed inset-0 backdrop-blur-sm z-10 lg:hidden"
+          style={{ background: "rgba(0,0,0,0.25)" }}
           onClick={() => setShowSidebar(false)}
         />
       )}
@@ -268,7 +282,10 @@ function EmptyState({
   return (
     <div className="flex-1 flex flex-col min-w-0">
       {/* Header */}
-      <header className="glass border-b border-border px-4 py-3 flex items-center gap-3 shrink-0">
+      <header
+        className="border-b border-border px-4 py-3 flex items-center gap-3 shrink-0"
+        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)" }}
+      >
         <button
           onClick={onToggleSidebar}
           className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
@@ -294,7 +311,7 @@ function EmptyState({
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse 65% 55% at 50% 40%, rgba(59,130,246,0.09), transparent 70%)",
+              "radial-gradient(ellipse 65% 55% at 50% 40%, var(--feat-chat-bg), transparent 70%)",
           }}
         />
 
@@ -318,10 +335,13 @@ function EmptyState({
               <button
                 key={i}
                 onClick={() => handleSend(prompt.text)}
-                className="group glass-subtle p-4 rounded-2xl text-left hover:border-primary/30 hover:bg-primary/5 hover:-translate-y-0.5 hover:shadow-glow-sm transition-all duration-200"
+                className="card-light group p-4 rounded-2xl text-left hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200"
               >
-                <div className="h-7 w-7 rounded-lg bg-primary/10 grid place-items-center mb-2.5 group-hover:bg-primary/20 transition-colors">
-                  <prompt.icon className="h-3.5 w-3.5 text-primary" />
+                <div
+                  className="h-7 w-7 rounded-lg grid place-items-center mb-2.5 transition-colors"
+                  style={{ background: "var(--feat-chat-bg)" }}
+                >
+                  <prompt.icon className="h-3.5 w-3.5" style={{ color: "var(--feat-chat)" }} />
                 </div>
                 <div className="text-xs font-medium text-foreground leading-snug mb-0.5">
                   {prompt.text}
@@ -334,11 +354,15 @@ function EmptyState({
       </div>
 
       {/* Input bar */}
-      <div className="border-t border-border p-4 shrink-0 glass">
+      <div
+        className="border-t border-border p-4 shrink-0"
+        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)" }}
+      >
         <div className="max-w-3xl mx-auto">
           <div className="flex items-end gap-2">
             <label
-              className="h-10 w-10 shrink-0 rounded-xl glass-subtle grid place-items-center cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-all"
+              className="h-10 w-10 shrink-0 rounded-xl border border-border grid place-items-center cursor-pointer hover:border-primary/30 hover:bg-accent transition-all"
+              style={{ background: "var(--muted)" }}
               title="Upload image or take photo"
             >
               <Paperclip className="h-4 w-4 text-muted-foreground" />
@@ -357,7 +381,10 @@ function EmptyState({
                 }}
               />
             </label>
-            <div className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200">
+            <div
+              className="flex-1 rounded-2xl border border-border focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200"
+              style={{ background: "var(--muted)" }}
+            >
               <textarea
                 ref={inputRef}
                 value={input}
@@ -761,7 +788,8 @@ function ChatView({
 
       {/* Chat header */}
       <header
-        className="glass border-b border-border px-4 py-3 flex items-center gap-3 shrink-0"
+        className="border-b border-border px-4 py-3 flex items-center gap-3 shrink-0"
+        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)" }}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -832,7 +860,7 @@ function ChatView({
               <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center shrink-0 shadow-glow-sm">
                 <Bot className="h-4 w-4 text-white" />
               </div>
-              <div className="glass-subtle px-4 py-3 rounded-2xl rounded-tl-sm">
+              <div className="card-light px-4 py-3 rounded-2xl rounded-tl-sm">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
                   <span>
@@ -857,9 +885,10 @@ function ChatView({
                 <button
                   key={action.label}
                   onClick={() => handleSend(action.prompt)}
-                  className="shrink-0 text-xs px-3 py-1.5 rounded-full glass-subtle hover:border-primary/30 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 whitespace-nowrap"
+                  className="shrink-0 text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground transition-all flex items-center gap-1.5 whitespace-nowrap hover:border-primary/30"
+                  style={{ background: "var(--muted)" }}
                 >
-                  <action.icon className="h-3 w-3 text-primary" />
+                  <action.icon className="h-3 w-3" style={{ color: "var(--feat-chat)" }} />
                   {action.label}
                 </button>
               ))}
@@ -870,7 +899,10 @@ function ChatView({
       {/* Image preview strip */}
       {pendingImage && (
         <div className="px-4 pb-2 max-w-3xl mx-auto w-full">
-          <div className="inline-flex items-center gap-3 glass-subtle p-2.5 rounded-2xl border border-primary/20">
+          <div
+            className="inline-flex items-center gap-3 p-2.5 rounded-2xl border border-border"
+            style={{ background: "var(--muted)" }}
+          >
             <div className="relative h-16 w-16 rounded-xl overflow-hidden shrink-0">
               <img
                 src={pendingImage.previewUrl}
@@ -901,7 +933,10 @@ function ChatView({
       {/* PDF preview strip */}
       {pendingPdf && (
         <div className="px-4 pb-2 max-w-3xl mx-auto w-full">
-          <div className="inline-flex items-center gap-3 glass-subtle p-2.5 rounded-2xl border border-primary/20">
+          <div
+            className="inline-flex items-center gap-3 p-2.5 rounded-2xl border border-border"
+            style={{ background: "var(--muted)" }}
+          >
             <div className="h-12 w-12 rounded-xl bg-primary/15 grid place-items-center shrink-0">
               <FileText className="h-6 w-6 text-primary" />
             </div>
@@ -929,15 +964,19 @@ function ChatView({
       )}
 
       {/* Input area */}
-      <div className="border-t border-border p-4 shrink-0 glass">
+      <div
+        className="border-t border-border p-4 shrink-0"
+        style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)" }}
+      >
         <div className="max-w-3xl mx-auto">
           <div className="flex items-end gap-2">
             {/* Attach button */}
             <label
               className={cn(
-                "h-10 w-10 shrink-0 rounded-xl glass-subtle grid place-items-center cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-all",
+                "h-10 w-10 shrink-0 rounded-xl border border-border grid place-items-center cursor-pointer hover:border-primary/30 hover:bg-accent transition-all",
                 isStreaming && "opacity-40 pointer-events-none",
               )}
+              style={{ background: "var(--muted)" }}
               title="Attach image or PDF"
             >
               <Paperclip className="h-4 w-4 text-muted-foreground" />
@@ -956,7 +995,8 @@ function ChatView({
             </label>
 
             <div
-              className="flex-1 glass-subtle rounded-2xl focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200"
+              className="flex-1 rounded-2xl border border-border focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200"
+              style={{ background: "var(--muted)" }}
               data-tour="tour-chat-input"
             >
               <textarea
@@ -1017,20 +1057,32 @@ function MessageBubble({
       <div
         className={cn(
           "h-8 w-8 rounded-lg grid place-items-center shrink-0",
-          isUser ? "bg-accent/10" : "bg-gradient-primary shadow-glow-sm",
+          isUser ? "" : "bg-gradient-primary shadow-glow-sm",
         )}
+        style={isUser ? { background: "var(--feat-chat-bg)" } : undefined}
       >
-        {isUser ? <User className="h-4 w-4 text-accent" /> : <Bot className="h-4 w-4 text-white" />}
+        {isUser ? (
+          <User className="h-4 w-4" style={{ color: "var(--feat-chat)" }} />
+        ) : (
+          <Bot className="h-4 w-4 text-white" />
+        )}
       </div>
 
       <div className={cn("flex flex-col gap-1 max-w-[80%]", isUser && "items-end")}>
         <div
           className={cn(
             "rounded-2xl text-sm leading-relaxed",
-            isUser
-              ? "bg-primary/12 text-foreground rounded-tr-sm border border-primary/15"
-              : "glass-subtle rounded-tl-sm",
+            isUser ? "rounded-tr-sm" : "card-light rounded-tl-sm",
           )}
+          style={
+            isUser
+              ? {
+                  background: "var(--feat-chat-bg)",
+                  color: "var(--foreground)",
+                  border: "1px solid var(--border)",
+                }
+              : undefined
+          }
         >
           {/* Render image if present */}
           {message.imageUrl && (

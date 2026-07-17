@@ -37,8 +37,8 @@ const MODES: Record<
   { label: string; minutes: number; color: string; icon: React.ElementType }
 > = {
   work: { label: "Focus", minutes: 25, color: "text-primary", icon: Flame },
-  short_break: { label: "Short Break", minutes: 5, color: "text-emerald-400", icon: Coffee },
-  long_break: { label: "Long Break", minutes: 15, color: "text-amber-400", icon: Coffee },
+  short_break: { label: "Short Break", minutes: 5, color: "text-emerald-500", icon: Coffee },
+  long_break: { label: "Long Break", minutes: 15, color: "text-amber-500", icon: Coffee },
 };
 
 const SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "English", "Other"];
@@ -240,7 +240,7 @@ function FocusPage() {
   const ModeIcon = MODES[mode].icon;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-2xl mx-auto">
+    <div className="min-h-screen p-4 md:p-8 max-w-2xl mx-auto animate-fade-up">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -254,7 +254,8 @@ function FocusPage() {
         </div>
         <button
           onClick={() => setShowSettings((s) => !s)}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted/30 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg transition-colors"
+          style={{ background: "transparent" }}
         >
           Settings{" "}
           {showSettings ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -263,7 +264,7 @@ function FocusPage() {
 
       {/* Settings panel */}
       {showSettings && (
-        <div className="glass-card rounded-2xl p-5 mb-6 space-y-4">
+        <div className="card-light rounded-2xl p-5 mb-6 space-y-4">
           <h3 className="font-medium text-sm">Custom Durations (minutes)</h3>
           <div className="grid grid-cols-3 gap-3">
             {(Object.entries(customMinutes) as [Mode, number][]).map(([k, v]) => (
@@ -283,7 +284,7 @@ function FocusPage() {
                     // to avoid discarding progress mid-session.
                     if (mode === k && !isRunning) setSecondsLeft(val * 60);
                   }}
-                  className="w-full mt-1 glass-subtle rounded-lg px-3 py-2 text-sm bg-transparent outline-none"
+                  className="w-full mt-1 rounded-lg px-3 py-2 text-sm bg-transparent outline-none border border-border"
                 />
               </div>
             ))}
@@ -292,16 +293,25 @@ function FocusPage() {
       )}
 
       {/* Mode selector */}
-      <div className="flex gap-2 mb-8 glass-card rounded-xl p-1">
+      <div className="flex gap-2 mb-8 card-light rounded-xl p-1">
         {(Object.entries(MODES) as [Mode, (typeof MODES)[Mode]][]).map(([k, v]) => (
           <button
             key={k}
             onClick={() => switchMode(k)}
-            className={cn(
-              "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all",
+            style={
               mode === k
-                ? "bg-primary/15 text-primary border border-primary/20"
-                : "text-muted-foreground hover:text-foreground",
+                ? {
+                    background: "var(--feat-focus-bg)",
+                    color: "var(--feat-focus)",
+                    borderColor: "var(--feat-focus)",
+                  }
+                : {}
+            }
+            className={cn(
+              "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all border",
+              mode === k
+                ? "border"
+                : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
             {v.label}
@@ -336,17 +346,17 @@ function FocusPage() {
             />
             <defs>
               <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="hsl(var(--primary))" />
-                <stop offset="100%" stopColor="#06b6d4" />
+                <stop offset="0%" stopColor="var(--feat-focus)" />
+                <stop offset="100%" stopColor="var(--feat-focus)" stopOpacity={0.6} />
               </linearGradient>
             </defs>
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <ModeIcon className={cn("h-6 w-6 mb-1", MODES[mode].color)} />
+            <ModeIcon className="h-6 w-6 mb-1" style={{ color: "var(--feat-focus)" }} />
             <div className="text-5xl font-bold font-heading tabular-nums">
               {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
             </div>
-            <div className={cn("text-sm font-medium mt-1", MODES[mode].color)}>
+            <div className="text-sm font-medium mt-1" style={{ color: "var(--feat-focus)" }}>
               {MODES[mode].label}
             </div>
           </div>
@@ -356,7 +366,8 @@ function FocusPage() {
         <div className="flex items-center gap-4 mt-6">
           <button
             onClick={handleReset}
-            className="h-11 w-11 rounded-xl glass-subtle grid place-items-center text-muted-foreground hover:text-foreground transition-colors"
+            className="h-11 w-11 rounded-xl border border-border grid place-items-center text-muted-foreground hover:text-foreground transition-colors"
+            style={{ background: "var(--muted)" }}
           >
             <RotateCcw className="h-5 w-5" />
           </button>
@@ -367,7 +378,10 @@ function FocusPage() {
           >
             {isRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
           </Button>
-          <div className="h-11 w-11 rounded-xl glass-subtle grid place-items-center text-muted-foreground text-sm font-bold">
+          <div
+            className="h-11 w-11 rounded-xl border border-border grid place-items-center text-muted-foreground text-sm font-bold"
+            style={{ background: "var(--muted)" }}
+          >
             {sessionsCompleted}×
           </div>
         </div>
@@ -375,18 +389,25 @@ function FocusPage() {
 
       {/* Subject / Topic for logging */}
       {mode === "work" && (
-        <div className="glass-card rounded-2xl p-5 mb-6 space-y-3">
+        <div className="card-light rounded-2xl p-5 mb-6 space-y-3">
           <p className="text-sm font-medium">What are you studying?</p>
           <div className="flex gap-2 flex-wrap">
             {subjectNames.map((s) => (
               <button
                 key={s}
                 onClick={() => setSubject(subject === s ? "" : s)}
+                style={
+                  subject === s
+                    ? {
+                        background: "var(--feat-focus-bg)",
+                        color: "var(--feat-focus)",
+                        borderColor: "var(--feat-focus)",
+                      }
+                    : { background: "var(--muted)" }
+                }
                 className={cn(
                   "px-3 py-1 rounded-full text-xs border transition-all",
-                  subject === s
-                    ? "bg-primary/15 text-primary border-primary/30"
-                    : "glass-subtle text-muted-foreground hover:text-foreground",
+                  subject === s ? "" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {s}
@@ -397,7 +418,8 @@ function FocusPage() {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="Topic (e.g. Kinematics, Thermodynamics…)"
-            className="w-full glass-subtle rounded-xl px-4 py-2.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground"
+            className="w-full rounded-xl px-4 py-2.5 text-sm bg-transparent outline-none placeholder:text-muted-foreground border border-border"
+            style={{ background: "var(--muted)" }}
           />
         </div>
       )}
@@ -409,23 +431,23 @@ function FocusPage() {
             label: "Sessions today",
             value: todaySessions.length,
             icon: CheckCircle2,
-            color: "text-emerald-400",
+            iconStyle: { color: "var(--feat-syllabus)" } as React.CSSProperties,
           },
           {
             label: "Focus time",
             value: `${totalFocusMinutes}m`,
             icon: Clock,
-            color: "text-primary",
+            iconStyle: { color: "var(--feat-focus)" } as React.CSSProperties,
           },
           {
             label: "Sessions done",
             value: sessionsCompleted,
             icon: Flame,
-            color: "text-amber-400",
+            iconStyle: { color: "var(--feat-focus)" } as React.CSSProperties,
           },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="glass-card rounded-xl p-4 text-center">
-            <Icon className={cn("h-4 w-4 mx-auto mb-1", color)} />
+        ].map(({ label, value, icon: Icon, iconStyle }) => (
+          <div key={label} className="card-light rounded-xl p-4 text-center">
+            <Icon className="h-4 w-4 mx-auto mb-1" style={iconStyle} />
             <div className="text-xl font-bold">{value}</div>
             <div className="text-xs text-muted-foreground">{label}</div>
           </div>
@@ -434,13 +456,13 @@ function FocusPage() {
 
       {/* Recent sessions */}
       {todaySessions.length > 0 && (
-        <div className="mt-6 glass-card rounded-2xl p-5">
+        <div className="mt-6 card-light rounded-2xl p-5">
           <h3 className="text-sm font-medium mb-3">Today's Sessions</h3>
           <div className="space-y-2">
             {todaySessions.slice(0, 5).map((s) => (
               <div key={s.id} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                  <CheckCircle2 className="h-3.5 w-3.5" style={{ color: "var(--feat-syllabus)" }} />
                   <span>
                     {s.subject || "General"}
                     {s.topic ? ` · ${s.topic}` : ""}

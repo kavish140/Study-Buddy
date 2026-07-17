@@ -107,8 +107,8 @@ function Dashboard() {
   const FocusIcon = todayFocus.icon;
 
   return (
-    <div className="relative min-h-full">
-      {/* Hero gradient background */}
+    <div className="relative min-h-full" style={{ background: "var(--background)" }}>
+      {/* Subtle hero tint */}
       <div className="absolute inset-0 bg-gradient-hero pointer-events-none" />
 
       <div className="relative max-w-5xl mx-auto px-5 py-8 space-y-7" data-tour="tour-dashboard">
@@ -147,26 +147,34 @@ function Dashboard() {
 
         {/* ── Today's Focus card ──────────────────────────────────────── */}
         <div
-          className={`glass-card rounded-2xl p-5 bg-gradient-to-br ${todayFocus.color} border-primary/10`}
+          className="card-light rounded-2xl p-5 relative overflow-hidden"
           data-tour="tour-today-focus"
+          style={{ borderLeft: "4px solid var(--primary)" }}
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <div
-                className={`h-10 w-10 rounded-xl glass-subtle grid place-items-center shrink-0 ${todayFocus.iconColor}`}
+                className={`h-10 w-10 rounded-xl grid place-items-center shrink-0 ${todayFocus.iconColor}`}
+                style={{ background: "var(--accent)" }}
               >
                 <FocusIcon className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                <div
+                  className="text-xs font-semibold uppercase tracking-wide mb-1"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
                   Today's Focus
                 </div>
-                <p className="text-sm text-foreground/90 leading-relaxed">{todayFocus.msg}</p>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--foreground)" }}>
+                  {todayFocus.msg}
+                </p>
               </div>
             </div>
             <Link
               to={todayFocus.to}
-              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+              className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-white text-xs font-semibold hover:opacity-90 transition-opacity"
+              style={{ background: "var(--gradient-primary)" }}
             >
               {todayFocus.action}
               <ArrowRight size={12} />
@@ -210,15 +218,18 @@ function Dashboard() {
 
         {/* ── XP progress bar ─────────────────────────────────────────── */}
         {xpInfo && userStats && (
-          <div className="glass-card p-4 rounded-2xl">
+          <div className="card-light p-4 rounded-2xl">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-amber-400" />
-                <span className="text-sm font-medium">Level {userStats.level} Progress</span>
+                <Trophy className="h-4 w-4 text-amber-500" />
+                <span className="text-sm font-semibold">Level {userStats.level} Progress</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <div
+                className="flex items-center gap-2 text-xs"
+                style={{ color: "var(--muted-foreground)" }}
+              >
                 {userStats.current_streak > 0 && (
-                  <span className="flex items-center gap-1 text-amber-400">
+                  <span className="flex items-center gap-1 text-amber-500">
                     <Flame size={12} />
                     {userStats.current_streak}d streak
                   </span>
@@ -226,13 +237,21 @@ function Dashboard() {
                 <span className="text-gradient font-semibold">{xpInfo.pct}%</span>
               </div>
             </div>
-            <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
+            <div
+              className="h-2 rounded-full overflow-hidden"
+              style={{ background: "var(--muted)" }}
+            >
               <div
-                className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${xpInfo.pct}%` }}
+                className="h-full rounded-full progress-fill"
+                style={
+                  {
+                    "--pct": `${xpInfo.pct}%`,
+                    background: "linear-gradient(90deg, #f59e0b, #f97316)",
+                  } as React.CSSProperties
+                }
               />
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1">
+            <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
               {xpInfo.current}/{xpInfo.needed} XP to Level {userStats.level + 1}
             </div>
           </div>
@@ -240,7 +259,10 @@ function Dashboard() {
 
         {/* ── Quick action cards ──────────────────────────────────────── */}
         <div>
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+          <h2
+            className="text-sm font-bold uppercase tracking-widest mb-3"
+            style={{ color: "var(--muted-foreground)" }}
+          >
             Quick Actions
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -249,69 +271,86 @@ function Dashboard() {
               icon={<Brain className="h-5 w-5" />}
               label="Start Quiz"
               hint="AI exam questions"
-              gradient="from-blue-500 to-cyan-500"
-              glow="shadow-[0_4px_20px_rgba(59,130,246,0.3)]"
+              colorVar="--feat-quiz"
+              bgVar="--feat-quiz-bg"
             />
             <QuickAction
               to="/review"
               icon={<FlipHorizontal2 className="h-5 w-5" />}
               label="Review Cards"
               hint={dueCards.length > 0 ? `${dueCards.length} due now` : "All reviewed!"}
-              gradient="from-violet-500 to-purple-500"
-              glow="shadow-[0_4px_20px_rgba(139,92,246,0.3)]"
+              colorVar="--feat-review"
+              bgVar="--feat-review-bg"
             />
             <QuickAction
               to="/chat"
               icon={<Sparkles className="h-5 w-5" />}
               label="Ask AI Tutor"
               hint="Any question, anytime"
-              gradient="from-emerald-500 to-teal-500"
-              glow="shadow-[0_4px_20px_rgba(16,185,129,0.3)]"
+              colorVar="--feat-chat"
+              bgVar="--feat-chat-bg"
             />
             <QuickAction
               to="/focus"
               icon={<Flame className="h-5 w-5" />}
               label="Focus Session"
               hint="Pomodoro timer"
-              gradient="from-orange-500 to-amber-500"
-              glow="shadow-[0_4px_20px_rgba(245,158,11,0.3)]"
+              colorVar="--feat-focus"
+              bgVar="--feat-focus-bg"
             />
           </div>
         </div>
 
-        {/* ── Exam countdown + feature cards ─────────────────────────── */}
+        {/* ── Exam countdown ───────────────────────────────────────────── */}
         {examInfo && daysRemaining !== null && (
-          <div className="glass-card p-5 rounded-2xl flex items-center gap-5">
+          <div className="card-light p-5 rounded-2xl flex items-center gap-5">
             <div
               className="h-14 w-14 rounded-xl grid place-items-center text-2xl shrink-0"
-              style={{ backgroundColor: (examInfo.color || "#3b82f6") + "15" }}
+              style={{ backgroundColor: (examInfo.color || "#2563eb") + "15" }}
             >
               {examInfo.icon}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs text-muted-foreground">Preparing for</div>
-              <div className="font-bold font-heading text-lg">{examInfo.name}</div>
-              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+              <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                Preparing for
+              </div>
+              <div className="font-bold text-lg">{examInfo.name}</div>
+              <div
+                className="flex items-center gap-3 mt-1 text-xs"
+                style={{ color: "var(--muted-foreground)" }}
+              >
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {examInfo.examPattern.totalTimeMinutes} min
                 </span>
                 <span>{examInfo.examPattern.totalQuestions} questions</span>
-                <Link to="/onboarding" className="text-primary hover:underline">
+                <Link
+                  to="/onboarding"
+                  className="hover:underline"
+                  style={{ color: "var(--primary)" }}
+                >
                   Change
                 </Link>
               </div>
             </div>
-            <div className="text-center px-5 py-3 rounded-xl bg-primary/5 border border-primary/10 shrink-0">
-              <div className="text-3xl font-bold font-heading text-gradient">{daysRemaining}</div>
-              <div className="text-[11px] text-muted-foreground">days left</div>
+            <div
+              className="text-center px-5 py-3 rounded-xl shrink-0"
+              style={{ background: "var(--accent)", border: "1px solid var(--border)" }}
+            >
+              <div className="text-3xl font-bold text-gradient">{daysRemaining}</div>
+              <div className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                days left
+              </div>
             </div>
           </div>
         )}
 
         {/* ── Feature overview cards ──────────────────────────────────── */}
         <div>
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+          <h2
+            className="text-sm font-bold uppercase tracking-widest mb-3"
+            style={{ color: "var(--muted-foreground)" }}
+          >
             Features
           </h2>
           <div className="grid md:grid-cols-2 gap-3">
@@ -321,7 +360,8 @@ function Dashboard() {
               title="Syllabus Tracker"
               desc="Paste a syllabus and let AI structure subjects and topics. Mark progress as you go."
               badge={totalTopics > 0 ? `${pct}%` : undefined}
-              gradient="from-blue-500/20 to-cyan-500/10"
+              colorVar="--feat-syllabus"
+              bgVar="--feat-syllabus-bg"
             />
             <FeatureCard
               to="/planner"
@@ -329,14 +369,16 @@ function Dashboard() {
               title="Study Planner"
               desc="Auto-build a multi-day study schedule tailored to your exam date and remaining topics."
               badge={todayItems.length > 0 ? `${todayDone}/${todayItems.length} today` : undefined}
-              gradient="from-amber-500/20 to-orange-500/10"
+              colorVar="--feat-planner"
+              bgVar="--feat-planner-bg"
             />
             <FeatureCard
               to="/analytics"
               icon={<BarChart3 className="h-5 w-5" />}
               title="Analytics"
               desc="See your accuracy trend, weak subjects, and study time to optimise your preparation."
-              gradient="from-purple-500/20 to-pink-500/10"
+              colorVar="--feat-analytics"
+              bgVar="--feat-analytics-bg"
             />
             <FeatureCard
               to="/notes"
@@ -344,35 +386,45 @@ function Dashboard() {
               title="Notes & Flashcards"
               desc="Summarise any topic into clear notes and auto-generate a flashcard deck."
               badge={notes.length > 0 ? `${notes.length} notes` : undefined}
-              gradient="from-emerald-500/20 to-teal-500/10"
+              colorVar="--feat-notes"
+              bgVar="--feat-notes-bg"
             />
           </div>
         </div>
 
         {/* ── Overall progress bar ────────────────────────────────────── */}
         {totalTopics > 0 && (
-          <div className="glass-card p-5 rounded-2xl" data-tour="tour-overall-progress">
+          <div className="card-light p-5 rounded-2xl" data-tour="tour-overall-progress">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <TrendingUp className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <TrendingUp className="h-4 w-4" style={{ color: "var(--primary)" }} />
                 Overall Syllabus Progress
               </div>
-              <span className="text-sm font-semibold text-gradient">{pct}%</span>
+              <span className="text-sm font-bold text-gradient">{pct}%</span>
             </div>
-            <div className="h-2.5 bg-muted/40 rounded-full overflow-hidden">
+            <div
+              className="h-2.5 rounded-full overflow-hidden"
+              style={{ background: "var(--muted)" }}
+            >
               <div
-                className="h-full bg-gradient-primary rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${pct}%` }}
+                className="h-full rounded-full progress-fill"
+                style={
+                  {
+                    "--pct": `${pct}%`,
+                    background: "var(--gradient-primary)",
+                  } as React.CSSProperties
+                }
               />
             </div>
             <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                 {doneTopics} of {totalTopics} topics complete
               </span>
               {pct < 100 && (
                 <Link
                   to="/syllabus"
-                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                  className="text-xs hover:underline flex items-center gap-0.5"
+                  style={{ color: "var(--primary)" }}
                 >
                   Continue <ArrowRight size={11} />
                 </Link>
@@ -383,24 +435,37 @@ function Dashboard() {
 
         {/* ── Empty state for new users ───────────────────────────────── */}
         {totalTopics === 0 && quizzes.length === 0 && (
-          <div className="glass-card p-8 rounded-2xl text-center border-dashed border-2 border-primary/10">
-            <GraduationCap className="h-12 w-12 text-primary/40 mx-auto mb-4" />
-            <h3 className="font-semibold font-heading text-lg mb-2">Ready to start?</h3>
-            <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+          <div
+            className="card-light p-8 rounded-2xl text-center"
+            style={{ border: "2px dashed var(--border)" }}
+          >
+            <div
+              className="h-14 w-14 rounded-2xl mx-auto mb-4 grid place-items-center"
+              style={{ background: "var(--accent)" }}
+            >
+              <GraduationCap className="h-7 w-7" style={{ color: "var(--primary)" }} />
+            </div>
+            <h3 className="font-bold text-lg mb-2">Ready to start?</h3>
+            <p
+              className="text-sm mb-6 max-w-sm mx-auto"
+              style={{ color: "var(--muted-foreground)" }}
+            >
               Begin by adding your syllabus so AI can structure your subjects and topics. Then
               generate your first quiz!
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link
                 to="/syllabus"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-primary text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+                style={{ background: "var(--gradient-primary)" }}
               >
                 <BookOpen size={15} />
                 Set up Syllabus
               </Link>
               <Link
                 to="/quiz"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-sidebar-accent transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors hover:opacity-80"
+                style={{ border: "1px solid var(--border)", color: "var(--foreground)" }}
               >
                 <Brain size={15} />
                 Try a Quiz
@@ -431,33 +496,47 @@ function StatCard({
   ring?: number;
   linkTo?: string;
 }) {
-  const colorMap = {
-    primary: { bg: "bg-primary/10", text: "text-primary", border: "border-primary/20" },
-    accent: { bg: "bg-accent/10", text: "text-accent", border: "border-accent/20" },
-    warning: { bg: "bg-warning/10", text: "text-warning", border: "border-warning/20" },
-    success: { bg: "bg-success/10", text: "text-success", border: "border-success/20" },
+  const colorStyle = {
+    primary: { color: "var(--primary)", bg: "var(--accent)" },
+    accent: { color: "var(--accent)", bg: "rgba(6,182,212,0.08)" },
+    warning: { color: "var(--warning)", bg: "rgba(245,158,11,0.1)" },
+    success: { color: "var(--success)", bg: "rgba(16,185,129,0.1)" },
   };
-  const c = colorMap[accentColor];
+  const cs = colorStyle[accentColor];
 
   const content = (
-    <div className="glass-card p-4 rounded-2xl h-full">
+    <div className="card-light p-4 rounded-2xl h-full">
       <div className="flex items-center justify-between mb-2">
-        <div className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+        <div
+          className="text-[10px] font-bold uppercase tracking-widest"
+          style={{ color: "var(--muted-foreground)" }}
+        >
           {label}
         </div>
         <div
-          className={`h-7 w-7 rounded-lg ${c.bg} ${c.text} grid place-items-center border ${c.border}`}
+          className="h-8 w-8 rounded-lg grid place-items-center"
+          style={{ background: cs.bg, color: cs.color }}
         >
           {icon}
         </div>
       </div>
-      <div className="text-2xl font-bold font-heading">{value}</div>
-      <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>
+      <div className="text-2xl font-bold">{value}</div>
+      <div className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+        {hint}
+      </div>
       {ring !== undefined && ring > 0 && (
-        <div className="mt-2 h-1 bg-muted/30 rounded-full overflow-hidden">
+        <div
+          className="mt-2 h-1 rounded-full overflow-hidden"
+          style={{ background: "var(--muted)" }}
+        >
           <div
-            className="h-full bg-gradient-primary rounded-full transition-all duration-700"
-            style={{ width: `${ring}%` }}
+            className="h-full rounded-full progress-fill"
+            style={
+              {
+                "--pct": `${ring}%`,
+                background: "var(--gradient-primary)",
+              } as React.CSSProperties
+            }
           />
         </div>
       )}
@@ -480,27 +559,33 @@ function QuickAction({
   icon,
   label,
   hint,
-  gradient,
-  glow,
+  colorVar,
+  bgVar,
 }: {
   to: string;
   icon: React.ReactNode;
   label: string;
   hint: string;
-  gradient: string;
-  glow: string;
+  colorVar: string;
+  bgVar: string;
 }) {
   return (
     <Link
       to={to as "/quiz"}
-      className={`group flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-gradient-to-br ${gradient} border border-white/5 text-white ${glow} transition-all duration-200 hover:scale-[1.03] hover:brightness-110`}
+      className="group flex flex-col items-center justify-center gap-2 p-4 rounded-2xl transition-all duration-200 hover:scale-[1.03] card-light"
+      style={{ borderTopColor: `var(${colorVar})`, borderTopWidth: "3px" }}
     >
-      <div className="h-10 w-10 rounded-xl bg-white/15 grid place-items-center group-hover:bg-white/25 transition-colors">
+      <div
+        className="h-10 w-10 rounded-xl grid place-items-center transition-transform group-hover:scale-110"
+        style={{ background: `var(${bgVar})`, color: `var(${colorVar})` }}
+      >
         {icon}
       </div>
       <div className="text-center">
         <div className="text-sm font-semibold">{label}</div>
-        <div className="text-[11px] text-white/70">{hint}</div>
+        <div className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+          {hint}
+        </div>
       </div>
     </Link>
   );
@@ -512,40 +597,53 @@ function FeatureCard({
   icon,
   title,
   desc,
-  gradient,
+  colorVar,
+  bgVar,
   badge,
 }: {
   to: string;
   icon: React.ReactNode;
   title: string;
   desc: string;
-  gradient: string;
+  colorVar: string;
+  bgVar: string;
   badge?: string;
 }) {
   return (
     <Link
       to={to as "/syllabus"}
-      className="group glass-card p-5 rounded-2xl relative overflow-hidden"
+      className="group card-light p-5 rounded-2xl relative overflow-hidden"
     >
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-      />
-      <div className="relative flex items-start gap-3">
-        <div className="h-10 w-10 rounded-xl bg-gradient-primary grid place-items-center text-white shrink-0 group-hover:shadow-glow-sm transition-shadow duration-300">
+      <div className="flex items-start gap-3">
+        <div
+          className="h-10 w-10 rounded-xl grid place-items-center shrink-0 transition-transform group-hover:scale-110"
+          style={{ background: `var(${bgVar})`, color: `var(${colorVar})` }}
+        >
           {icon}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <div className="font-semibold font-heading">{title}</div>
+            <div className="font-semibold">{title}</div>
             {badge && (
-              <span className="px-2 py-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold border border-primary/20">
+              <span
+                className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                style={{ background: `var(${bgVar})`, color: `var(${colorVar})` }}
+              >
                 {badge}
               </span>
             )}
           </div>
-          <div className="text-sm text-muted-foreground mt-1 leading-relaxed">{desc}</div>
+          <div
+            className="text-sm mt-1 leading-relaxed"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            {desc}
+          </div>
         </div>
-        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+        <ArrowRight
+          className="h-4 w-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 mt-0.5"
+          style={{ color: `var(${colorVar})` }}
+        />
       </div>
     </Link>
   );

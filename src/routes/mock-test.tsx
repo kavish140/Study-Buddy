@@ -114,7 +114,6 @@ function MockTestPage() {
 
   return (
     <div className="relative min-h-full">
-      <div className="absolute inset-0 bg-gradient-hero pointer-events-none" />
       <div className="relative">
         {screen === "setup" && (
           <SetupScreen
@@ -212,7 +211,7 @@ function SetupScreen({
   const completedTests = mockTests.filter((t) => t.status === "completed");
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-6 py-10 animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight font-heading">
         <span className="text-gradient">Mock Tests</span>
       </h1>
@@ -221,7 +220,7 @@ function SetupScreen({
       </p>
 
       {/* Generate card */}
-      <div className="glass-card p-6 rounded-2xl mt-8" data-tour="tour-mock-new">
+      <div className="card-light p-6 rounded-2xl mt-8" data-tour="tour-mock-new">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-11 w-11 rounded-xl bg-gradient-primary grid place-items-center text-white">
             <Sparkles className="h-5 w-5" />
@@ -239,19 +238,19 @@ function SetupScreen({
         {examInfo && (
           <>
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="p-3 rounded-xl bg-muted/30 text-center">
+              <div className="p-3 rounded-xl text-center" style={{ background: "var(--muted)" }}>
                 <div className="text-lg font-bold font-heading">
                   {examInfo.examPattern.sections.length}
                 </div>
                 <div className="text-xs text-muted-foreground">Sections</div>
               </div>
-              <div className="p-3 rounded-xl bg-muted/30 text-center">
+              <div className="p-3 rounded-xl text-center" style={{ background: "var(--muted)" }}>
                 <div className="text-lg font-bold font-heading">
                   {examInfo.examPattern.totalTimeMinutes}m
                 </div>
                 <div className="text-xs text-muted-foreground">Total time</div>
               </div>
-              <div className="p-3 rounded-xl bg-muted/30 text-center">
+              <div className="p-3 rounded-xl text-center" style={{ background: "var(--muted)" }}>
                 <div className="text-lg font-bold font-heading">
                   {examInfo.examPattern.markingScheme.split(".")[0]}
                 </div>
@@ -270,8 +269,9 @@ function SetupScreen({
                       "px-4 py-2 rounded-xl text-sm font-medium transition-all",
                       questionsPerSection === n
                         ? "bg-gradient-primary text-white shadow-glow-sm"
-                        : "bg-muted/40 text-muted-foreground hover:bg-muted/60",
+                        : "text-muted-foreground hover:opacity-80",
                     )}
+                    style={questionsPerSection !== n ? { background: "var(--muted)" } : undefined}
                   >
                     {n}
                   </button>
@@ -309,7 +309,7 @@ function SetupScreen({
                 : 0;
               const mins = test.time_taken_seconds ? Math.round(test.time_taken_seconds / 60) : 0;
               return (
-                <div key={test.id} className="glass-card p-4 rounded-2xl flex items-center gap-4">
+                <div key={test.id} className="card-light p-4 rounded-2xl flex items-center gap-4">
                   <div
                     className={cn(
                       "h-12 w-12 rounded-xl grid place-items-center text-lg font-bold font-heading",
@@ -478,10 +478,9 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
         <div
           className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded-full font-mono text-sm font-bold",
-            isTimeLow
-              ? "bg-destructive/15 text-destructive animate-pulse"
-              : "bg-primary/10 text-primary",
+            isTimeLow ? "bg-destructive/15 text-destructive animate-pulse" : "bg-accent",
           )}
+          style={isTimeLow ? undefined : { color: "var(--primary)" }}
         >
           <Timer className="h-4 w-4" />
           {formatTime(timeLeft)}
@@ -592,7 +591,10 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
             <div className="flex-1 p-6 max-w-3xl mx-auto w-full">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                  <span
+                    className="text-xs px-2.5 py-1 rounded-full font-medium"
+                    style={{ background: "var(--accent)", color: "var(--primary)" }}
+                  >
                     Q{activeQuestion + 1} of {sectionQuestions.length}
                   </span>
                   <span className="text-xs text-muted-foreground">{currentQ.topic}</span>
@@ -621,19 +623,23 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
                       key={oi}
                       onClick={() => handleAnswer(currentQ.id, oi)}
                       className={cn(
-                        "w-full text-left p-4 rounded-xl transition-all duration-200 flex items-center gap-3",
+                        "w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center gap-3",
                         isSelected
-                          ? "glass border-2 border-primary shadow-glow-sm"
-                          : "glass-subtle hover:border-primary/20",
+                          ? "border-[color:var(--feat-mock)] shadow-sm"
+                          : "border-border hover:border-primary/20",
                       )}
+                      style={
+                        isSelected
+                          ? { background: "var(--feat-mock-bg)" }
+                          : { background: "var(--muted)" }
+                      }
                     >
                       <div
                         className={cn(
                           "h-8 w-8 rounded-lg grid place-items-center text-sm font-bold shrink-0",
-                          isSelected
-                            ? "bg-gradient-primary text-white"
-                            : "bg-muted/40 text-muted-foreground",
+                          isSelected ? "bg-primary text-white" : "text-muted-foreground",
                         )}
+                        style={isSelected ? undefined : { background: "var(--muted)" }}
                       >
                         {String.fromCharCode(65 + oi)}
                       </div>
@@ -719,7 +725,7 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
           onClick={() => setShowConfirm(false)}
         >
           <div
-            className="glass p-6 rounded-2xl max-w-sm w-full shadow-elegant"
+            className="card-light p-6 rounded-2xl max-w-sm w-full shadow-elegant"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -731,7 +737,10 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
                 <div className="text-sm text-muted-foreground">This action cannot be undone.</div>
               </div>
             </div>
-            <div className="text-sm space-y-1 mb-5 p-3 rounded-xl bg-muted/20">
+            <div
+              className="text-sm space-y-1 mb-5 p-3 rounded-xl"
+              style={{ background: "var(--muted)" }}
+            >
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Answered</span>
                 <span className="font-medium">
@@ -792,9 +801,9 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
   const unanswered = allQuestions.length - correct - incorrect;
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-6 py-10 animate-fade-up">
       {/* Score hero */}
-      <div className="glass-card p-8 rounded-2xl text-center mb-6">
+      <div className="card-light p-8 rounded-2xl text-center mb-6">
         <div
           className={cn(
             "inline-flex h-24 w-24 rounded-full items-center justify-center text-4xl font-bold font-heading mb-4",
@@ -821,17 +830,17 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="glass-card p-4 rounded-2xl text-center">
+        <div className="card-light p-4 rounded-2xl text-center">
           <CheckCircle2 className="h-5 w-5 text-success mx-auto mb-1" />
           <div className="text-xl font-bold font-heading">{correct}</div>
           <div className="text-xs text-muted-foreground">Correct</div>
         </div>
-        <div className="glass-card p-4 rounded-2xl text-center">
+        <div className="card-light p-4 rounded-2xl text-center">
           <XCircle className="h-5 w-5 text-destructive mx-auto mb-1" />
           <div className="text-xl font-bold font-heading">{incorrect}</div>
           <div className="text-xs text-muted-foreground">Incorrect</div>
         </div>
-        <div className="glass-card p-4 rounded-2xl text-center">
+        <div className="card-light p-4 rounded-2xl text-center">
           <CircleDot className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
           <div className="text-xl font-bold font-heading">{unanswered}</div>
           <div className="text-xs text-muted-foreground">Unanswered</div>
@@ -839,7 +848,7 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
       </div>
 
       {/* Section breakdown */}
-      <div className="glass-card p-5 rounded-2xl mb-6">
+      <div className="card-light p-5 rounded-2xl mb-6">
         <div className="flex items-center gap-2 mb-4">
           <BarChart3 className="h-4 w-4 text-primary" />
           <span className="font-semibold text-sm">Section Breakdown</span>
@@ -860,10 +869,18 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
                     {sCorrect}/{section.questions.length} ({sPct}%)
                   </span>
                 </div>
-                <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
+                <div
+                  className="h-2 rounded-full overflow-hidden"
+                  style={{ background: "var(--muted)" }}
+                >
                   <div
-                    className="h-full bg-gradient-primary rounded-full transition-all duration-700"
-                    style={{ width: `${sPct}%` }}
+                    className="progress-fill h-full rounded-full transition-all duration-700"
+                    style={
+                      {
+                        "--pct": `${sPct}%`,
+                        background: "var(--gradient-primary)",
+                      } as React.CSSProperties
+                    }
                   />
                 </div>
               </div>
@@ -908,7 +925,7 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
               const isCorrect = userAnswer === q.answerIndex;
               const isUnanswered = userAnswer === null || userAnswer === undefined;
               return (
-                <div key={q.id} className="glass-card p-5 rounded-2xl">
+                <div key={q.id} className="card-light p-5 rounded-2xl">
                   <div className="flex items-center gap-2 mb-3">
                     <span
                       className={cn(
@@ -953,7 +970,16 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
                     ))}
                   </div>
 
-                  <div className="text-xs text-muted-foreground p-3 rounded-lg bg-primary/5 border border-primary/10">
+                  <div
+                    className="text-xs text-muted-foreground p-3 rounded-lg"
+                    style={{
+                      background: "var(--accent)",
+                      borderColor: "var(--primary)",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      opacity: 0.7,
+                    }}
+                  >
                     <strong>Explanation:</strong> {q.explanation}
                   </div>
                 </div>

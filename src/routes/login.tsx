@@ -47,25 +47,27 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background">
-      {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-hero" />
+      {/* Subtle background accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Floating orbs */}
-        <div className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-primary/5 blur-3xl animate-float" />
+        {/* Floating orbs — very low opacity for light mode */}
         <div
-          className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full bg-accent/5 blur-3xl animate-float"
-          style={{ animationDelay: "-3s" }}
+          className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full blur-3xl animate-float"
+          style={{ background: "rgba(99,102,241,0.04)" }}
         />
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-primary/5 blur-3xl animate-float"
-          style={{ animationDelay: "-1.5s" }}
+          className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full blur-3xl animate-float"
+          style={{ background: "rgba(59,130,246,0.04)", animationDelay: "-3s" }}
         />
-        {/* Grid overlay */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-float"
+          style={{ background: "rgba(99,102,241,0.04)", animationDelay: "-1.5s" }}
+        />
+        {/* Grid overlay — very subtle blue tint */}
+        <div
+          className="absolute inset-0"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(59,130,246,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.3) 1px, transparent 1px)",
+              "linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
           }}
         />
@@ -98,7 +100,7 @@ function Login() {
         </div>
 
         {/* Login card */}
-        <div className="glass p-8 rounded-2xl shadow-elegant">
+        <div className="card-light p-8 rounded-2xl animate-fade-in">
           <div className="text-center mb-6">
             <h2 className="text-lg font-semibold">Welcome back</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -156,7 +158,8 @@ function Login() {
             {["JEE", "NEET", "SAT", "GRE", "CAT", "UPSC"].map((exam) => (
               <span
                 key={exam}
-                className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary/80 font-medium"
+                className="text-xs px-2.5 py-1 rounded-full font-medium"
+                style={{ background: "var(--accent)", color: "var(--primary)" }}
               >
                 {exam}
               </span>

@@ -87,7 +87,7 @@ function CommunityPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto">
+    <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto animate-fade-up">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -114,10 +114,13 @@ function CommunityPage() {
           onClick={() => setExamFilter("")}
           className={cn(
             "px-3 py-1 rounded-full text-xs border transition-all",
-            !examFilter
-              ? "bg-primary/15 text-primary border-primary/30"
-              : "glass-subtle text-muted-foreground",
+            !examFilter ? "border-primary/30" : "border-border text-muted-foreground",
           )}
+          style={
+            !examFilter
+              ? { background: "var(--accent)", color: "var(--primary)" }
+              : { background: "var(--muted)" }
+          }
         >
           All exams
         </button>
@@ -128,9 +131,14 @@ function CommunityPage() {
             className={cn(
               "px-3 py-1 rounded-full text-xs border transition-all",
               examFilter === e.id
-                ? "bg-primary/15 text-primary border-primary/30"
-                : "glass-subtle text-muted-foreground hover:text-foreground",
+                ? "border-primary/30"
+                : "border-border text-muted-foreground hover:text-foreground",
             )}
+            style={
+              examFilter === e.id
+                ? { background: "var(--accent)", color: "var(--primary)" }
+                : { background: "var(--muted)" }
+            }
           >
             {e.label}
           </button>
@@ -143,9 +151,14 @@ function CommunityPage() {
             className={cn(
               "px-3 py-1 rounded-full text-xs border transition-all",
               subjectFilter === s
-                ? "bg-accent/15 text-accent border-accent/30"
-                : "glass-subtle text-muted-foreground hover:text-foreground",
+                ? "border-primary/30"
+                : "border-border text-muted-foreground hover:text-foreground",
             )}
+            style={
+              subjectFilter === s
+                ? { background: "var(--accent)", color: "var(--primary)" }
+                : { background: "var(--muted)" }
+            }
           >
             {s}
           </button>
@@ -156,11 +169,11 @@ function CommunityPage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-24 glass-card rounded-xl animate-pulse" />
+            <div key={i} className="h-24 card-light rounded-xl animate-pulse" />
           ))}
         </div>
       ) : posts.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="card-light rounded-2xl p-12 text-center">
           <MessageSquare className="h-12 w-12 text-primary/20 mx-auto mb-4" />
           <p className="text-lg font-medium mb-2">No discussions yet</p>
           <p className="text-sm text-muted-foreground mb-6">Be the first to start a discussion!</p>
@@ -174,18 +187,32 @@ function CommunityPage() {
             <button
               key={post.id}
               onClick={() => setActivePost(post.id)}
-              className="w-full glass-card rounded-xl p-4 text-left hover:border-primary/20 transition-all group"
+              className="w-full card-light rounded-xl p-4 text-left hover:border-primary/30 transition-all group"
             >
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap gap-1.5 mb-1">
                     {post.exam_id && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                      <span
+                        className="text-[10px] px-2 py-0.5 rounded-full border"
+                        style={{
+                          background: "var(--feat-community-bg)",
+                          color: "var(--feat-community)",
+                          borderColor: "var(--feat-community-bg)",
+                        }}
+                      >
                         {examLabel(post.exam_id)}
                       </span>
                     )}
                     {post.subject && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
+                      <span
+                        className="text-[10px] px-2 py-0.5 rounded-full border"
+                        style={{
+                          background: "var(--feat-community-bg)",
+                          color: "var(--feat-community)",
+                          borderColor: "var(--feat-community-bg)",
+                        }}
+                      >
                         {post.subject}
                       </span>
                     )}
@@ -358,16 +385,30 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
       </button>
 
       {/* Post */}
-      <div className="glass-card rounded-2xl p-6 mb-6">
+      <div className="card-light rounded-2xl p-6 mb-6">
         <div className="flex flex-wrap gap-1.5 mb-3">
           {post.exam_id && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+            <span
+              className="text-xs px-2 py-0.5 rounded-full border"
+              style={{
+                background: "var(--feat-community-bg)",
+                color: "var(--feat-community)",
+                borderColor: "var(--feat-community-bg)",
+              }}
+            >
               {/* Bug fix #3: use examLabel() instead of raw .toUpperCase() on the slug */}
               {examLabel(post.exam_id)}
             </span>
           )}
           {post.subject && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
+            <span
+              className="text-xs px-2 py-0.5 rounded-full border"
+              style={{
+                background: "var(--feat-community-bg)",
+                color: "var(--feat-community)",
+                borderColor: "var(--feat-community-bg)",
+              }}
+            >
               {post.subject}
             </span>
           )}
@@ -385,10 +426,16 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
             title={upvoted ? "Already upvoted" : "Upvote this post"}
             className={cn(
               "flex items-center gap-1.5 text-sm transition-colors",
-              upvoted
-                ? "text-primary cursor-default"
-                : "text-muted-foreground hover:text-primary cursor-pointer",
+              upvoted ? "cursor-default" : "text-muted-foreground cursor-pointer",
             )}
+            style={upvoted ? { color: "var(--feat-community)" } : undefined}
+            onMouseEnter={(e) => {
+              if (!upvoted)
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--feat-community)";
+            }}
+            onMouseLeave={(e) => {
+              if (!upvoted) (e.currentTarget as HTMLButtonElement).style.color = "";
+            }}
           >
             {upvoting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -420,7 +467,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
 
       {/* AI Answer */}
       {(aiAnswer || aiLoading) && (
-        <div className="glass-card rounded-2xl p-5 mb-6 border border-primary/20">
+        <div className="card-light rounded-2xl p-5 mb-6 border border-primary/20">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">AI Answer</span>
@@ -428,7 +475,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
               <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-auto" />
             )}
           </div>
-          <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap prose prose-sm prose-invert max-w-none">
+          <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap prose prose-sm max-w-none">
             {aiAnswer || <span className="animate-pulse">Thinking…</span>}
           </div>
         </div>
@@ -441,12 +488,12 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
           <div
             key={r.id}
             className={cn(
-              "glass-card rounded-xl p-4",
+              "card-light rounded-xl p-4",
               r.is_accepted && "border border-emerald-500/30 bg-emerald-500/5",
             )}
           >
             {r.is_accepted && (
-              <div className="flex items-center gap-1.5 text-xs text-emerald-400 mb-2">
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 mb-2">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Accepted answer
               </div>
             )}
@@ -461,7 +508,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
               {!r.is_accepted && (
                 <button
                   onClick={() => handleAcceptReply(r.id)}
-                  className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-emerald-400 transition-colors"
+                  className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-emerald-600 transition-colors"
                   title="Mark as accepted answer"
                 >
                   <CheckCircle2 className="h-3 w-3" /> Accept
@@ -473,7 +520,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
       </div>
 
       {/* Reply input */}
-      <div className="glass-card rounded-2xl p-4">
+      <div className="card-light rounded-2xl p-4">
         <p className="text-sm font-medium mb-3">Add your reply</p>
         <textarea
           value={reply}
@@ -481,7 +528,8 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
           onKeyDown={handleReplyKeyDown}
           placeholder="Share your solution or thoughts… (Ctrl+Enter to submit)"
           rows={4}
-          className="w-full glass-subtle rounded-xl px-4 py-3 text-sm bg-transparent outline-none resize-none placeholder:text-muted-foreground mb-3"
+          className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground mb-3 border border-border"
+          style={{ background: "var(--muted)" }}
         />
         <div className="flex justify-end">
           <Button
@@ -538,7 +586,7 @@ function CreatePostModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4">
-      <div className="glass-card rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="card-light rounded-2xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-lg">Ask a Question</h2>
           <button onClick={onClose}>
@@ -550,21 +598,23 @@ function CreatePostModal({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Question title *"
-            className="w-full glass-subtle rounded-xl px-4 py-2.5 text-sm bg-transparent outline-none"
+            className="w-full rounded-xl px-4 py-2.5 text-sm outline-none border border-border"
+            style={{ background: "var(--muted)" }}
           />
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Describe your doubt in detail… *"
             rows={5}
-            className="w-full glass-subtle rounded-xl px-4 py-2.5 text-sm bg-transparent outline-none resize-none"
+            className="w-full rounded-xl px-4 py-2.5 text-sm outline-none resize-none border border-border"
+            style={{ background: "var(--muted)" }}
           />
           <div className="grid grid-cols-2 gap-2">
             <select
               value={examId}
               onChange={(e) => setExamId(e.target.value)}
-              className="glass-subtle rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border text-foreground appearance-none cursor-pointer"
-              style={{ colorScheme: "dark" }}
+              className="rounded-xl px-3 py-2 text-sm outline-none border border-border text-foreground appearance-none cursor-pointer"
+              style={{ background: "var(--muted)" }}
             >
               <option value="" className="bg-background text-foreground">
                 Select exam
@@ -578,8 +628,8 @@ function CreatePostModal({
             <select
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="glass-subtle rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border text-foreground appearance-none cursor-pointer"
-              style={{ colorScheme: "dark" }}
+              className="rounded-xl px-3 py-2 text-sm outline-none border border-border text-foreground appearance-none cursor-pointer"
+              style={{ background: "var(--muted)" }}
             >
               <option value="" className="bg-background text-foreground">
                 Select subject
@@ -595,7 +645,8 @@ function CreatePostModal({
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="Topic (e.g. Rotational Motion)"
-            className="w-full glass-subtle rounded-xl px-4 py-2.5 text-sm bg-transparent outline-none"
+            className="w-full rounded-xl px-4 py-2.5 text-sm outline-none border border-border"
+            style={{ background: "var(--muted)" }}
           />
         </div>
         <div className="flex gap-3">

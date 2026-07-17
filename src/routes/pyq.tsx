@@ -195,7 +195,7 @@ function PYQPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-5xl mx-auto">
+    <div className="min-h-screen p-4 md:p-8 max-w-5xl mx-auto animate-fade-up">
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -218,7 +218,7 @@ function PYQPage() {
 
       {/* AI Generate strip */}
       <div
-        className="glass-card rounded-2xl p-4 mb-6 border border-primary/20"
+        className="card-light rounded-2xl p-4 mb-6 border border-primary/20"
         data-tour="tour-pyq-generate"
       >
         <p className="text-sm font-medium mb-3 flex items-center gap-2">
@@ -230,7 +230,8 @@ function PYQPage() {
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
             placeholder="Topic (e.g. Electromagnetic Induction)"
-            className="flex-1 min-w-[200px] glass-subtle rounded-xl px-3 py-2 text-sm bg-transparent outline-none"
+            className="flex-1 min-w-[200px] rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border"
+            style={{ background: "var(--muted)" }}
           />
           <Button
             onClick={handleGenerate}
@@ -248,7 +249,7 @@ function PYQPage() {
       </div>
 
       {/* Filters */}
-      <div className="glass-card rounded-2xl p-4 mb-6 space-y-3">
+      <div className="card-light rounded-2xl p-4 mb-6 space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium">
           <Filter className="h-4 w-4 text-muted-foreground" /> Filters
         </div>
@@ -261,11 +262,18 @@ function PYQPage() {
                 setExamId(e);
                 setSubject("");
               }}
+              style={
+                examId === e
+                  ? {
+                      background: "var(--feat-pyq-bg)",
+                      color: "var(--feat-pyq)",
+                      borderColor: "var(--feat-pyq)",
+                    }
+                  : { background: "var(--muted)" }
+              }
               className={cn(
                 "px-3 py-1 rounded-full text-xs border transition-all",
-                examId === e
-                  ? "bg-primary/15 text-primary border-primary/30"
-                  : "glass-subtle text-muted-foreground hover:text-foreground",
+                examId === e ? "" : "text-muted-foreground hover:text-foreground",
               )}
             >
               {EXAM_LABELS[e]}
@@ -276,11 +284,18 @@ function PYQPage() {
           {/* Subject */}
           <button
             onClick={() => setSubject("")}
+            style={
+              !subject
+                ? {
+                    background: "var(--feat-pyq-bg)",
+                    color: "var(--feat-pyq)",
+                    borderColor: "var(--feat-pyq)",
+                  }
+                : { background: "var(--muted)" }
+            }
             className={cn(
               "px-3 py-1 rounded-full text-xs border transition-all",
-              !subject
-                ? "bg-primary/15 text-primary border-primary/30"
-                : "glass-subtle text-muted-foreground",
+              !subject ? "" : "text-muted-foreground",
             )}
           >
             All subjects
@@ -289,11 +304,18 @@ function PYQPage() {
             <button
               key={s}
               onClick={() => setSubject(s === subject ? "" : s)}
+              style={
+                subject === s
+                  ? {
+                      background: "var(--feat-pyq-bg)",
+                      color: "var(--feat-pyq)",
+                      borderColor: "var(--feat-pyq)",
+                    }
+                  : { background: "var(--muted)" }
+              }
               className={cn(
                 "px-3 py-1 rounded-full text-xs border transition-all",
-                subject === s
-                  ? "bg-primary/15 text-primary border-primary/30"
-                  : "glass-subtle text-muted-foreground hover:text-foreground",
+                subject === s ? "" : "text-muted-foreground hover:text-foreground",
               )}
             >
               {s}
@@ -304,7 +326,8 @@ function PYQPage() {
           <select
             value={year}
             onChange={(e) => setYear(e.target.value ? Number(e.target.value) : "")}
-            className="glass-subtle rounded-lg px-3 py-1.5 text-xs bg-transparent outline-none border border-border"
+            className="rounded-lg px-3 py-1.5 text-xs bg-transparent outline-none border border-border"
+            style={{ background: "var(--muted)" }}
           >
             <option value="">All years</option>
             {YEARS.map((y) => (
@@ -317,6 +340,7 @@ function PYQPage() {
             <button
               key={d}
               onClick={() => setDifficulty(d === difficulty ? "" : d)}
+              style={difficulty === d ? undefined : { background: "var(--muted)" }}
               className={cn(
                 "px-3 py-1 rounded-full text-xs border transition-all capitalize",
                 difficulty === d
@@ -325,13 +349,16 @@ function PYQPage() {
                     : d === "medium"
                       ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
                       : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                  : "glass-subtle text-muted-foreground hover:text-foreground",
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {d}
             </button>
           ))}
-          <div className="flex items-center gap-2 flex-1 min-w-[160px] glass-subtle rounded-xl px-3 py-1.5">
+          <div
+            className="flex items-center gap-2 flex-1 min-w-[160px] rounded-xl px-3 py-1.5 border border-border"
+            style={{ background: "var(--muted)" }}
+          >
             <Search className="h-3 w-3 text-muted-foreground shrink-0" />
             <input
               value={search}
@@ -347,11 +374,11 @@ function PYQPage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-20 glass-card rounded-xl animate-pulse" />
+            <div key={i} className="h-20 card-light rounded-xl animate-pulse" />
           ))}
         </div>
       ) : questions.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center">
+        <div className="card-light rounded-2xl p-12 text-center">
           <BookOpen className="h-12 w-12 text-primary/20 mx-auto mb-4" />
           <p className="text-lg font-medium mb-2">No questions found</p>
           <p className="text-sm text-muted-foreground mb-6">
@@ -382,7 +409,7 @@ function QuestionCard({ question: q, index }: { question: PYQQuestion; index: nu
         : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
 
   return (
-    <div className="glass-card rounded-xl p-4">
+    <div className="card-light rounded-xl p-4">
       <div className="flex items-start gap-3">
         <span className="text-xs text-muted-foreground shrink-0 mt-0.5">Q{index + 1}</span>
         <div className="flex-1 min-w-0">
@@ -403,18 +430,28 @@ function QuestionCard({ question: q, index }: { question: PYQQuestion; index: nu
                 <div
                   key={oi}
                   className={cn(
-                    "text-sm px-3 py-2 rounded-lg border",
-                    opt === q.answer
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                      : "glass-subtle",
+                    "text-sm px-3 py-2 rounded-lg border transition-colors",
+                    opt === q.answer ? "" : "",
                   )}
+                  style={
+                    opt === q.answer
+                      ? {
+                          background: "var(--feat-syllabus-bg)",
+                          borderColor: "var(--feat-syllabus)",
+                          color: "var(--feat-syllabus)",
+                        }
+                      : { background: "var(--muted)" }
+                  }
                 >
                   {opt === q.answer && <CheckCircle2 className="inline h-3.5 w-3.5 mr-1.5" />}
                   {opt}
                 </div>
               ))}
               {q.explanation && (
-                <p className="text-xs text-muted-foreground mt-2 p-3 bg-muted/20 rounded-lg">
+                <p
+                  className="text-xs text-muted-foreground mt-2 p-3 rounded-lg"
+                  style={{ background: "var(--muted)" }}
+                >
                   {q.explanation}
                 </p>
               )}
@@ -446,13 +483,16 @@ function PracticeMode({
     const pct = Math.round((state.score / total) * 100);
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="glass-card rounded-2xl p-10 text-center max-w-md w-full">
+        <div className="card-light rounded-2xl p-10 text-center max-w-md w-full">
           <div className="text-5xl mb-4">{pct >= 70 ? "🎉" : pct >= 40 ? "💪" : "📚"}</div>
           <h2 className="text-2xl font-bold mb-1">Practice Complete!</h2>
           <p className="text-muted-foreground mb-6">
             {state.score}/{total} correct · {pct}% accuracy
           </p>
-          <div className="h-3 bg-muted/30 rounded-full overflow-hidden mb-6">
+          <div
+            className="h-3 rounded-full overflow-hidden mb-6"
+            style={{ background: "var(--muted)" }}
+          >
             <div className="h-full bg-gradient-primary rounded-full" style={{ width: `${pct}%` }} />
           </div>
           <div className="flex gap-3 justify-center">
@@ -511,7 +551,7 @@ function PracticeMode({
         </div>
       </div>
 
-      <div className="glass-card rounded-2xl p-6 space-y-5">
+      <div className="card-light rounded-2xl p-6 space-y-5">
         <div className="flex gap-2 text-xs text-muted-foreground">
           <span>{q.exam_id?.toUpperCase()}</span>
           <span>·</span>
@@ -524,22 +564,44 @@ function PracticeMode({
           {(q.options || []).map((opt, idx) => {
             const isSelected = state.selected === idx;
             const isCorrect = opt === q.answer;
-            let cls = "glass-subtle border text-sm";
+            let optStyle: React.CSSProperties = { background: "var(--muted)" };
+            let optCls = "border text-sm";
             if (state.revealed) {
-              cls = isCorrect
-                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                : isSelected
-                  ? "bg-red-500/15 border-red-500/40 text-red-300"
-                  : "glass-subtle border opacity-50";
-            } else if (isSelected) cls = "bg-primary/15 border-primary/40 text-primary";
+              if (isCorrect) {
+                optStyle = {
+                  background: "var(--feat-syllabus-bg)",
+                  borderColor: "var(--feat-syllabus)",
+                  color: "var(--feat-syllabus)",
+                };
+                optCls = "border text-sm";
+              } else if (isSelected) {
+                optStyle = {
+                  background: "rgba(239,68,68,0.1)",
+                  borderColor: "#ef4444",
+                  color: "#ef4444",
+                };
+                optCls = "border text-sm";
+              } else {
+                optStyle = { background: "var(--muted)", opacity: 0.5 };
+                optCls = "border text-sm";
+              }
+            } else if (isSelected) {
+              optStyle = {
+                background: "var(--feat-pyq-bg)",
+                borderColor: "var(--feat-pyq)",
+                color: "var(--feat-pyq)",
+              };
+              optCls = "border text-sm";
+            }
             return (
               <button
                 key={idx}
                 onClick={() => handleSelect(idx)}
                 disabled={state.revealed}
+                style={optStyle}
                 className={cn(
                   "w-full text-left px-4 py-3 rounded-xl transition-all flex items-center gap-3",
-                  cls,
+                  optCls,
                 )}
               >
                 {state.revealed && isCorrect && <CheckCircle2 className="h-4 w-4 shrink-0" />}
@@ -552,7 +614,10 @@ function PracticeMode({
           })}
         </div>
         {state.revealed && q.explanation && (
-          <div className="p-4 bg-muted/20 rounded-xl text-sm text-muted-foreground border border-muted/30">
+          <div
+            className="p-4 rounded-xl text-sm text-muted-foreground border border-border"
+            style={{ background: "var(--muted)" }}
+          >
             <span className="font-medium text-foreground">Explanation: </span>
             {q.explanation}
           </div>

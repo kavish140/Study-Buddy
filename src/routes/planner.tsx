@@ -142,14 +142,14 @@ function PlannerPage() {
   }, [plan]);
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Study planner</h1>
       <p className="text-muted-foreground mt-1">
         Generate a schedule from your syllabus or build one yourself.
       </p>
 
       <div className="grid md:grid-cols-2 gap-4 mt-6">
-        <div className="p-5 rounded-2xl glass-card" data-tour="tour-planner-generate">
+        <div className="card-light p-5 rounded-2xl" data-tour="tour-planner-generate">
           <div className="flex items-center gap-2 text-sm font-medium mb-3">
             <Sparkles className="h-4 w-4 text-primary" /> AI plan generator
           </div>
@@ -180,7 +180,7 @@ function PlannerPage() {
             </Button>
           </div>
         </div>
-        <div className="p-5 rounded-2xl glass-card">
+        <div className="card-light p-5 rounded-2xl">
           <div className="text-sm font-medium mb-3">Add task manually</div>
           <div className="flex gap-2">
             <Input
@@ -217,11 +217,14 @@ function PlannerPage() {
             });
             const isToday = date === dayKey(0);
             return (
-              <div key={date} className="p-5 rounded-2xl glass-card">
+              <div key={date} className="card-light p-5 rounded-2xl">
                 <div className="flex items-center gap-2">
                   <div className="font-semibold">{label}</div>
                   {isToday && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{ background: "var(--feat-planner-bg)", color: "var(--feat-planner)" }}
+                    >
                       Today
                     </span>
                   )}
@@ -235,7 +238,18 @@ function PlannerPage() {
                       key={it.id}
                       className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 group cursor-pointer"
                     >
-                      <Checkbox checked={it.done} onCheckedChange={() => toggle(it.id)} />
+                      <Checkbox
+                        checked={it.done}
+                        onCheckedChange={() => toggle(it.id)}
+                        style={
+                          it.done
+                            ? {
+                                background: "var(--feat-planner-bg)",
+                                borderColor: "var(--feat-planner)",
+                              }
+                            : {}
+                        }
+                      />
                       <span
                         className={it.done ? "line-through text-muted-foreground flex-1" : "flex-1"}
                       >

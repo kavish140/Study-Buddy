@@ -21,71 +21,395 @@ import {
   Zap,
   Library,
   MessageCircle,
-  ChevronLeft,
-  ChevronRight,
   MoreHorizontal,
   X,
   LogOut,
+  Menu,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "@tanstack/react-router";
 import { useTutorial } from "./TutorialProvider";
+import { useTheme } from "@/hooks/use-theme";
 
 type NavItem = {
   to: string;
   label: string;
-  icon: ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string; style?: React.CSSProperties }>;
   tourId?: string;
+  colorVar: string;
+  bgVar: string;
 };
 
-/** ── Navigation groups ───────────────────────────────────────────────── */
+/** ── Feature color map ───────────────────────────────────────────────── */
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Study",
     items: [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard, tourId: "tour-nav-dashboard" },
-      { to: "/syllabus", label: "Syllabus", icon: BookOpen, tourId: "tour-nav-syllabus" },
-      { to: "/planner", label: "Planner", icon: Calendar, tourId: "tour-nav-planner" },
-      { to: "/notes", label: "Notes", icon: FileText, tourId: "tour-nav-notes" },
+      {
+        to: "/",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        tourId: "tour-nav-dashboard",
+        colorVar: "--feat-dashboard",
+        bgVar: "--feat-dashboard-bg",
+      },
+      {
+        to: "/syllabus",
+        label: "Syllabus",
+        icon: BookOpen,
+        tourId: "tour-nav-syllabus",
+        colorVar: "--feat-syllabus",
+        bgVar: "--feat-syllabus-bg",
+      },
+      {
+        to: "/planner",
+        label: "Planner",
+        icon: Calendar,
+        tourId: "tour-nav-planner",
+        colorVar: "--feat-planner",
+        bgVar: "--feat-planner-bg",
+      },
+      {
+        to: "/notes",
+        label: "Notes",
+        icon: FileText,
+        tourId: "tour-nav-notes",
+        colorVar: "--feat-notes",
+        bgVar: "--feat-notes-bg",
+      },
     ],
   },
   {
     label: "Practice",
     items: [
-      { to: "/quiz", label: "Quizzes", icon: Brain, tourId: "tour-nav-quiz" },
-      { to: "/mock-test", label: "Mock Test", icon: Timer, tourId: "tour-nav-mock" },
-      { to: "/review", label: "Smart Review", icon: FlipHorizontal2, tourId: "tour-nav-review" },
-      { to: "/pyq", label: "PYQ Bank", icon: Library, tourId: "tour-nav-pyq" },
+      {
+        to: "/quiz",
+        label: "Quizzes",
+        icon: Brain,
+        tourId: "tour-nav-quiz",
+        colorVar: "--feat-quiz",
+        bgVar: "--feat-quiz-bg",
+      },
+      {
+        to: "/mock-test",
+        label: "Mock Test",
+        icon: Timer,
+        tourId: "tour-nav-mock",
+        colorVar: "--feat-mock",
+        bgVar: "--feat-mock-bg",
+      },
+      {
+        to: "/review",
+        label: "Smart Review",
+        icon: FlipHorizontal2,
+        tourId: "tour-nav-review",
+        colorVar: "--feat-review",
+        bgVar: "--feat-review-bg",
+      },
+      {
+        to: "/pyq",
+        label: "PYQ Bank",
+        icon: Library,
+        tourId: "tour-nav-pyq",
+        colorVar: "--feat-pyq",
+        bgVar: "--feat-pyq-bg",
+      },
     ],
   },
   {
     label: "Tools",
     items: [
-      { to: "/chat", label: "AI Tutor", icon: Sparkles, tourId: "tour-nav-chat" },
-      { to: "/focus", label: "Focus Timer", icon: Flame, tourId: "tour-nav-focus" },
-      { to: "/analytics", label: "Analytics", icon: BarChart3, tourId: "tour-nav-analytics" },
+      {
+        to: "/chat",
+        label: "AI Tutor",
+        icon: Sparkles,
+        tourId: "tour-nav-chat",
+        colorVar: "--feat-chat",
+        bgVar: "--feat-chat-bg",
+      },
+      {
+        to: "/focus",
+        label: "Focus Timer",
+        icon: Flame,
+        tourId: "tour-nav-focus",
+        colorVar: "--feat-focus",
+        bgVar: "--feat-focus-bg",
+      },
+      {
+        to: "/analytics",
+        label: "Analytics",
+        icon: BarChart3,
+        tourId: "tour-nav-analytics",
+        colorVar: "--feat-analytics",
+        bgVar: "--feat-analytics-bg",
+      },
     ],
   },
   {
     label: "Community",
     items: [
-      { to: "/community", label: "Community", icon: MessageCircle, tourId: "tour-nav-community" },
-      { to: "/leaderboard", label: "Leaderboard", icon: Trophy, tourId: "tour-nav-leaderboard" },
+      {
+        to: "/community",
+        label: "Community",
+        icon: MessageCircle,
+        tourId: "tour-nav-community",
+        colorVar: "--feat-community",
+        bgVar: "--feat-community-bg",
+      },
+      {
+        to: "/leaderboard",
+        label: "Leaderboard",
+        icon: Trophy,
+        tourId: "tour-nav-leaderboard",
+        colorVar: "--feat-leaderboard",
+        bgVar: "--feat-leaderboard-bg",
+      },
     ],
   },
 ];
 
-/** Primary tabs shown in the mobile bottom bar (max 5) */
+/** Primary tabs shown in the mobile bottom bar (max 4) */
 const MOBILE_PRIMARY: NavItem[] = [
-  { to: "/", label: "Home", icon: LayoutDashboard },
-  { to: "/quiz", label: "Quiz", icon: Brain },
-  { to: "/chat", label: "AI Tutor", icon: Sparkles },
-  { to: "/focus", label: "Focus", icon: Flame },
+  {
+    to: "/",
+    label: "Home",
+    icon: LayoutDashboard,
+    colorVar: "--feat-dashboard",
+    bgVar: "--feat-dashboard-bg",
+  },
+  { to: "/quiz", label: "Quiz", icon: Brain, colorVar: "--feat-quiz", bgVar: "--feat-quiz-bg" },
+  {
+    to: "/chat",
+    label: "AI Tutor",
+    icon: Sparkles,
+    colorVar: "--feat-chat",
+    bgVar: "--feat-chat-bg",
+  },
+  { to: "/focus", label: "Focus", icon: Flame, colorVar: "--feat-focus", bgVar: "--feat-focus-bg" },
 ];
 
-// Flatten all nav items for helpers
+// Flatten all nav items
 const ALL_NAV: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
+
+// Map route → page title
+const PAGE_TITLES: Record<string, string> = {
+  "/": "Dashboard",
+  "/syllabus": "Syllabus",
+  "/planner": "Planner",
+  "/notes": "Notes",
+  "/quiz": "Quizzes",
+  "/mock-test": "Mock Test",
+  "/review": "Smart Review",
+  "/pyq": "PYQ Bank",
+  "/chat": "AI Tutor",
+  "/focus": "Focus Timer",
+  "/analytics": "Analytics",
+  "/community": "Community",
+  "/leaderboard": "Leaderboard",
+};
+
+function getPageTitle(path: string): string {
+  if (path === "/") return "Dashboard";
+  for (const [route, title] of Object.entries(PAGE_TITLES)) {
+    if (route !== "/" && path.startsWith(route)) return title;
+  }
+  return "AcePrep";
+}
+
+/** ── Feature Tile component ─────────────────────────────────────────── */
+function FeatureTile({
+  item,
+  active,
+  dueCount,
+  onClick,
+}: {
+  item: NavItem;
+  active: boolean;
+  dueCount?: number;
+  onClick: () => void;
+}) {
+  const { icon: Icon, label, to, colorVar, bgVar } = item;
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={cn("feature-tile", active && "active")}
+      style={
+        active
+          ? {
+              background: `var(${bgVar})`,
+              borderColor: `var(${colorVar})`,
+              borderWidth: "1.5px",
+            }
+          : undefined
+      }
+    >
+      <div className="feature-tile__icon" style={{ background: `var(${bgVar})` }}>
+        <Icon className="h-5 w-5" style={{ color: `var(${colorVar})` }} />
+        {dueCount != null && dueCount > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold grid place-items-center z-10">
+            {dueCount > 9 ? "9+" : dueCount}
+          </span>
+        )}
+      </div>
+      <span
+        className="feature-tile__label"
+        style={active ? { color: `var(${colorVar})` } : undefined}
+      >
+        {label}
+      </span>
+    </Link>
+  );
+}
+
+/** ── Feature Panel ─────────────────────────────────────────────────── */
+function FeaturePanel({
+  open,
+  onClose,
+  isActive,
+  dueCards,
+  user,
+  userStats,
+  profile,
+  onSignOut,
+}: {
+  open: boolean;
+  onClose: () => void;
+  isActive: (to: string) => boolean;
+  dueCards: unknown[];
+  user: { email?: string | null } | null;
+  userStats: { xp: number; level: number; current_streak: number } | null | undefined;
+  profile: { exam_name?: string | null } | null | undefined;
+  onSignOut: () => void;
+}) {
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <>
+      <div className="feature-panel-backdrop" onClick={onClose} />
+      <div className="feature-panel">
+        {/* Header */}
+        <div className="feature-panel__header">
+          <div className="feature-panel__logo">
+            <div className="top-bar__logo-icon">
+              <GraduationCap className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <div
+                className="font-bold text-[15px] leading-tight"
+                style={{ color: "var(--foreground)" }}
+              >
+                AcePrep
+              </div>
+              {profile?.exam_name && (
+                <div className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                  {profile.exam_name}
+                </div>
+              )}
+            </div>
+          </div>
+          <button className="feature-panel__close" onClick={onClose} aria-label="Close panel">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Nav Groups */}
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label}>
+            <div className="feature-panel__group-label">{group.label}</div>
+            <div className="feature-panel__grid">
+              {group.items.map((item) => {
+                const dueCount = item.to === "/review" ? dueCards.length : 0;
+                return (
+                  <FeatureTile
+                    key={item.to}
+                    item={item}
+                    active={isActive(item.to)}
+                    dueCount={dueCount}
+                    onClick={onClose}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {/* User info + sign out */}
+        <div className="mt-auto p-4 border-t" style={{ borderColor: "var(--border)" }}>
+          {userStats &&
+            (() => {
+              const { pct, current, needed } = xpForNextLevel(userStats.xp);
+              return (
+                <div className="mb-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Zap className="h-3.5 w-3.5 text-amber-500" />
+                      <span className="text-xs font-semibold">{userStats.xp} XP</span>
+                      <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                        · Lv.{userStats.level}
+                      </span>
+                    </div>
+                    {userStats.current_streak > 0 && (
+                      <div className="flex items-center gap-0.5 text-[11px] text-amber-500">
+                        <Flame className="h-3 w-3" />
+                        {userStats.current_streak}d
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    className="h-1.5 rounded-full overflow-hidden"
+                    style={{ background: "var(--muted)" }}
+                  >
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${pct}%`,
+                        background: "linear-gradient(90deg, #f59e0b, #f97316)",
+                      }}
+                    />
+                  </div>
+                  <div className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+                    {current}/{needed} XP to Lv.{userStats.level + 1}
+                  </div>
+                </div>
+              );
+            })()}
+
+          <div className="flex items-center gap-2">
+            <div className="top-bar__avatar text-xs">
+              {user?.email?.charAt(0).toUpperCase() ?? "?"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-medium truncate">{user?.email}</div>
+            </div>
+            <button
+              onClick={onSignOut}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs transition-colors hover:opacity-80"
+              style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+            >
+              <LogOut size={12} />
+              Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 export function AppLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -93,8 +417,9 @@ export function AppLayout() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { triggerPageTour } = useTutorial();
+  const { effectiveTheme, toggle } = useTheme();
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -124,11 +449,10 @@ export function AppLayout() {
     },
   });
 
-  // Award daily login XP once per day, scoped to the current user to avoid cross-user leakage
+  // Award daily login XP once per day
   useEffect(() => {
     if (!user) return;
     const today = todayIST();
-    // Key includes user.id so two users on the same browser each get their XP
     const todayKey = `aceprep_login_${user.id}_${today}`;
     if (!localStorage.getItem(todayKey)) {
       localStorage.setItem(todayKey, "1");
@@ -174,12 +498,20 @@ export function AppLayout() {
 
   if (loading || (user && profileLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-gradient-primary grid place-items-center shadow-glow animate-pulse">
-            <GraduationCap className="h-6 w-6 text-white" />
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--background)" }}
+      >
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div
+            className="h-14 w-14 rounded-2xl grid place-items-center shadow-glow animate-pulse"
+            style={{ background: "var(--gradient-primary)" }}
+          >
+            <GraduationCap className="h-7 w-7 text-white" />
           </div>
-          <div className="text-sm text-muted-foreground">Loading…</div>
+          <div className="text-sm font-medium" style={{ color: "var(--muted-foreground)" }}>
+            Loading…
+          </div>
         </div>
       </div>
     );
@@ -189,315 +521,230 @@ export function AppLayout() {
 
   const isActive = (to: string) => (to === "/" ? path === "/" : path.startsWith(to));
 
+  const handleSignOut = async () => {
+    setPanelOpen(false);
+    setMoreOpen(false);
+    try {
+      await signOut();
+    } finally {
+      navigate({ to: "/login" });
+    }
+  };
+
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
-      {/* ── Desktop Sidebar ────────────────────────────────────────────── */}
-      <aside
-        className={cn(
-          "hidden md:flex flex-col border-r border-sidebar-border bg-sidebar relative transition-all duration-300 ease-in-out overflow-hidden",
-          collapsed ? "w-[72px]" : "w-64",
-        )}
-      >
-        {/* Subtle top glow */}
-        <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-primary/6 to-transparent pointer-events-none" />
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "var(--background)", color: "var(--foreground)" }}
+    >
+      {/* ── Top Bar ─────────────────────────────────────────────────────── */}
+      <header className="top-bar">
+        {/* Menu button */}
+        <button
+          className="top-bar__menu-btn"
+          onClick={() => setPanelOpen(true)}
+          aria-label="Open navigation"
+          data-tour="tour-nav-dashboard"
+        >
+          <Menu size={20} />
+        </button>
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 px-4 py-5 relative shrink-0">
-          <div className="h-9 w-9 rounded-xl bg-gradient-primary grid place-items-center shadow-glow-sm shrink-0">
-            <GraduationCap className="h-4.5 w-4.5 text-white" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 overflow-hidden">
-              <div className="font-bold tracking-tight font-heading text-base leading-tight">
-                AcePrep
-              </div>
-              <div className="text-[11px] text-muted-foreground truncate">
-                {profile?.exam_name || "Exam prep OS"}
-              </div>
-            </div>
-          )}
-        </Link>
-
-        {/* Nav groups */}
-        <nav className="flex-1 overflow-y-auto px-2 pb-2 flex flex-col gap-4 relative">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.label}>
-              {!collapsed && (
-                <div className="px-2 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
-                  {group.label}
-                </div>
-              )}
-              <div className="flex flex-col gap-0.5">
-                {group.items.map(({ to, label, icon: Icon, tourId }) => {
-                  const active = isActive(to);
-                  const dueCount = to === "/review" ? dueCards.length : 0;
-                  return (
-                    <div key={to} className="relative group/navitem">
-                      <Link
-                        to={to}
-                        data-tour={tourId}
-                        className={cn(
-                          "flex items-center gap-3 px-2.5 py-2 rounded-xl text-sm transition-all duration-150 w-full",
-                          active
-                            ? "bg-primary/12 text-primary border border-primary/15 shadow-sm"
-                            : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        )}
-                      >
-                        <Icon className={cn("h-4 w-4 shrink-0", active && "text-primary")} />
-                        {!collapsed && (
-                          <span className={cn("truncate", active && "font-medium")}>{label}</span>
-                        )}
-                        {!collapsed && dueCount > 0 && (
-                          <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold grid place-items-center">
-                            {dueCount > 99 ? "99+" : dueCount}
-                          </span>
-                        )}
-                        {!collapsed && active && dueCount === 0 && (
-                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shadow-glow-sm" />
-                        )}
-                        {collapsed && dueCount > 0 && (
-                          <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500 text-white text-[8px] font-bold grid place-items-center">
-                            {dueCount > 9 ? "9+" : dueCount}
-                          </span>
-                        )}
-                      </Link>
-                      {/* Collapsed tooltip */}
-                      {collapsed && (
-                        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-popover border border-border text-xs font-medium whitespace-nowrap shadow-elegant opacity-0 pointer-events-none group-hover/navitem:opacity-100 transition-opacity duration-150 z-50">
-                          {label}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-
-        {/* Bottom: XP + user */}
-        <div className="mt-auto border-t border-sidebar-border p-3 space-y-3">
-          {/* XP bar */}
-          {userStats &&
-            (() => {
-              const { pct, current, needed } = xpForNextLevel(userStats.xp);
-              return (
-                <div className={cn("space-y-1", collapsed && "hidden")}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Zap className="h-3 w-3 text-amber-400" />
-                      <span className="text-xs font-semibold">{userStats.xp} XP</span>
-                      <span className="text-xs text-muted-foreground">· Lv.{userStats.level}</span>
-                    </div>
-                    {userStats.current_streak > 0 && (
-                      <div className="flex items-center gap-0.5 text-[11px] text-amber-400">
-                        <Flame className="h-3 w-3" />
-                        {userStats.current_streak}d
-                      </div>
-                    )}
-                  </div>
-                  <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full transition-all duration-700"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {current}/{needed} XP to Lv.{userStats.level + 1}
-                  </div>
-                </div>
-              );
-            })()}
-
-          {/* User row */}
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full bg-gradient-primary grid place-items-center text-[11px] font-bold text-white shrink-0">
-              {user?.email?.charAt(0).toUpperCase() || "?"}
-            </div>
-            {!collapsed && (
-              <>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-medium truncate">{user?.email}</div>
-                </div>
-                <button
-                  onClick={async () => {
-                    try {
-                      await signOut();
-                    } finally {
-                      navigate({ to: "/login" });
-                    }
-                  }}
-                  title="Sign out"
-                  className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
-                >
-                  <LogOut size={13} />
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Collapse toggle */}
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="absolute -right-3 top-20 h-6 w-6 rounded-full bg-sidebar border border-sidebar-border shadow-elegant grid place-items-center text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-all z-10"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-        </button>
-      </aside>
-
-      {/* ── Main content ───────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile top bar */}
-        <header className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border glass sticky top-0 z-20">
-          <div className="h-8 w-8 rounded-lg bg-gradient-primary grid place-items-center shrink-0">
+        <Link to="/" className="top-bar__logo ml-2">
+          <div className="top-bar__logo-icon">
             <GraduationCap className="h-4 w-4 text-white" />
           </div>
-          <span className="font-bold font-heading">AcePrep</span>
-          {profile?.exam_name && (
-            <span className="ml-1 text-xs text-muted-foreground">· {profile.exam_name}</span>
-          )}
-          <div className="ml-auto flex items-center gap-2">
-            {dueCards.length > 0 && (
-              <Link
-                to="/review"
-                className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/15 text-red-400 text-xs font-medium border border-red-500/20"
-              >
-                <FlipHorizontal2 size={11} />
-                {dueCards.length} due
-              </Link>
-            )}
-            {userStats && (
-              <div className="flex items-center gap-1 text-xs text-amber-400">
-                <Zap size={11} />
-                {userStats.xp}
-              </div>
-            )}
-          </div>
-        </header>
+          <span className="top-bar__logo-name hidden sm:block">AcePrep</span>
+        </Link>
 
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-          <Outlet />
-        </main>
+        {/* Page title — centered */}
+        <div className="top-bar__page-title">{getPageTitle(path)}</div>
 
-        {/* ── Mobile bottom tab bar ────────────────────────────────────── */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-border z-20">
-          <div className="flex justify-around items-center h-16 px-1">
-            {MOBILE_PRIMARY.map(({ to, label, icon: Icon }) => {
-              const active = isActive(to);
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={cn(
-                    "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all min-w-[56px] relative",
-                    active ? "text-primary" : "text-muted-foreground",
-                  )}
-                >
-                  {active && (
-                    <div className="absolute -top-px left-1/2 -translate-x-1/2 w-6 h-0.5 bg-gradient-primary rounded-full" />
-                  )}
-                  <Icon
-                    className={cn(
-                      "h-5 w-5",
-                      active && "drop-shadow-[0_0_6px_rgba(59,130,246,0.5)]",
-                    )}
-                  />
-                  <span className="text-[10px] font-medium">{label}</span>
-                </Link>
-              );
-            })}
-
-            {/* More button */}
-            <button
-              onClick={() => setMoreOpen(true)}
-              className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all min-w-[56px] text-muted-foreground"
-            >
-              <MoreHorizontal className="h-5 w-5" />
-              <span className="text-[10px] font-medium">More</span>
-            </button>
-          </div>
-        </nav>
-
-        {/* ── Mobile "More" sheet ──────────────────────────────────────── */}
-        {moreOpen && (
-          <>
-            <div className="mobile-sheet-backdrop md:hidden" onClick={() => setMoreOpen(false)} />
-            <div className="mobile-sheet md:hidden">
-              <div className="mobile-sheet__handle" />
-              <div className="flex items-center justify-between mb-4 px-1">
-                <span className="text-sm font-semibold">All Features</span>
-                <button
-                  onClick={() => setMoreOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-sidebar-accent text-muted-foreground"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {ALL_NAV.map(({ to, label, icon: Icon }) => {
-                  const active = isActive(to);
-                  const dueCount = to === "/review" ? dueCards.length : 0;
-                  return (
-                    <Link
-                      key={to}
-                      to={to}
-                      onClick={() => setMoreOpen(false)}
-                      className={cn(
-                        "flex flex-col items-center gap-1.5 p-3 rounded-2xl border text-center transition-all",
-                        active
-                          ? "bg-primary/10 border-primary/20 text-primary"
-                          : "border-border text-muted-foreground hover:bg-sidebar-accent",
-                      )}
-                    >
-                      <div className="relative">
-                        <Icon className="h-5 w-5" />
-                        {dueCount > 0 && (
-                          <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500 text-white text-[8px] font-bold grid place-items-center">
-                            {dueCount}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[11px] font-medium leading-tight">{label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-
-              {/* User info in sheet */}
-              <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-gradient-primary grid place-items-center text-xs font-bold text-white shrink-0">
-                  {user?.email?.charAt(0).toUpperCase() || "?"}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-medium truncate">{user?.email}</div>
-                  {userStats && (
-                    <div className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <Zap size={9} className="text-amber-400" />
-                      {userStats.xp} XP · Lv.{userStats.level}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={async () => {
-                    setMoreOpen(false);
-                    try {
-                      await signOut();
-                    } finally {
-                      navigate({ to: "/login" });
-                    }
-                  }}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <LogOut size={12} />
-                  Sign out
-                </button>
-              </div>
+        {/* Right side */}
+        <div className="top-bar__right">
+          {/* XP pill */}
+          {userStats && (
+            <div className="top-bar__xp-pill hidden sm:flex">
+              <Zap size={11} className="text-amber-500" />
+              <span>{userStats.xp} XP</span>
+              <span style={{ color: "var(--muted-foreground)" }}>· Lv.{userStats.level}</span>
+              {userStats.current_streak > 0 && (
+                <>
+                  <span style={{ color: "var(--border)" }}>·</span>
+                  <Flame size={11} className="text-amber-500" />
+                  <span>{userStats.current_streak}d</span>
+                </>
+              )}
             </div>
-          </>
-        )}
-      </div>
+          )}
+
+          {/* Due cards badge */}
+          {dueCards.length > 0 && (
+            <Link
+              to="/review"
+              className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold"
+              style={{
+                background: "rgba(239,68,68,0.1)",
+                color: "#ef4444",
+                border: "1px solid rgba(239,68,68,0.2)",
+              }}
+            >
+              <FlipHorizontal2 size={11} />
+              {dueCards.length} due
+            </Link>
+          )}
+
+          {/* Theme toggle */}
+          <button
+            className="top-bar__theme-btn"
+            onClick={toggle}
+            aria-label="Toggle theme"
+            title={effectiveTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {effectiveTheme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+
+          {/* Avatar */}
+          <div className="top-bar__avatar">{user?.email?.charAt(0).toUpperCase() ?? "?"}</div>
+        </div>
+      </header>
+
+      {/* ── Feature Panel ─────────────────────────────────────────────── */}
+      <FeaturePanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        isActive={isActive}
+        dueCards={dueCards}
+        user={user}
+        userStats={userStats}
+        profile={profile}
+        onSignOut={handleSignOut}
+      />
+
+      {/* ── Main content ─────────────────────────────────────────────── */}
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-0 animate-fade-up">
+        <Outlet />
+      </main>
+
+      {/* ── Mobile bottom tab bar ────────────────────────────────────── */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-20"
+        style={{
+          background:
+            effectiveTheme === "dark" ? "rgba(6, 9, 26, 0.95)" : "rgba(255, 255, 255, 0.95)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderTop: "1px solid var(--border)",
+        }}
+      >
+        <div className="flex justify-around items-center h-16 px-1">
+          {MOBILE_PRIMARY.map(({ to, label, icon: Icon, colorVar }) => {
+            const active = isActive(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all min-w-[56px] relative"
+                style={{ color: active ? `var(${colorVar})` : "var(--muted-foreground)" }}
+              >
+                {active && (
+                  <div
+                    className="absolute -top-px left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full"
+                    style={{ background: `var(${colorVar})` }}
+                  />
+                )}
+                <Icon className="h-5 w-5" />
+                <span className="text-[10px] font-semibold">{label}</span>
+              </Link>
+            );
+          })}
+
+          {/* More button */}
+          <button
+            onClick={() => setMoreOpen(true)}
+            className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all min-w-[56px]"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            <MoreHorizontal className="h-5 w-5" />
+            <span className="text-[10px] font-semibold">More</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* ── Mobile "More" sheet ─────────────────────────────────────── */}
+      {moreOpen && (
+        <>
+          <div className="mobile-sheet-backdrop md:hidden" onClick={() => setMoreOpen(false)} />
+          <div className="mobile-sheet md:hidden">
+            <div className="mobile-sheet__handle" />
+            <div className="flex items-center justify-between mb-4 px-1">
+              <span className="text-sm font-bold">All Features</span>
+              <button
+                onClick={() => setMoreOpen(false)}
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Feature grid in sheet */}
+            {NAV_GROUPS.map((group) => (
+              <div key={group.label} className="mb-3">
+                <div
+                  className="text-[10px] font-bold uppercase tracking-widest mb-2 px-1"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  {group.label}
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {group.items.map((item) => {
+                    const dueCount = item.to === "/review" ? dueCards.length : 0;
+                    return (
+                      <FeatureTile
+                        key={item.to}
+                        item={item}
+                        active={isActive(item.to)}
+                        dueCount={dueCount}
+                        onClick={() => setMoreOpen(false)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* User info in sheet */}
+            <div
+              className="mt-3 pt-3 border-t flex items-center gap-2"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <div className="top-bar__avatar text-xs shrink-0">
+                {user?.email?.charAt(0).toUpperCase() ?? "?"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium truncate">{user?.email}</div>
+                {userStats && (
+                  <div
+                    className="text-[10px] flex items-center gap-1"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    <Zap size={9} className="text-amber-500" />
+                    {userStats.xp} XP · Lv.{userStats.level}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs transition-colors"
+                style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+              >
+                <LogOut size={12} />
+                Sign out
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

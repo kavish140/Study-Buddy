@@ -321,7 +321,7 @@ function SyllabusPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Syllabus tracker</h1>
       <p className="text-muted-foreground mt-1">
         Track your topics chapter by chapter. Mark done as you go.
@@ -329,7 +329,7 @@ function SyllabusPage() {
 
       {/* Class 11 / 12 quick-loader for JEE/NEET */}
       {isJeeNeet && (
-        <div className="glass-card p-5 rounded-2xl mt-6">
+        <div className="card-light p-5 rounded-2xl mt-6">
           <div className="flex items-center gap-2 text-sm font-medium mb-3">
             <GraduationCap className="h-4 w-4 text-primary" />
             Quick load syllabus by class
@@ -344,7 +344,7 @@ function SyllabusPage() {
                   "px-5 py-2.5 rounded-xl text-sm font-semibold transition-all",
                   classFilter === cls
                     ? "bg-gradient-primary text-white shadow-glow-sm"
-                    : "glass-subtle text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:text-foreground border border-border bg-muted",
                 )}
               >
                 Class {cls}
@@ -360,7 +360,11 @@ function SyllabusPage() {
               </p>
               <div className="grid sm:grid-cols-3 gap-2">
                 {classTopics.map((group) => (
-                  <div key={group.subject} className="glass-subtle p-3 rounded-xl">
+                  <div
+                    key={group.subject}
+                    className="p-3 rounded-xl"
+                    style={{ background: "var(--muted)" }}
+                  >
                     <div className="text-xs font-semibold text-primary mb-2">
                       {group.subject} · {group.topics.length} topics
                     </div>
@@ -390,7 +394,7 @@ function SyllabusPage() {
       )}
 
       <div className="grid md:grid-cols-2 gap-4 mt-6" data-tour="tour-syllabus-add">
-        <div className="p-5 rounded-2xl glass-card">
+        <div className="card-light p-5 rounded-2xl">
           <div className="flex items-center gap-2 text-sm font-medium mb-3">
             <Sparkles className="h-4 w-4 text-primary" /> AI parse syllabus
           </div>
@@ -408,7 +412,7 @@ function SyllabusPage() {
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Parse with AI"}
           </Button>
         </div>
-        <div className="p-5 rounded-2xl glass-card">
+        <div className="card-light p-5 rounded-2xl">
           <div className="text-sm font-medium mb-3">Add subject manually</div>
           <div className="flex gap-2">
             <Input
@@ -489,10 +493,10 @@ function SubjectCard({
 }) {
   const [topic, setTopic] = useState("");
   return (
-    <div className="p-5 rounded-2xl glass-card">
+    <div className="card-light p-5 rounded-2xl">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="h-3 w-3 rounded-full" style={{ background: subject.color }} />
+          <span className="h-3 w-3 rounded-full" style={{ background: "var(--feat-syllabus)" }} />
           <div className="font-semibold truncate">{subject.name}</div>
           <span className="text-xs text-muted-foreground">
             {done}/{subject.topics.length} · {pct}%
@@ -503,7 +507,10 @@ function SubjectCard({
         </Button>
       </div>
       <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-primary" style={{ width: `${pct}%` }} />
+        <div
+          className="progress-fill"
+          style={{ "--pct": `${pct}%`, background: "var(--feat-syllabus)" } as React.CSSProperties}
+        />
       </div>
       <div className="mt-4 space-y-1.5">
         {subject.topics.map((t) => (
@@ -518,8 +525,16 @@ function SubjectCard({
               checked={t.done}
               onCheckedChange={() => {}}
               onClick={(e) => e.stopPropagation()}
+              style={
+                t.done
+                  ? { background: "var(--feat-syllabus-bg)", borderColor: "var(--feat-syllabus)" }
+                  : {}
+              }
             />
-            <span className={t.done ? "line-through text-muted-foreground flex-1" : "flex-1"}>
+            <span
+              className={t.done ? "line-through text-muted-foreground flex-1" : "flex-1"}
+              style={t.done ? { color: "var(--feat-syllabus)" } : {}}
+            >
               {t.name}
             </span>
             <button

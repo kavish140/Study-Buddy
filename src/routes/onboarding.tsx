@@ -164,17 +164,19 @@ function OnboardingPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-background">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-hero" />
+      {/* Subtle background accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-primary/5 blur-3xl animate-float" />
         <div
-          className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full bg-accent/5 blur-3xl animate-float"
-          style={{ animationDelay: "-3s" }}
+          className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full blur-3xl animate-float"
+          style={{ background: "rgba(99,102,241,0.04)" }}
+        />
+        <div
+          className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full blur-3xl animate-float"
+          style={{ background: "rgba(59,130,246,0.04)", animationDelay: "-3s" }}
         />
       </div>
 
-      <div className="relative z-10 max-w-2xl mx-auto px-6 py-10">
+      <div className="relative z-10 max-w-2xl mx-auto px-6 py-10 animate-fade-up">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <div className="h-10 w-10 rounded-xl bg-gradient-primary grid place-items-center shadow-glow-sm">
@@ -236,11 +238,16 @@ function OnboardingPage() {
                 <button
                   key={exam.id}
                   onClick={() => handleExamSelect(exam)}
-                  className={`w-full text-left p-5 rounded-2xl transition-all duration-200 ${
+                  className="w-full text-left p-5 rounded-2xl transition-all duration-200 card-light"
+                  style={
                     selectedExam?.id === exam.id
-                      ? "glass border-2 border-primary shadow-glow-sm"
-                      : "glass-card"
-                  }`}
+                      ? {
+                          background: "var(--feat-planner-bg)",
+                          border: "2px solid var(--primary)",
+                          boxShadow: "var(--shadow-soft)",
+                        }
+                      : undefined
+                  }
                 >
                   <div className="flex items-center gap-4">
                     <div
@@ -303,9 +310,15 @@ function OnboardingPage() {
                   <button
                     key={subject.name}
                     onClick={() => toggleSubject(subject.name)}
-                    className={`w-full text-left p-5 rounded-2xl transition-all duration-200 ${
-                      isSelected ? "glass border border-primary/30" : "glass-card opacity-60"
-                    }`}
+                    className="w-full text-left p-5 rounded-2xl transition-all duration-200 card-light"
+                    style={
+                      isSelected
+                        ? {
+                            background: "var(--feat-planner-bg)",
+                            border: "1px solid var(--primary)",
+                          }
+                        : { opacity: 0.7 }
+                    }
                   >
                     <div className="flex items-center gap-4">
                       <Checkbox checked={isSelected} className="pointer-events-none" />
@@ -345,7 +358,7 @@ function OnboardingPage() {
               Set a target date so we can build a personalized study plan. You can skip this.
             </p>
 
-            <div className="glass-card p-6 rounded-2xl">
+            <div className="card-light p-6 rounded-2xl">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
                   <Calendar className="h-5 w-5 text-primary" />
@@ -377,7 +390,7 @@ function OnboardingPage() {
             </div>
 
             {/* Summary */}
-            <div className="glass-card p-5 rounded-2xl mt-4">
+            <div className="card-light p-5 rounded-2xl mt-4">
               <div className="flex items-center gap-2 text-sm font-medium mb-3">
                 <Sparkles className="h-4 w-4 text-primary" />
                 Setup summary

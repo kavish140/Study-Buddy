@@ -36,28 +36,28 @@ const RATINGS = [
   {
     label: "Again",
     value: 0 as const,
-    color: "bg-red-500/15 text-red-400 border-red-500/20 hover:bg-red-500/25",
+    color: "bg-red-50 text-red-600 border-red-200 hover:bg-red-100",
     emoji: "🔴",
     hint: "< 1 day",
   },
   {
     label: "Hard",
     value: 1 as const,
-    color: "bg-amber-500/15 text-amber-400 border-amber-500/20 hover:bg-amber-500/25",
+    color: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100",
     emoji: "🟡",
     hint: "1 day",
   },
   {
     label: "Good",
     value: 3 as const,
-    color: "bg-blue-500/15 text-blue-400 border-blue-500/20 hover:bg-blue-500/25",
+    color: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
     emoji: "🔵",
     hint: "few days",
   },
   {
     label: "Easy",
     value: 5 as const,
-    color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/25",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
     emoji: "🟢",
     hint: "long",
   },
@@ -158,7 +158,7 @@ function ReviewPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-2xl mx-auto">
+    <div className="min-h-screen p-4 md:p-8 max-w-2xl mx-auto animate-fade-up">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -173,7 +173,8 @@ function ReviewPage() {
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl glass-subtle text-sm hover:border-primary/30 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm hover:border-primary/30 transition-colors"
+            style={{ background: "var(--muted)" }}
           >
             <Plus className="h-4 w-4" /> Add card
           </button>
@@ -192,16 +193,16 @@ function ReviewPage() {
               label: "Total cards",
               value: totalCards.length,
               icon: BookOpen,
-              color: "text-accent",
+              color: "text-primary",
             },
             {
               label: "Done today",
               value: doneCount,
               icon: CheckCircle2,
-              color: "text-emerald-400",
+              color: "text-emerald-600",
             },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="glass-card rounded-xl p-4 text-center">
+            <div key={label} className="card-light rounded-xl p-4 text-center">
               <Icon className={cn("h-5 w-5 mx-auto mb-1", color)} />
               <div className="text-2xl font-bold">{value}</div>
               <div className="text-xs text-muted-foreground">{label}</div>
@@ -211,7 +212,10 @@ function ReviewPage() {
 
         {/* Progress bar */}
         {allCards.length > 0 && (
-          <div className="mt-4 h-1.5 bg-muted/30 rounded-full overflow-hidden">
+          <div
+            className="mt-4 h-1.5 rounded-full overflow-hidden"
+            style={{ background: "var(--muted)" }}
+          >
             <div
               className="h-full bg-gradient-primary rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
@@ -222,7 +226,7 @@ function ReviewPage() {
 
       {/* Session complete */}
       {sessionComplete && (
-        <div className="glass-card rounded-2xl p-10 text-center">
+        <div className="card-light rounded-2xl p-10 text-center">
           <div className="text-5xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold font-heading mb-2">Session Complete!</h2>
           <p className="text-muted-foreground mb-6">
@@ -252,7 +256,7 @@ function ReviewPage() {
 
       {/* No cards due */}
       {!sessionComplete && allCards.length === 0 && (
-        <div className="glass-card rounded-2xl p-10 text-center">
+        <div className="card-light rounded-2xl p-10 text-center">
           <Sparkles className="h-12 w-12 text-primary/30 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">You're all caught up!</h2>
           <p className="text-muted-foreground mb-2">No cards due for review today.</p>
@@ -299,7 +303,7 @@ function ReviewPage() {
             >
               {/* Front */}
               <div
-                className="absolute inset-0 glass-card rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden"
+                className="absolute inset-0 card-light rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden"
                 style={{ backfaceVisibility: "hidden" }}
               >
                 <div className="text-xs text-muted-foreground mb-4 uppercase tracking-wider">
@@ -314,10 +318,18 @@ function ReviewPage() {
               </div>
               {/* Back */}
               <div
-                className="absolute inset-0 glass-card rounded-2xl p-8 flex flex-col items-center justify-center border border-primary/20"
-                style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+                className="absolute inset-0 rounded-2xl p-8 flex flex-col items-center justify-center border"
+                style={{
+                  backfaceVisibility: "hidden",
+                  transform: "rotateY(180deg)",
+                  background: "var(--feat-review-bg)",
+                  borderColor: "var(--feat-review)",
+                }}
               >
-                <div className="text-xs text-primary mb-4 uppercase tracking-wider font-medium">
+                <div
+                  className="text-xs mb-4 uppercase tracking-wider font-medium"
+                  style={{ color: "var(--feat-review)" }}
+                >
                   Answer
                 </div>
                 <p className="text-lg font-medium text-center leading-relaxed">
@@ -476,7 +488,7 @@ function AddCardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="glass-card rounded-2xl p-6 w-full max-w-md space-y-4">
+      <div className="card-light rounded-2xl p-6 w-full max-w-md space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-lg">Add Review Card</h2>
           <button onClick={onClose}>
@@ -490,7 +502,8 @@ function AddCardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="e.g. Physics"
-              className="w-full mt-1 glass-subtle rounded-lg px-3 py-2 text-sm bg-transparent outline-none"
+              className="w-full mt-1 rounded-lg border border-border px-3 py-2 text-sm outline-none"
+              style={{ background: "var(--muted)" }}
             />
           </div>
           <div>
@@ -500,7 +513,8 @@ function AddCardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="What is the formula for kinetic energy?"
               rows={3}
-              className="w-full mt-1 glass-subtle rounded-lg px-3 py-2 text-sm bg-transparent outline-none resize-none"
+              className="w-full mt-1 rounded-lg border border-border px-3 py-2 text-sm outline-none resize-none"
+              style={{ background: "var(--muted)" }}
             />
           </div>
           <div>
@@ -510,7 +524,8 @@ function AddCardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
               onChange={(e) => setAnswer(e.target.value)}
               placeholder="KE = ½mv²"
               rows={2}
-              className="w-full mt-1 glass-subtle rounded-lg px-3 py-2 text-sm bg-transparent outline-none resize-none"
+              className="w-full mt-1 rounded-lg border border-border px-3 py-2 text-sm outline-none resize-none"
+              style={{ background: "var(--muted)" }}
             />
           </div>
           <div>
@@ -520,7 +535,8 @@ function AddCardModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
               onChange={(e) => setExplanation(e.target.value)}
               placeholder="Where m = mass in kg, v = velocity in m/s"
               rows={2}
-              className="w-full mt-1 glass-subtle rounded-lg px-3 py-2 text-sm bg-transparent outline-none resize-none"
+              className="w-full mt-1 rounded-lg border border-border px-3 py-2 text-sm outline-none resize-none"
+              style={{ background: "var(--muted)" }}
             />
           </div>
         </div>

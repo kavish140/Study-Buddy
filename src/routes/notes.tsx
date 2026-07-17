@@ -81,7 +81,7 @@ function NotesPage() {
   const remove = (id: string) => deleteMutation.mutate(id);
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Notes & flashcards</h1>
       <p className="text-muted-foreground mt-1">
         Drop a syllabus topic, get a crisp summary and flashcard deck.
@@ -90,7 +90,7 @@ function NotesPage() {
         )}
       </p>
 
-      <div className="p-5 rounded-2xl glass-card mt-6" data-tour="tour-notes-topic">
+      <div className="p-5 rounded-2xl card-light mt-6" data-tour="tour-notes-topic">
         <div className="flex items-center gap-2 text-sm font-medium mb-3">
           <Sparkles className="h-4 w-4 text-primary" /> Generate
         </div>
@@ -142,7 +142,10 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
   };
 
   return (
-    <div className="p-5 rounded-2xl glass-card">
+    <div
+      className="p-5 rounded-2xl card-light"
+      style={{ borderLeft: "3px solid var(--feat-notes)" }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="font-semibold">{note.topic}</div>
@@ -167,9 +170,17 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
             </div>
             <button
               onClick={() => setRevealed((r) => !r)}
-              className="w-full text-left p-5 rounded-2xl glass-subtle hover:border-primary/30 transition-all min-h-32"
+              className="w-full text-left p-5 rounded-2xl border transition-all min-h-32"
+              style={{
+                background: "var(--feat-notes-bg)",
+                borderColor: "var(--feat-notes)",
+                borderWidth: "1px",
+              }}
             >
-              <div className="text-xs uppercase tracking-wide text-primary mb-2">
+              <div
+                className="text-xs uppercase tracking-wide font-medium mb-2"
+                style={{ color: "var(--feat-notes)" }}
+              >
                 {revealed ? "Answer" : "Question"}
               </div>
               <div className="text-base">{revealed ? card!.a : card!.q}</div>

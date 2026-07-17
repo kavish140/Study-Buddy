@@ -103,7 +103,7 @@ function QuizPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight font-heading">AI Quizzer</h1>
       <p className="text-muted-foreground mt-1">
         Generate a{" "}
@@ -115,7 +115,7 @@ function QuizPage() {
         -level quiz on any syllabus topic.
       </p>
 
-      <div className="p-5 rounded-2xl glass-card mt-6" data-tour="tour-quiz-topic">
+      <div className="p-5 rounded-2xl card-light mt-6" data-tour="tour-quiz-topic">
         <div className="flex items-center gap-2 text-sm font-medium mb-4">
           <Sparkles className="h-4 w-4 text-primary" /> New quiz
         </div>
@@ -176,7 +176,7 @@ function QuizPage() {
           {quizzes.map((q) => (
             <div
               key={q.id}
-              className="p-4 rounded-2xl glass-card flex items-center justify-between gap-3"
+              className="p-4 rounded-2xl card-light flex items-center justify-between gap-3"
             >
               <div className="min-w-0">
                 <div className="font-medium truncate">{q.topic}</div>
@@ -234,7 +234,7 @@ function QuizRunner({
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
+    <div className="max-w-3xl mx-auto px-6 py-10 animate-fade-up">
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs text-muted-foreground">Quiz</div>
@@ -247,7 +247,7 @@ function QuizRunner({
 
       <div className="mt-6 space-y-4">
         {quiz.questions.map((q: QuizQuestion, i) => (
-          <div key={i} className="p-5 rounded-2xl glass-card">
+          <div key={i} className="p-5 rounded-2xl card-light">
             <div className="text-xs text-muted-foreground mb-1">Question {i + 1}</div>
             <div className="font-medium">{q.question}</div>
             <div className="grid gap-2 mt-3">
@@ -262,14 +262,30 @@ function QuizRunner({
                     onClick={() => setAnswers({ ...answers, [i]: oi })}
                     className={cn(
                       "text-left px-4 py-2.5 rounded-lg border text-sm transition-colors",
-                      !showState && chosen && "border-primary bg-primary/10",
+                      !showState && chosen && "border-[color:var(--feat-quiz)]",
                       !showState && !chosen && "border-border hover:border-primary/50",
-                      showState &&
-                        correct &&
-                        "border-[color:var(--success)] bg-[color:var(--success)]/10",
-                      showState && chosen && !correct && "border-destructive bg-destructive/10",
+                      showState && correct && "border-[color:var(--feat-quiz)]",
+                      showState && chosen && !correct && "border-[#ef4444]",
                       showState && !chosen && !correct && "border-border opacity-60",
                     )}
+                    style={{
+                      background:
+                        !showState && chosen
+                          ? "var(--feat-quiz-bg)"
+                          : showState && correct
+                            ? "var(--feat-quiz-bg)"
+                            : showState && chosen && !correct
+                              ? "rgba(239,68,68,0.1)"
+                              : undefined,
+                      color:
+                        !showState && chosen
+                          ? "var(--feat-quiz)"
+                          : showState && correct
+                            ? "var(--feat-quiz)"
+                            : showState && chosen && !correct
+                              ? "#ef4444"
+                              : undefined,
+                    }}
                   >
                     <span className="inline-flex items-center gap-2">
                       {showState && correct && <Check className="h-4 w-4" />}
@@ -290,7 +306,7 @@ function QuizRunner({
         ))}
       </div>
 
-      <div className="sticky bottom-0 mt-6 p-4 glass border-t border-border flex items-center justify-between">
+      <div className="sticky bottom-0 mt-6 p-4 bg-white border-t border-border flex items-center justify-between">
         {submitted ? (
           <>
             <div className="font-medium">

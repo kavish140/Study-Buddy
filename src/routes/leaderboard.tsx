@@ -20,22 +20,22 @@ export const Route = createFileRoute("/leaderboard")({
 
 const RANK_STYLES = [
   {
-    bg: "from-amber-500/20 to-yellow-500/10",
-    border: "border-amber-500/30",
+    bgStyle: { background: "var(--feat-leaderboard-bg)" },
+    border: "border-amber-300/40",
     icon: "🥇",
-    label: "text-amber-400",
+    labelStyle: { color: "var(--feat-leaderboard)" },
   },
   {
-    bg: "from-slate-400/20 to-gray-500/10",
-    border: "border-slate-400/30",
+    bgStyle: { background: "var(--muted)" },
+    border: "border-slate-300/40",
     icon: "🥈",
-    label: "text-slate-300",
+    labelStyle: { color: "#64748b" },
   },
   {
-    bg: "from-orange-500/20 to-amber-600/10",
-    border: "border-orange-500/30",
+    bgStyle: { background: "rgba(180,83,9,0.08)" },
+    border: "border-orange-300/40",
     icon: "🥉",
-    label: "text-orange-400",
+    labelStyle: { color: "#c2410c" },
   },
 ];
 
@@ -59,7 +59,7 @@ function LeaderboardPage() {
   const myRank = board.findIndex((r) => r.user_id === user?.id) + 1;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto">
+    <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto animate-fade-up">
       {/* Header */}
       <div className="mb-8 text-center">
         <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-glow mb-4">
@@ -72,7 +72,7 @@ function LeaderboardPage() {
       {/* My rank banner */}
       {myStats && myRank > 0 && (
         <div
-          className="glass-card rounded-2xl p-4 mb-6 flex items-center justify-between border border-primary/20"
+          className="card-light rounded-2xl p-4 mb-6 flex items-center justify-between border border-primary/20"
           data-tour="tour-leaderboard-rank"
         >
           <div className="flex items-center gap-3">
@@ -104,18 +104,18 @@ function LeaderboardPage() {
               <div
                 key={entry?.user_id ?? i}
                 className={cn(
-                  "glass-card rounded-2xl p-4 text-center bg-gradient-to-b border transition-all",
-                  style.bg,
+                  "card-light rounded-2xl p-4 text-center border transition-all",
                   style.border,
                   podiumRank === 1 && "scale-105 shadow-glow-sm",
                   isMe && "ring-2 ring-primary",
                 )}
+                style={style.bgStyle}
               >
                 <div className="text-2xl mb-1">{style.icon}</div>
                 <div className="h-12 w-12 rounded-full bg-muted/30 mx-auto mb-2 grid place-items-center text-xl">
                   🎓
                 </div>
-                <div className={cn("text-sm font-semibold truncate", style.label)}>
+                <div className="text-sm font-semibold truncate" style={style.labelStyle}>
                   {isMe ? "You" : `#${podiumRank}`}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">{entry?.xp ?? 0} XP</div>
@@ -130,7 +130,7 @@ function LeaderboardPage() {
       <div className="space-y-2">
         {isLoading
           ? Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-16 glass-card rounded-xl animate-pulse" />
+              <div key={i} className="h-16 card-light rounded-xl animate-pulse" />
             ))
           : board.slice(3).map((entry, idx) => {
               const rank = idx + 4;
@@ -142,22 +142,26 @@ function LeaderboardPage() {
                 <div
                   key={entry.user_id ?? idx}
                   className={cn(
-                    "glass-card rounded-xl px-4 py-3 flex items-center gap-4 transition-all",
-                    isMe && "border border-primary/30 bg-primary/5",
+                    "card-light rounded-xl px-4 py-3 flex items-center gap-4 transition-all",
+                    isMe && "border border-primary/30",
                   )}
+                  style={isMe ? { background: "var(--accent)" } : undefined}
                 >
                   {/* Rank */}
                   <div
-                    className={cn(
-                      "h-9 w-9 shrink-0 rounded-lg grid place-items-center text-sm font-bold",
+                    className="h-9 w-9 shrink-0 rounded-lg grid place-items-center text-sm font-bold"
+                    style={
                       rank === 1
-                        ? "bg-amber-500/20 text-amber-400"
+                        ? {
+                            background: "var(--feat-leaderboard-bg)",
+                            color: "var(--feat-leaderboard)",
+                          }
                         : rank === 2
-                          ? "bg-slate-400/20 text-slate-300"
+                          ? { background: "var(--muted)", color: "#64748b" }
                           : rank === 3
-                            ? "bg-orange-500/20 text-orange-400"
-                            : "bg-muted/20 text-muted-foreground",
-                    )}
+                            ? { background: "rgba(180,83,9,0.08)", color: "#c2410c" }
+                            : { background: "var(--muted)", color: "var(--muted-foreground)" }
+                    }
                   >
                     {rank <= 3 ? ["🥇", "🥈", "🥉"][rank - 1] : `#${rank}`}
                   </div>
@@ -176,10 +180,18 @@ function LeaderboardPage() {
                       {isMe && <span className="text-xs text-primary font-medium">← you</span>}
                     </div>
                     {/* XP progress bar */}
-                    <div className="mt-1 h-1 bg-muted/30 rounded-full overflow-hidden w-24">
+                    <div
+                      className="mt-1 h-1 rounded-full overflow-hidden w-24"
+                      style={{ background: "var(--muted)" }}
+                    >
                       <div
-                        className="h-full bg-gradient-primary rounded-full"
-                        style={{ width: `${pct}%` }}
+                        className="h-full progress-fill rounded-full"
+                        style={
+                          {
+                            "--pct": `${pct}%`,
+                            background: "var(--gradient-primary)",
+                          } as React.CSSProperties
+                        }
                       />
                     </div>
                   </div>

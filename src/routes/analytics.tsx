@@ -217,9 +217,7 @@ function AnalyticsPage() {
 
   return (
     <div className="relative min-h-full">
-      <div className="absolute inset-0 bg-gradient-hero pointer-events-none" />
-
-      <div className="relative max-w-6xl mx-auto px-6 py-10">
+      <div className="relative max-w-6xl mx-auto px-6 py-10 animate-fade-up">
         <h1 className="text-3xl font-bold tracking-tight font-heading">
           <span className="text-gradient">Analytics</span>
         </h1>
@@ -230,7 +228,7 @@ function AnalyticsPage() {
         </p>
 
         {!hasData ? (
-          <div className="glass-card p-12 rounded-2xl mt-8 text-center">
+          <div className="card-light p-12 rounded-2xl mt-8 text-center">
             <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
             <h2 className="font-semibold font-heading text-lg mb-2">No data yet</h2>
             <p className="text-muted-foreground text-sm max-w-md mx-auto">
@@ -285,7 +283,7 @@ function AnalyticsPage() {
 
             {/* Score trend chart */}
             {trendData.length >= 2 && (
-              <div className="glass-card p-6 rounded-2xl mt-6">
+              <div className="card-light p-6 rounded-2xl mt-6">
                 <div className="flex items-center gap-2 mb-4">
                   <TrendingUp className="h-4 w-4 text-primary" />
                   <span className="font-semibold text-sm">Score Trend</span>
@@ -295,21 +293,21 @@ function AnalyticsPage() {
                     <AreaChart data={trendData}>
                       <defs>
                         <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          <stop offset="5%" stopColor="var(--feat-analytics)" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="var(--feat-analytics)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.08)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                       <XAxis
                         dataKey="date"
-                        stroke="#7b8baa"
+                        stroke="var(--muted-foreground)"
                         fontSize={11}
                         tickLine={false}
                         axisLine={false}
                       />
                       <YAxis
                         domain={[0, 100]}
-                        stroke="#7b8baa"
+                        stroke="var(--muted-foreground)"
                         fontSize={11}
                         tickLine={false}
                         axisLine={false}
@@ -317,22 +315,27 @@ function AnalyticsPage() {
                       />
                       <Tooltip
                         contentStyle={{
-                          background: "rgba(15, 23, 52, 0.9)",
-                          border: "1px solid rgba(59, 130, 246, 0.2)",
+                          background: "var(--card)",
+                          border: "1px solid var(--border)",
                           borderRadius: "12px",
                           fontSize: 12,
-                          color: "#e8ecf4",
+                          color: "var(--foreground)",
                         }}
                         formatter={(v: number) => [`${v}%`, "Score"]}
                       />
                       <Area
                         type="monotone"
                         dataKey="score"
-                        stroke="#3b82f6"
+                        stroke="var(--feat-analytics)"
                         strokeWidth={2}
                         fill="url(#scoreGradient)"
-                        dot={{ fill: "#3b82f6", strokeWidth: 0, r: 3 }}
-                        activeDot={{ r: 5, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }}
+                        dot={{ fill: "var(--feat-analytics)", strokeWidth: 0, r: 3 }}
+                        activeDot={{
+                          r: 5,
+                          fill: "var(--feat-analytics)",
+                          stroke: "#fff",
+                          strokeWidth: 2,
+                        }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -344,7 +347,7 @@ function AnalyticsPage() {
             <div className="grid lg:grid-cols-3 gap-4 mt-6">
               {/* Heatmap */}
               <div
-                className="lg:col-span-2 glass-card p-6 rounded-2xl"
+                className="lg:col-span-2 card-light p-6 rounded-2xl"
                 data-tour="tour-analytics-subjects"
               >
                 <div className="flex items-center gap-2 mb-4">
@@ -409,7 +412,7 @@ function AnalyticsPage() {
               {/* Weak + Strong areas */}
               <div className="space-y-4">
                 {/* Weak areas */}
-                <div className="glass-card p-5 rounded-2xl">
+                <div className="card-light p-5 rounded-2xl">
                   <div className="flex items-center gap-2 mb-3">
                     <AlertTriangle className="h-4 w-4 text-warning" />
                     <span className="font-semibold text-sm">Needs Attention</span>
@@ -439,7 +442,7 @@ function AnalyticsPage() {
                 </div>
 
                 {/* Strong areas */}
-                <div className="glass-card p-5 rounded-2xl">
+                <div className="card-light p-5 rounded-2xl">
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle2 className="h-4 w-4 text-success" />
                     <span className="font-semibold text-sm">Strong Topics</span>
@@ -472,7 +475,7 @@ function AnalyticsPage() {
 
             {/* Mock test history */}
             {completedMocks.length > 0 && (
-              <div className="glass-card p-6 rounded-2xl mt-6">
+              <div className="card-light p-6 rounded-2xl mt-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Clock className="h-4 w-4 text-primary" />
                   <span className="font-semibold text-sm">Mock Test History</span>
@@ -486,7 +489,10 @@ function AnalyticsPage() {
                     return (
                       <div
                         key={t.id}
-                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/20 transition-colors"
+                        className="flex items-center gap-3 p-3 rounded-xl transition-colors"
+                        style={{ cursor: "default" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--muted)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                       >
                         <div
                           className={cn(
@@ -553,7 +559,7 @@ function StatCard({
   };
   const c = colorMap[accent];
   return (
-    <div className="glass-card p-5 rounded-2xl">
+    <div className="card-light p-5 rounded-2xl">
       <div className="flex items-center justify-between mb-3">
         <div className="text-xs text-muted-foreground font-medium">{label}</div>
         <div
