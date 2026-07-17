@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SyllabusRouteImport } from './routes/syllabus'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as PyqRouteImport } from './routes/pyq'
@@ -24,6 +25,7 @@ import { Route as FocusRouteImport } from './routes/focus'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as AnalysisTestRouteImport } from './routes/analysis-test'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SyllabusRoute = SyllabusRouteImport.update({
@@ -34,6 +36,11 @@ const SyllabusRoute = SyllabusRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewRoute = ReviewRouteImport.update({
@@ -101,6 +108,11 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalysisTestRoute = AnalysisTestRouteImport.update({
+  id: '/analysis-test',
+  path: '/analysis-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -109,6 +121,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analysis-test': typeof AnalysisTestRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/community': typeof CommunityRoute
@@ -122,11 +135,13 @@ export interface FileRoutesByFullPath {
   '/pyq': typeof PyqRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
+  '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/syllabus': typeof SyllabusRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analysis-test': typeof AnalysisTestRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/community': typeof CommunityRoute
@@ -140,12 +155,14 @@ export interface FileRoutesByTo {
   '/pyq': typeof PyqRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
+  '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/syllabus': typeof SyllabusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analysis-test': typeof AnalysisTestRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/community': typeof CommunityRoute
@@ -159,6 +176,7 @@ export interface FileRoutesById {
   '/pyq': typeof PyqRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
+  '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/syllabus': typeof SyllabusRoute
 }
@@ -166,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/analysis-test'
     | '/analytics'
     | '/chat'
     | '/community'
@@ -179,11 +198,13 @@ export interface FileRouteTypes {
     | '/pyq'
     | '/quiz'
     | '/review'
+    | '/settings'
     | '/sitemap.xml'
     | '/syllabus'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/analysis-test'
     | '/analytics'
     | '/chat'
     | '/community'
@@ -197,11 +218,13 @@ export interface FileRouteTypes {
     | '/pyq'
     | '/quiz'
     | '/review'
+    | '/settings'
     | '/sitemap.xml'
     | '/syllabus'
   id:
     | '__root__'
     | '/'
+    | '/analysis-test'
     | '/analytics'
     | '/chat'
     | '/community'
@@ -215,12 +238,14 @@ export interface FileRouteTypes {
     | '/pyq'
     | '/quiz'
     | '/review'
+    | '/settings'
     | '/sitemap.xml'
     | '/syllabus'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalysisTestRoute: typeof AnalysisTestRoute
   AnalyticsRoute: typeof AnalyticsRoute
   ChatRoute: typeof ChatRoute
   CommunityRoute: typeof CommunityRoute
@@ -234,6 +259,7 @@ export interface RootRouteChildren {
   PyqRoute: typeof PyqRoute
   QuizRoute: typeof QuizRoute
   ReviewRoute: typeof ReviewRoute
+  SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SyllabusRoute: typeof SyllabusRoute
 }
@@ -252,6 +278,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review': {
@@ -345,6 +378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analysis-test': {
+      id: '/analysis-test'
+      path: '/analysis-test'
+      fullPath: '/analysis-test'
+      preLoaderRoute: typeof AnalysisTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -357,6 +397,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalysisTestRoute: AnalysisTestRoute,
   AnalyticsRoute: AnalyticsRoute,
   ChatRoute: ChatRoute,
   CommunityRoute: CommunityRoute,
@@ -370,6 +411,7 @@ const rootRouteChildren: RootRouteChildren = {
   PyqRoute: PyqRoute,
   QuizRoute: QuizRoute,
   ReviewRoute: ReviewRoute,
+  SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SyllabusRoute: SyllabusRoute,
 }

@@ -55,25 +55,40 @@ function NotesPage() {
       const res = await generateNotes({
         data: { topic, examName: profile?.exam_name, source: "notes" },
       });
+
+      // Validate response shape — AI can occasionally return empty objects
+      if (!res || typeof res.summary !== "string" || res.summary.trim().length === 0) {
+        toast.error("The AI returned an empty response. Please try again or rephrase the topic.");
+        return;
+      }
+
       const note: Note = {
         id: uid(),
         topic: topic.trim(),
         summary: res.summary,
         // Ensure flashcards is always an array even if the AI omits it
         flashcards: Array.isArray(res.flashcards) ? res.flashcards : [],
-        createdAt: Date.now(),
+        created_at: new Date().toISOString(),
       };
       // Use mutate (not mutateAsync) so the mutation's onError handler is the
       // single place that shows the error toast — prevents duplicate toasts.
       saveMutation.mutate(note, {
         onSuccess: () => {
           setTopic("");
-          toast.success("Notes generated");
+          toast.success(`Notes generated${note.flashcards.length > 0 ? ` with ${note.flashcards.length} flashcards` : ""}!`);
         },
       });
     } catch (e) {
       // Only AI-generation errors reach here (saveMutation errors are handled by onError)
-      toast.error(e instanceof Error ? e.message : "Failed to generate notes");
+      const msg = e instanceof Error ? e.message : "Failed to generate notes";
+      // Provide context-specific error messages for common failures
+      if (msg.toLowerCase().includes("timeout") || msg.toLowerCase().includes("time out")) {
+        toast.error("The AI took too long to respond. Try a shorter or simpler topic.");
+      } else if (msg.toLowerCase().includes("auth")) {
+        toast.error("Session expired. Please refresh the page and try again.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -186,7 +201,9 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
               >
                 {revealed ? "Answer" : "Question"}
               </div>
-              <div className="text-base">{revealed ? card!.a : card!.q}</div>
+              <div className="text-base">
+                <MarkdownContent content={revealed ? card!.a : card!.q} />
+              </div>
               {!revealed && <div className="text-xs text-muted-foreground mt-3">Tap to reveal</div>}
             </button>
             <div className="flex justify-end mt-3">

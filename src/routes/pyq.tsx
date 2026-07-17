@@ -78,7 +78,6 @@ function PYQPage() {
   }, [search]);
   const [practicing, setPracticing] = useState<PracticeState | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [topic, setTopic] = useState("");
   const { triggerPageTour } = useTutorial();
 
   useEffect(() => {
@@ -105,12 +104,12 @@ function PYQPage() {
 
   // Generate AI PYQ-style questions
   const handleGenerate = async () => {
-    if (!topic.trim()) return toast.error("Enter a topic to generate questions");
     setGenerating(true);
     try {
       const examLabel = EXAM_LABELS[examId] || examId;
       const yearLabel = year || new Date().getFullYear();
       const subjectLabel = subject || (SUBJECTS[examId]?.[0] ?? "General");
+      const generatedTopic = `${subjectLabel} PYQs from ${yearLabel}`;
 
       // Use study-ai generateQuiz action with user's auth token
       const {
@@ -129,7 +128,7 @@ function PYQPage() {
         body: JSON.stringify({
           action: "generateQuiz",
           data: {
-            topic: `${topic} (${subjectLabel})`,
+            topic: generatedTopic,
             count: 5,
             difficulty: difficulty || "hard",
             examName: examLabel,
@@ -155,7 +154,7 @@ function PYQPage() {
         exam_id: examId,
         year: Number(yearLabel),
         subject: subjectLabel,
-        topic: topic.trim(),
+        topic: generatedTopic,
         question: q.question,
         question_type: "mcq",
         options: q.options,
@@ -165,12 +164,11 @@ function PYQPage() {
             : (q.answer ?? ""),
         explanation: q.explanation,
         difficulty: (difficulty || "hard") as "easy" | "medium" | "hard",
-        tags: [topic.trim(), subjectLabel],
+        tags: [subjectLabel, String(yearLabel)],
       }));
 
       await saveMutation.mutateAsync(qs);
-      toast.success(`✅ Generated ${qs.length} ${examLabel} questions for ${topic}`);
-      setTopic("");
+      toast.success(`✅ Generated ${qs.length} ${examLabel} questions for ${subjectLabel}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Generation failed");
     } finally {
@@ -222,18 +220,10 @@ function PYQPage() {
         className="card-light rounded-2xl p-4 mb-6 border border-primary/20"
         data-tour="tour-pyq-generate"
       >
-        <p className="text-sm font-medium mb-3 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" /> Generate AI-powered PYQ-style questions
-        </p>
-        <div className="flex gap-2 flex-wrap">
-          <input
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
-            placeholder="Topic (e.g. Electromagnetic Induction)"
-            className="flex-1 min-w-[200px] rounded-xl px-3 py-2 text-sm bg-transparent outline-none border border-border"
-            style={{ background: "var(--muted)" }}
-          />
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <p className="text-sm font-medium flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" /> Generate AI-powered PYQ-style questions
+          </p>
           <Button
             onClick={handleGenerate}
             disabled={generating}

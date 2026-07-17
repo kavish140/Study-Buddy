@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { formatTimeIST } from "@/lib/date-utils";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import {
   Upload,
   X,
   Paperclip,
+  GraduationCap,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -31,6 +32,9 @@ import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
 
 export const Route = createFileRoute("/chat")({
+  validateSearch: (search: Record<string, unknown>): { initialPrompt?: string } => ({
+    initialPrompt: search.initialPrompt as string | undefined,
+  }),
   head: () => ({
     meta: [
       { title: "AI Tutor \u2014 AcePrep" },
@@ -54,13 +58,25 @@ function ChatPage() {
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
-  // Tracks a pending first message when creating a new session from empty state
   const [pendingFirstMsg, setPendingFirstMsg] = useState<string | null>(null);
+  const [pendingFirstFile, setPendingFirstFile] = useState<File | null>(null);
   const { triggerPageTour } = useTutorial();
+
+  const { initialPrompt } = Route.useSearch();
+  const initRef = useRef(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     triggerPageTour("chat");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (initialPrompt && !initRef.current) {
+      initRef.current = true;
+      handleSendFromEmpty(initialPrompt);
+      navigate({ to: "/chat", replace: true });
+    }
+  }, [initialPrompt]);
 
   const saveMutation = useMutation({
     mutationFn: api.saveChatSession,
@@ -89,20 +105,19 @@ function ChatPage() {
   };
 
   // Called from EmptyState \u2014 creates session AND sends first message immediately
-  const handleSendFromEmpty = (msg: string) => {
+  const handleSendFromEmpty = (msg: string, file?: File) => {
     const newSession: ChatSession = {
       id: uid(),
-      title: Array.from(msg).slice(0, 50).join("") + (Array.from(msg).length > 50 ? "\u2026" : ""),
+      title: Array.from(msg || (file ? "Upload: " + file.name : "New chat")).slice(0, 50).join("") + (Array.from(msg || "").length > 50 ? "\u2026" : ""),
       exam_id: profile?.exam_id,
       messages: [],
     };
-    // Set activeSessionId AND pendingFirstMsg only AFTER the session is persisted,
-    // so ChatView never mounts before the session exists in the query cache.
     saveMutation.mutate(newSession, {
       onSuccess: () => {
         setActiveSessionId(newSession.id);
         setShowSidebar(false);
         setPendingFirstMsg(msg);
+        if (file) setPendingFirstFile(file);
       },
     });
   };
@@ -124,7 +139,7 @@ function ChatPage() {
 
   return (
     <div
-      className="relative h-[calc(100vh-64px)] lg:h-screen flex overflow-hidden animate-fade-up"
+      className="relative flex-1 flex overflow-hidden animate-fade-up min-h-0"
       style={{ background: "var(--background)" }}
     >
       {/* \u2500\u2500 Sidebar */}
@@ -226,6 +241,8 @@ function ChatPage() {
             onToggleSidebar={() => setShowSidebar(!showSidebar)}
             initialMessage={pendingFirstMsg ?? undefined}
             onInitialMessageConsumed={() => setPendingFirstMsg(null)}
+            initialFile={pendingFirstFile ?? undefined}
+            onInitialFileConsumed={() => setPendingFirstFile(null)}
           />
         ) : (
           <EmptyState
@@ -243,7 +260,7 @@ function EmptyState({
   onSend,
   onToggleSidebar,
 }: {
-  onSend: (msg: string) => void;
+  onSend: (msg: string, file?: File) => void;
   onToggleSidebar: () => void;
 }) {
   const [input, setInput] = useState("");
@@ -373,8 +390,7 @@ function EmptyState({
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    // For empty state, delegate to ChatView after creation
-                    toast.info("Start a new chat to upload images");
+                    onSend("", file);
                   }
                   e.target.value = "";
                 }}
@@ -432,16 +448,21 @@ function ChatView({
   onToggleSidebar,
   initialMessage,
   onInitialMessageConsumed,
+  initialFile,
+  onInitialFileConsumed,
 }: {
   session: ChatSession;
   examName?: string;
-  onUpdate: (session: ChatSession) => void;
+  onUpdate: (s: ChatSession) => void;
   onToggleSidebar: () => void;
   initialMessage?: string;
   onInitialMessageConsumed?: () => void;
+  initialFile?: File;
+  onInitialFileConsumed?: () => void;
 }) {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isTeachingMode, setIsTeachingMode] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const [pendingPdf, setPendingPdf] = useState<{ file: File; pageCount?: number } | null>(null);
@@ -478,6 +499,15 @@ function ChatView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMessage]);
+
+  const initialFileRef = useRef(false);
+  useEffect(() => {
+    if (initialFile && !initialFileRef.current) {
+      initialFileRef.current = true;
+      onInitialFileConsumed?.();
+      handleFileSelect(initialFile);
+    }
+  }, [initialFile]);
 
   // \u2500\u2500 Drag & Drop handlers
   const handleDragEnter = (e: React.DragEvent) => {
@@ -566,9 +596,10 @@ function ChatView({
           // Scanned / image-based PDF — send raw file to Gemini's native PDF reader
           toast.info(`📷 Scanned PDF detected — Gemini is reading all ${pageCount} pages…`);
 
+          const teachingPrefix = isTeachingMode ? "[TEACHING MODE: Act as a curious student learning this topic. DO NOT give answers. Ask clarifying questions and let me teach you.]\n\n" : "";
           const result = await solveFromPdf({
             file: pdfFile,
-            prompt: userMsg,
+            prompt: teachingPrefix + userMsg,
             examName,
             source: "chat",
           });
@@ -586,10 +617,17 @@ function ChatView({
           // Digital PDF with a text layer — use existing streaming text flow
           const contextMsg = `The student has uploaded a PDF: "${pdfFile.name}" (${pageCount} pages).\n\nPDF CONTENT:\n${text.slice(0, 12000)}${text.length > 12000 ? "\n\n[...content truncated to first 12,000 characters...]" : ""}\n\nStudent's question: ${userMsg}`;
 
-          const messagesWithPdf = [
+          let messagesWithPdf = [
             ...updatedMessages.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
             { role: "user" as const, content: contextMsg },
           ];
+          
+          if (isTeachingMode) {
+            messagesWithPdf = [
+              { role: "system", content: "TEACHING MODE ACTIVATED: You are a curious student. The user is your teacher. DO NOT give answers. Ask clarifying questions, act slightly confused about nuances, and let the user guide you. If they explain it well, praise them and ask a follow-up question." },
+              ...messagesWithPdf
+            ];
+          }
 
           let fullResponse = "";
           await streamChat({
@@ -653,11 +691,11 @@ function ChatView({
       setIsStreaming(true);
 
       try {
-        const { base64, mimeType } = await compressImage(imageFile.file);
+        const teachingPrefix = isTeachingMode ? "[TEACHING MODE: Act as a curious student learning this topic. DO NOT give answers. Ask clarifying questions and let me teach you.]\n\n" : "";
         const result = await solveFromImage({
           imageBase64: base64,
           mimeType,
-          prompt: userMsg,
+          prompt: teachingPrefix + userMsg,
           examName,
           source: "chat",
         });
@@ -711,8 +749,17 @@ function ChatView({
     try {
       let fullResponse = "";
 
+      let messagesPayload = updatedMessages.map((m) => ({ role: m.role, content: m.content }));
+      
+      if (isTeachingMode) {
+        messagesPayload = [
+          { role: "system", content: "TEACHING MODE ACTIVATED: You are a curious student learning about this topic. The user is your teacher. DO NOT give the answers yourself! DO NOT act like an expert! Ask clarifying questions, act slightly confused about the nuances, and let the user guide you. If they explain it well, praise them and ask a follow-up question." },
+          ...messagesPayload
+        ];
+      }
+
       await streamChat({
-        messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
+        messages: messagesPayload,
         examName,
         source: "chat",
         onChunk: (chunk) => {
@@ -823,6 +870,20 @@ function ChatView({
             )}
           </div>
         </div>
+        
+        <button
+          onClick={() => setIsTeachingMode((p) => !p)}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-all shrink-0",
+            isTeachingMode
+              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+              : "bg-muted text-muted-foreground border-transparent hover:border-border"
+          )}
+          title="Teaching Mode: You act as the teacher, AI acts as the student"
+        >
+          <GraduationCap className="h-3.5 w-3.5" />
+          {isTeachingMode ? "Student Mode" : "Tutor Mode"}
+        </button>
       </header>
 
       {/* Messages \u2014 also a drop target */}

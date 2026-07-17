@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
-import { xpForNextLevel } from "@/lib/storage";
+import { xpForNextLevel, getRankForXp } from "@/lib/storage";
 import { cn } from "@/lib/utils";
-import { Trophy, Flame, Star, Crown, Zap } from "lucide-react";
+import { Trophy, Flame, Star, Crown, Zap, Info } from "lucide-react";
 import { useTutorial } from "@/components/TutorialProvider";
 
 export const Route = createFileRoute("/leaderboard")({
@@ -57,6 +57,7 @@ function LeaderboardPage() {
   }, [triggerPageTour]);
 
   const myRank = board.findIndex((r) => r.user_id === user?.id) + 1;
+  const myRankInfo = myStats ? getRankForXp(myStats.xp) : null;
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-3xl mx-auto animate-fade-up">
@@ -80,8 +81,15 @@ function LeaderboardPage() {
               #{myRank}
             </div>
             <div>
-              <div className="text-sm font-medium">Your rank</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-sm font-medium flex items-center gap-2">
+                Your position
+                {myRankInfo && (
+                  <span className={cn("text-xs font-bold px-1.5 py-0.5 rounded-md", myRankInfo.bg, myRankInfo.color)}>
+                    {myRankInfo.icon} {myRankInfo.name}
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
                 {myStats.xp} XP · Level {myStats.level}
               </div>
             </div>
@@ -118,6 +126,11 @@ function LeaderboardPage() {
                 <div className="text-sm font-semibold truncate" style={style.labelStyle}>
                   {isMe ? "You" : `#${podiumRank}`}
                 </div>
+                {entry && (
+                  <div className={cn("inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-1 mb-1", getRankForXp(entry.xp ?? 0).bg, getRankForXp(entry.xp ?? 0).color)}>
+                    {getRankForXp(entry.xp ?? 0).icon} {getRankForXp(entry.xp ?? 0).name}
+                  </div>
+                )}
                 <div className="text-xs text-muted-foreground mt-0.5">{entry?.xp ?? 0} XP</div>
                 <div className="text-xs text-muted-foreground">Lv. {entry?.level ?? 1}</div>
               </div>
@@ -125,6 +138,26 @@ function LeaderboardPage() {
           })}
         </div>
       )}
+
+      {/* XP Explanation Card */}
+      <div className="card-light rounded-2xl p-4 mb-6 border border-border">
+        <div className="flex items-start gap-3">
+          <div className="h-8 w-8 rounded-full bg-blue-500/10 grid place-items-center shrink-0">
+            <Info className="h-4 w-4 text-blue-500" />
+          </div>
+          <div className="flex-1 text-sm">
+            <h3 className="font-semibold mb-1">How to earn XP & Rank Up</h3>
+            <ul className="text-muted-foreground space-y-1 text-xs list-disc pl-4 mb-3">
+              <li>Complete a Focus Session (+XP based on minutes)</li>
+              <li>Attempt Mock Tests and Quizzes (+XP based on score)</li>
+              <li>Review Flashcards (+XP per review)</li>
+            </ul>
+            <p className="text-xs font-medium text-amber-600/80 dark:text-amber-500/80 bg-amber-500/10 inline-block px-2 py-1 rounded-md">
+              ⚠️ Rank Decay: Missing a day will cost you 50 XP per missed day! Keep your streak alive!
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Full list */}
       <div className="space-y-2">
@@ -178,6 +211,11 @@ function LeaderboardPage() {
                         {isMe ? "You" : `Student #${rank}`}
                       </span>
                       {isMe && <span className="text-xs text-primary font-medium">← you</span>}
+                      
+                      {/* Rank Badge */}
+                      <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-md", getRankForXp(entry.xp ?? 0).bg, getRankForXp(entry.xp ?? 0).color)}>
+                        {getRankForXp(entry.xp ?? 0).icon} {getRankForXp(entry.xp ?? 0).name}
+                      </span>
                     </div>
                     {/* XP progress bar */}
                     <div

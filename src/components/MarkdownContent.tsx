@@ -2,6 +2,10 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import type { Components } from "react-markdown";
 
 /* ─── Code Block with Copy button ─── */
 function CodeBlock({ lang, content }: { lang: string; content: string }) {
@@ -45,223 +49,58 @@ function CodeBlock({ lang, content }: { lang: string; content: string }) {
   );
 }
 
-/* ─── Inline markdown: bold, italic, inline-code ─── */
-function renderInline(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = [];
-  let remaining = text;
-  let key = 0;
-
-  while (remaining.length > 0) {
-    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-    const italicMatch = remaining.match(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/);
-    const codeMatch = remaining.match(/\x60([^\x60]+)\x60/);
-
-    let firstMatch: { index: number; length: number; node: React.ReactNode } | null = null;
-
-    if (boldMatch?.index !== undefined) {
-      firstMatch = {
-        index: boldMatch.index,
-        length: boldMatch[0].length,
-        node: (
-          <strong key={key++} className="font-semibold text-foreground">
-            {boldMatch[1]}
-          </strong>
-        ),
-      };
+/* ─── Custom component overrides for react-markdown ─── */
+const components: Components = {
+  // Headings
+  h1: ({ children }) => (
+    <h2 className="font-bold text-lg mt-4 mb-2 text-foreground">{children}</h2>
+  ),
+  h2: ({ children }) => (
+    <h3 className="font-bold text-base mt-4 mb-1.5 text-foreground">{children}</h3>
+  ),
+  h3: ({ children }) => (
+    <h4 className="font-semibold text-sm mt-4 mb-1.5 text-foreground">{children}</h4>
+  ),
+  // Paragraph
+  p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+  // Strong / Em
+  strong: ({ children }) => (
+    <strong className="font-semibold text-foreground">{children}</strong>
+  ),
+  em: ({ children }) => <em className="italic">{children}</em>,
+  // Horizontal rule
+  hr: () => <hr className="my-3 border-border" />,
+  // Blockquote
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-2 border-primary/40 pl-3 my-2 text-muted-foreground italic">
+      {children}
+    </blockquote>
+  ),
+  // Lists
+  ul: ({ children }) => <ul className="space-y-1 my-1.5 pl-1">{children}</ul>,
+  ol: ({ children }) => <ol className="space-y-1 my-1.5 pl-1 list-decimal list-inside">{children}</ol>,
+  li: ({ children }) => (
+    <div className="flex items-start gap-2 mb-1">
+      <span className="text-primary mt-0.5 shrink-0 text-xs">•</span>
+      <span className="flex-1">{children}</span>
+    </div>
+  ),
+  // Inline code
+  code: ({ children, className }) => {
+    const isBlock = className?.startsWith("language-");
+    if (isBlock) {
+      const lang = (className ?? "").replace("language-", "");
+      return <CodeBlock lang={lang} content={String(children).replace(/\n$/, "")} />;
     }
-
-    if (italicMatch?.index !== undefined) {
-      const candidate = {
-        index: italicMatch.index,
-        length: italicMatch[0].length,
-        node: (
-          <em key={key++} className="italic">
-            {italicMatch[1]}
-          </em>
-        ),
-      };
-      if (firstMatch === null || candidate.index < firstMatch.index) firstMatch = candidate;
-    }
-
-    if (codeMatch?.index !== undefined) {
-      const candidate = {
-        index: codeMatch.index,
-        length: codeMatch[0].length,
-        node: (
-          <code
-            key={key++}
-            className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-mono border border-primary/20"
-          >
-            {codeMatch[1]}
-          </code>
-        ),
-      };
-      if (firstMatch === null || candidate.index < firstMatch.index) firstMatch = candidate;
-    }
-
-    if (firstMatch) {
-      if (firstMatch.index > 0) {
-        parts.push(remaining.slice(0, firstMatch.index));
-      }
-      parts.push(firstMatch.node);
-      remaining = remaining.slice(firstMatch.index + firstMatch.length);
-    } else {
-      parts.push(remaining);
-      break;
-    }
-  }
-
-  return parts.length === 1 ? parts[0] : <>{parts}</>;
-}
-
-/* ─── Block markdown renderer ─── */
-function renderMarkdown(text: string): React.ReactNode[] {
-  const blocks: React.ReactNode[] = [];
-  const lines = text.split("\n");
-  let currentBlock: string[] = [];
-  let inCodeBlock = false;
-  let codeLang = "";
-
-  const flushParagraph = () => {
-    if (currentBlock.length > 0) {
-      const joined = currentBlock.join("\n");
-      if (joined.trim()) {
-        blocks.push(
-          <p key={blocks.length} className="mb-2 last:mb-0">
-            {renderInline(joined)}
-          </p>,
-        );
-      }
-      currentBlock = [];
-    }
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Code blocks
-    if (line.trim().startsWith("```")) {
-      if (inCodeBlock) {
-        blocks.push(
-          <CodeBlock
-            key={"cb-" + blocks.length}
-            lang={codeLang}
-            content={currentBlock.join("\n")}
-          />,
-        );
-        currentBlock = [];
-        inCodeBlock = false;
-        codeLang = "";
-      } else {
-        flushParagraph();
-        inCodeBlock = true;
-        codeLang = line.trim().slice(3).trim();
-      }
-      continue;
-    }
-
-    if (inCodeBlock) {
-      currentBlock.push(line);
-      continue;
-    }
-
-    // Headers
-    if (line.startsWith("### ")) {
-      flushParagraph();
-      blocks.push(
-        <h4 key={blocks.length} className="font-semibold text-sm mt-4 mb-1.5 text-foreground">
-          {renderInline(line.slice(4))}
-        </h4>,
-      );
-      continue;
-    }
-    if (line.startsWith("## ")) {
-      flushParagraph();
-      blocks.push(
-        <h3 key={blocks.length} className="font-bold text-base mt-4 mb-1.5 text-foreground">
-          {renderInline(line.slice(3))}
-        </h3>,
-      );
-      continue;
-    }
-    if (line.startsWith("# ")) {
-      flushParagraph();
-      blocks.push(
-        <h2 key={blocks.length} className="font-bold text-lg mt-4 mb-2 text-foreground">
-          {renderInline(line.slice(2))}
-        </h2>,
-      );
-      continue;
-    }
-
-    // Horizontal rule
-    if (line.trim().match(/^---+$/) || line.trim().match(/^\*\*\*+$/)) {
-      flushParagraph();
-      blocks.push(<hr key={blocks.length} className="my-3 border-border" />);
-      continue;
-    }
-
-    // Bullet lists
-    if (line.match(/^[-*] /)) {
-      flushParagraph();
-      blocks.push(
-        <div key={blocks.length} className="flex items-start gap-2 mb-1">
-          <span className="text-primary mt-0.5 shrink-0 text-xs">•</span>
-          <span>{renderInline(line.slice(2))}</span>
-        </div>,
-      );
-      continue;
-    }
-
-    // Numbered lists
-    const numMatch = line.match(/^(\d+)\.\s/);
-    if (numMatch) {
-      flushParagraph();
-      blocks.push(
-        <div key={blocks.length} className="flex items-start gap-2 mb-1">
-          <span className="text-primary font-semibold shrink-0 text-xs min-w-[1.25rem]">
-            {numMatch[1]}.
-          </span>
-          <span>{renderInline(line.slice(numMatch[0].length))}</span>
-        </div>,
-      );
-      continue;
-    }
-
-    // Blockquote
-    if (line.startsWith("> ")) {
-      flushParagraph();
-      blocks.push(
-        <blockquote
-          key={blocks.length}
-          className="border-l-2 border-primary/40 pl-3 my-2 text-muted-foreground italic"
-        >
-          {renderInline(line.slice(2))}
-        </blockquote>,
-      );
-      continue;
-    }
-
-    // Empty lines
-    if (line.trim() === "") {
-      flushParagraph();
-      continue;
-    }
-
-    currentBlock.push(line);
-  }
-
-  // Flush any unclosed code block (can happen mid-stream)
-  if (inCodeBlock && currentBlock.length > 0) {
-    blocks.push(
-      <CodeBlock key={"cb-" + blocks.length} lang={codeLang} content={currentBlock.join("\n")} />,
+    return (
+      <code className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-mono border border-primary/20">
+        {children}
+      </code>
     );
-  } else {
-    flushParagraph();
-  }
-
-  return blocks;
-}
+  },
+  // Block pre — handled by code above
+  pre: ({ children }) => <>{children}</>,
+};
 
 /* ─── Public MarkdownContent component ─── */
 export function MarkdownContent({
@@ -275,7 +114,13 @@ export function MarkdownContent({
 }) {
   return (
     <div className={cn(isStreaming && "streaming-cursor", className)}>
-      {renderMarkdown(content)}
+      <ReactMarkdown
+        remarkPlugins={[remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+        components={components}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }

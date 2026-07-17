@@ -40,7 +40,7 @@ export type QuizQuestion = {
 export type SavedQuiz = {
   id: string;
   topic: string;
-  createdAt: number;
+  created_at?: string;
   score?: number;
   questions: QuizQuestion[];
 };
@@ -52,7 +52,7 @@ export type Note = {
   topic: string;
   summary: string;
   flashcards: { q: string; a: string }[];
-  createdAt: number;
+  created_at?: string;
 };
 
 export const uid = () => crypto.randomUUID();
@@ -139,6 +139,11 @@ export type ReviewCard = {
   subject?: string;
   topic?: string;
   source?: "quiz" | "mock_test" | "flashcard" | "manual";
+  /** MCQ options — populated when card is saved from a quiz/mock test wrong answer.
+   *  When present, the Smart Review Quiz Mode renders this as an interactive MCQ. */
+  options?: string[];
+  /** Index of the correct option within `options` */
+  correctOptionIndex?: number;
   ease_factor: number; // SM-2 ease factor, starts at 2.5
   interval_days: number; // days until next review
   repetitions: number; // times reviewed successfully
@@ -239,6 +244,25 @@ export function xpForNextLevel(xp: number): { current: number; needed: number; p
   const current = xp - (LEVEL_THRESHOLDS[idx] ?? 0);
   const needed = LEVEL_THRESHOLDS[idx + 1] - (LEVEL_THRESHOLDS[idx] ?? 0);
   return { current, needed, pct: Math.min(100, Math.round((current / needed) * 100)) };
+}
+
+export const RANKS = [
+  { id: "bronze", name: "Bronze", minXp: 0, color: "text-amber-700", bg: "bg-amber-700/10", icon: "🥉" },
+  { id: "silver", name: "Silver", minXp: 1000, color: "text-slate-400", bg: "bg-slate-400/10", icon: "🥈" },
+  { id: "gold", name: "Gold", minXp: 3000, color: "text-amber-400", bg: "bg-amber-400/10", icon: "🥇" },
+  { id: "platinum", name: "Platinum", minXp: 6000, color: "text-cyan-400", bg: "bg-cyan-400/10", icon: "💎" },
+  { id: "diamond", name: "Diamond", minXp: 12000, color: "text-violet-400", bg: "bg-violet-400/10", icon: "🔮" },
+  { id: "master", name: "Master", minXp: 25000, color: "text-rose-500", bg: "bg-rose-500/10", icon: "👑" },
+  { id: "grandmaster", name: "Grandmaster", minXp: 50000, color: "text-red-600", bg: "bg-red-600/10", icon: "🌟" },
+];
+
+export function getRankForXp(xp: number) {
+  let currentRank = RANKS[0];
+  for (const rank of RANKS) {
+    if (xp >= rank.minXp) currentRank = rank;
+    else break;
+  }
+  return currentRank;
 }
 
 export type BadgeDef = {

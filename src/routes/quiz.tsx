@@ -70,7 +70,7 @@ function QuizPage() {
       const quiz: SavedQuiz = {
         id: uid(),
         topic: topic.trim(),
-        createdAt: Date.now(),
+        created_at: new Date().toISOString(),
         questions: res.questions,
       };
       await saveMutation.mutateAsync(quiz);
@@ -224,6 +224,9 @@ function QuizRunner({
         explanation: q.explanation || undefined,
         subject: quiz.topic,
         source: "quiz" as const,
+        // Preserve MCQ options so Smart Review can offer quiz-mode practice
+        options: q.options,
+        correctOptionIndex: q.answerIndex,
         ease_factor: 2.5,
         interval_days: 1,
         repetitions: 0,
@@ -250,7 +253,9 @@ function QuizRunner({
         {quiz.questions.map((q: QuizQuestion, i) => (
           <div key={i} className="p-5 rounded-2xl card-light">
             <div className="text-xs text-muted-foreground mb-1">Question {i + 1}</div>
-            <div className="font-medium">{q.question}</div>
+            <div className="font-medium text-sm leading-relaxed">
+              <MarkdownContent content={q.question} />
+            </div>
             <div className="grid gap-2 mt-3">
               {q.options.map((opt, oi) => {
                 const chosen = answers[i] === oi;
@@ -288,10 +293,10 @@ function QuizRunner({
                               : undefined,
                     }}
                   >
-                    <span className="inline-flex items-center gap-2">
-                      {showState && correct && <Check className="h-4 w-4" />}
-                      {showState && chosen && !correct && <X className="h-4 w-4" />}
-                      {opt}
+                    <span className="inline-flex items-start gap-2">
+                      {showState && correct && <Check className="h-4 w-4 shrink-0 mt-0.5" />}
+                      {showState && chosen && !correct && <X className="h-4 w-4 shrink-0 mt-0.5" />}
+                      <MarkdownContent content={opt} />
                     </span>
                   </button>
                 );
@@ -311,7 +316,7 @@ function QuizRunner({
         ))}
       </div>
 
-      <div className="sticky bottom-0 mt-6 p-4 bg-white border-t border-border flex items-center justify-between">
+      <div className="sticky bottom-0 mt-6 p-4 border-t border-border flex items-center justify-between" style={{ background: "var(--background)" }}>
         {submitted ? (
           <>
             <div className="font-medium">

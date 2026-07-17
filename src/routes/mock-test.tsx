@@ -85,6 +85,9 @@ function MockTestPage() {
           subject: q.section,
           topic: q.topic || undefined,
           source: "mock_test" as const,
+          // Preserve MCQ options so Smart Review can offer quiz-mode practice
+          options: q.options,
+          correctOptionIndex: q.answerIndex,
           ease_factor: 2.5,
           interval_days: 1,
           repetitions: 0,
@@ -614,7 +617,9 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
                 </button>
               </div>
 
-              <div className="text-lg font-medium leading-relaxed mb-6">{currentQ.question}</div>
+              <div className="text-lg font-medium leading-relaxed mb-6">
+                <MarkdownContent content={currentQ.question} />
+              </div>
 
               <div className="space-y-3">
                 {currentQ.options.map((opt, oi) => {
@@ -644,7 +649,9 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
                       >
                         {String.fromCharCode(65 + oi)}
                       </div>
-                      <span className="text-sm">{opt}</span>
+                      <span className="text-sm">
+                        <MarkdownContent content={opt} />
+                      </span>
                     </button>
                   );
                 })}
@@ -901,9 +908,8 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
       </div>
 
       {/* Answer review */}
-      {showReview && (
-        <div>
-          <div className="flex border-b border-border mb-4 overflow-x-auto">
+      <div>
+        <div className="flex border-b border-border mb-4 overflow-x-auto">
             {test.sections.map((section, si) => (
               <button
                 key={section.name}
@@ -928,70 +934,81 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
               return (
                 <div key={q.id} className="card-light p-5 rounded-2xl">
                   <div className="flex items-center gap-2 mb-3">
-                    <span
-                      className={cn(
-                        "h-6 w-6 rounded-full grid place-items-center text-xs",
-                        isCorrect
-                          ? "bg-success/10 text-success"
-                          : isUnanswered
-                            ? "bg-muted/30 text-muted-foreground"
-                            : "bg-destructive/10 text-destructive",
-                      )}
-                    >
-                      {isCorrect ? (
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      ) : isUnanswered ? (
-                        "−"
-                      ) : (
-                        <XCircle className="h-3.5 w-3.5" />
-                      )}
-                    </span>
-                    <span className="text-sm font-medium">Q{qi + 1}</span>
+                    {showReview ? (
+                      <span
+                        className={cn(
+                          "h-6 w-6 rounded-full grid place-items-center text-xs",
+                          isCorrect
+                            ? "bg-success/10 text-success"
+                            : isUnanswered
+                              ? "bg-muted/30 text-muted-foreground"
+                              : "bg-destructive/10 text-destructive",
+                        )}
+                      >
+                        {isCorrect ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : isUnanswered ? (
+                          "−"
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5" />
+                        )}
+                      </span>
+                    ) : (
+                      <span className="h-6 w-6 rounded-full grid place-items-center text-xs bg-muted/30 text-muted-foreground">
+                        {qi + 1}
+                      </span>
+                    )}
+                    {showReview && <span className="text-sm font-medium">Q{qi + 1}</span>}
                     <span className="text-xs text-muted-foreground">{q.topic}</span>
                   </div>
 
-                  <div className="text-sm font-medium mb-3">{q.question}</div>
+                  <div className="text-sm font-medium mb-3">
+                    <MarkdownContent content={q.question} />
+                  </div>
 
                   <div className="space-y-1.5 mb-3">
                     {q.options.map((opt, oi) => (
                       <div
                         key={oi}
                         className={cn(
-                          "text-sm px-3 py-2 rounded-lg",
-                          oi === q.answerIndex
-                            ? "bg-success/10 text-success border border-success/20"
-                            : oi === userAnswer && oi !== q.answerIndex
-                              ? "bg-destructive/10 text-destructive border border-destructive/20"
-                              : "text-muted-foreground",
+                          "text-sm px-3 py-2 rounded-lg transition-all",
+                          showReview
+                            ? oi === q.answerIndex
+                              ? "bg-success/10 text-success border border-success/20"
+                              : oi === userAnswer && oi !== q.answerIndex
+                                ? "bg-destructive/10 text-destructive border border-destructive/20"
+                                : "text-muted-foreground border border-transparent"
+                            : "text-muted-foreground border border-border bg-muted/30"
                         )}
                       >
                         <span className="font-medium mr-2">{String.fromCharCode(65 + oi)}.</span>
-                        {opt}
+                        <MarkdownContent content={opt} />
                       </div>
                     ))}
                   </div>
 
-                  <div
-                    className="text-xs text-muted-foreground p-3 rounded-lg"
-                    style={{
-                      background: "var(--accent)",
-                      borderColor: "var(--primary)",
-                      borderWidth: "1px",
-                      borderStyle: "solid",
-                      opacity: 0.7,
-                    }}
-                  >
-                    <span className="text-xs font-semibold text-foreground uppercase tracking-wide block mb-1">
-                      Explanation
-                    </span>
-                    <MarkdownContent content={q.explanation || ""} />
-                  </div>
+                  {showReview && q.explanation && (
+                    <div
+                      className="text-xs text-muted-foreground p-3 rounded-lg"
+                      style={{
+                        background: "var(--accent)",
+                        borderColor: "var(--primary)",
+                        borderWidth: "1px",
+                        borderStyle: "solid",
+                        opacity: 0.7,
+                      }}
+                    >
+                      <span className="text-xs font-semibold text-foreground uppercase tracking-wide block mb-1">
+                        Explanation
+                      </span>
+                      <MarkdownContent content={q.explanation} />
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
-      )}
-    </div>
+      </div>
   );
 }

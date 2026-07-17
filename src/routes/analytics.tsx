@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { api } from "@/lib/api";
@@ -213,7 +213,7 @@ function AnalyticsPage() {
     subjectGroups.set(t.subject, arr);
   });
 
-  const hasData = totalQuizzes > 0 || totalMocks > 0 || trendData.length > 0;
+  const hasSufficientData = totalQuizzes + totalMocks >= 3;
 
   return (
     <div className="relative min-h-full">
@@ -227,14 +227,22 @@ function AnalyticsPage() {
             : "Track your exam prep performance"}
         </p>
 
-        {!hasData ? (
-          <div className="card-light p-12 rounded-2xl mt-8 text-center">
-            <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h2 className="font-semibold font-heading text-lg mb-2">No data yet</h2>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Take quizzes and mock tests to see your performance analytics here. Your scores, topic
-              mastery, and improvement trends will appear automatically.
+        {!hasSufficientData ? (
+          <div className="card-light p-12 rounded-2xl mt-8 text-center border border-primary/20" style={{ background: "var(--accent)" }}>
+            <Brain className="h-12 w-12 text-primary mx-auto mb-4" />
+            <h2 className="font-semibold font-heading text-xl mb-2 text-foreground">Unlock Your Analytics</h2>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto mb-8">
+              Complete at least 3 quizzes or mock tests to unlock detailed performance tracking. 
+              Want to see your stats instantly? Take a quick Analysis Test to calibrate your topic mastery!
             </p>
+            <Link
+              to="/analysis-test"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-primary-foreground shadow-lg transition-transform hover:scale-105"
+              style={{ background: "var(--gradient-primary)" }}
+            >
+              <Zap className="h-4 w-4" />
+              Take Analysis Test
+            </Link>
           </div>
         ) : (
           <>

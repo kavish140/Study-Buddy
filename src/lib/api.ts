@@ -433,7 +433,51 @@ export const api = {
       .select("*")
       .eq("user_id", user_id)
       .maybeSingle();
-    return (data as UserStats) || null;
+      
+    if (data) {
+      const stats = data as UserStats;
+      const today = todayIST();
+      
+      if (stats.last_active_date && stats.last_active_date < today) {
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const diffDays = Math.floor(
+          (new Date(today).getTime() - new Date(stats.last_active_date).getTime()) / msPerDay
+        );
+        
+        // If diffDays > 1, the user missed at least yesterday
+        if (diffDays > 1) {
+          const missedDays = diffDays - 1;
+          const FLAT_DECAY = 50; // XP per missed day
+          const decayXP = missedDays * FLAT_DECAY;
+          
+          if (decayXP > 0) {
+            const newXp = Math.max(0, stats.xp - decayXP);
+            // Advance last_active_date to (today - 2 days) so we don't double decay
+            // tomorrow if they remain inactive today, but streak remains broken (diff >= 2).
+            const newLastActive = new Date(new Date(today).getTime() - 2 * msPerDay)
+              .toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+              
+            await supabase
+              .from("user_stats")
+              .update({
+                xp: newXp,
+                last_active_date: newLastActive,
+                current_streak: 0,
+              })
+              .eq("id", stats.id);
+            
+            return {
+              ...stats,
+              xp: newXp,
+              last_active_date: newLastActive,
+              current_streak: 0,
+            };
+          }
+        }
+      }
+      return stats;
+    }
+    return null;
   },
 
   /**

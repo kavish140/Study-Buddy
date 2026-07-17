@@ -77,6 +77,7 @@ function FocusPage() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionStartRef = useRef<Date | null>(null);
+  const targetTimeRef = useRef<number | null>(null);
   // Flag to guard against double-invocation of the completion handler (React StrictMode)
   const completionFiredRef = useRef(false);
   // Reuse a single AudioContext to respect browser autoplay policies
@@ -119,6 +120,7 @@ function FocusPage() {
       setMode(newMode);
       setSecondsLeft(customMinutes[newMode] * 60);
       sessionStartRef.current = null;
+      targetTimeRef.current = null;
       completionFiredRef.current = false;
     },
     [customMinutes, isRunning, mode],
@@ -131,6 +133,7 @@ function FocusPage() {
 
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsRunning(false);
+    targetTimeRef.current = null;
 
     // Play sound notification (browser beep) — reuse AudioContext to respect browser policies
     try {
@@ -186,20 +189,20 @@ function FocusPage() {
     handleSessionCompleteRef.current = handleSessionComplete;
   });
 
-  // Countdown tick — only depends on isRunning; uses ref to avoid stale closures
+  // Countdown tick — uses absolute time to prevent background throttling drift
   useEffect(() => {
-    if (isRunning) {
+    if (isRunning && targetTimeRef.current) {
       intervalRef.current = setInterval(() => {
-        setSecondsLeft((s) => {
-          if (s <= 1) {
-            // Schedule completion outside the state setter to avoid side effects
-            // inside the updater function (which React may call multiple times).
-            setTimeout(() => handleSessionCompleteRef.current(), 0);
-            return 0;
-          }
-          return s - 1;
-        });
-      }, 1000);
+        const now = Date.now();
+        const remaining = Math.max(0, Math.ceil((targetTimeRef.current! - now) / 1000));
+        
+        setSecondsLeft(remaining);
+        
+        if (remaining <= 0) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          setTimeout(() => handleSessionCompleteRef.current(), 0);
+        }
+      }, 500); // 500ms for more responsive UI
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -219,8 +222,13 @@ function FocusPage() {
   }, [isRunning, minutes, seconds, mode]);
 
   const handleToggle = () => {
-    if (!isRunning && !sessionStartRef.current) {
-      sessionStartRef.current = new Date();
+    if (!isRunning) {
+      if (!sessionStartRef.current) {
+        sessionStartRef.current = new Date();
+      }
+      targetTimeRef.current = Date.now() + secondsLeft * 1000;
+    } else {
+      targetTimeRef.current = null;
     }
     setIsRunning((r) => !r);
   };
@@ -230,6 +238,7 @@ function FocusPage() {
     setIsRunning(false);
     setSecondsLeft(customMinutes[mode] * 60);
     sessionStartRef.current = null;
+    targetTimeRef.current = null;
   };
 
   // SVG circle progress

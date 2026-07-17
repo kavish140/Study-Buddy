@@ -28,6 +28,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -170,6 +171,19 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       },
     ],
   },
+  {
+    label: "Account",
+    items: [
+      {
+        to: "/settings",
+        label: "Settings",
+        icon: Settings,
+        tourId: "tour-nav-settings",
+        colorVar: "--feat-settings",
+        bgVar: "--feat-settings-bg",
+      },
+    ],
+  },
 ];
 
 /** Primary tabs shown in the mobile bottom bar (max 4) */
@@ -210,6 +224,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/analytics": "Analytics",
   "/community": "Community",
   "/leaderboard": "Leaderboard",
+  "/settings": "Settings",
 };
 
 function getPageTitle(path: string): string {
