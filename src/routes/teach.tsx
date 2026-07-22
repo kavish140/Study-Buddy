@@ -72,20 +72,11 @@ const SUGGESTED_TOPICS = [
   "Equilibrium in Chemical Reactions",
 ];
 
-/** System prompt baked into the AI context */
 const SOCRATIC_SYSTEM_PROMPT = `You are a Socratic AI tutor helping a student prepare for a competitive exam (JEE/NEET/UPSC/CAT level).
 
 Your role:
 1. The student will explain a concept to you. Ask one focused follow-up question at a time to probe their understanding deeper.
 2. Never give the answer directly. Instead, guide them with hints if they're stuck.
-3. After ${MAX_EXCHANGES} exchanges, output ONLY a JSON block (no extra text) in this exact format:
-{
-  "score": <0-10>,
-  "grade": "<Excellent|Good|Needs Work|Weak>",
-  "strengths": ["..."],
-  "gaps": ["..."],
-  "summary": "One paragraph summary of the student's conceptual understanding."
-}
 
 Rules:
 - Be encouraging but intellectually rigorous.
@@ -105,9 +96,17 @@ function ScoreCard({ json, onRetry }: { json: string; onRetry: () => void }) {
   } | null = null;
 
   try {
-    // Extract the JSON block from the AI response (may have surrounding text)
-    const match = json.match(/\{[\s\S]*\}/);
-    if (match) data = JSON.parse(match[0]);
+    const raw = json.trim();
+    const scoreIdx = raw.indexOf('"score"');
+    if (scoreIdx !== -1) {
+      const startIdx = raw.lastIndexOf('{', scoreIdx);
+      const endIdx = raw.lastIndexOf('}');
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        data = JSON.parse(raw.substring(startIdx, endIdx + 1));
+      }
+    }
+    // Fallback if the above doesn't work but it's pure JSON
+    if (!data) data = JSON.parse(raw);
   } catch {
     /* fall through — show raw */
   }
@@ -214,7 +213,8 @@ function TeachPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [exchangeCount, setExchangeCount] = useState(0);
+  // Derive exchange count directly from user messages to prevent state desync
+  const exchangeCount = messages.filter((m) => m.role === "user").length;
   const [scoreJson, setScoreJson] = useState("");
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -235,7 +235,6 @@ function TeachPage() {
     if (!chosenTopic.trim()) return;
     setTopic(chosenTopic.trim());
     setMessages([]);
-    setExchangeCount(0);
     setScoreJson("");
     setPhase("teaching");
 
@@ -283,12 +282,11 @@ function TeachPage() {
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", content: text };
     const aiId = crypto.randomUUID();
 
+    const newExchanges = exchangeCount + 1;
+
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setStreaming(true);
-
-    const newExchanges = exchangeCount + 1;
-    setExchangeCount(newExchanges);
 
     abortRef.current = new AbortController();
 
@@ -304,7 +302,7 @@ function TeachPage() {
               {
                 role: "user",
                 content:
-                  "Now give me the final JSON score block as described in your instructions. Output ONLY valid JSON, no other text.",
+                  "Please evaluate my understanding now based on our conversation. Output ONLY a JSON block (no extra text) in this exact format:\n{\n  \"score\": <0-10>,\n  \"grade\": \"<Excellent|Good|Needs Work|Weak>\",\n  \"strengths\": [\"...\"],\n  \"gaps\": [\"...\"],\n  \"summary\": \"One paragraph summary of the student's conceptual understanding.\"\n}",
               },
             ]
           : history;
@@ -366,7 +364,6 @@ function TeachPage() {
     setInputTopic("");
     setMessages([]);
     setInput("");
-    setExchangeCount(0);
     setScoreJson("");
   }, []);
 
