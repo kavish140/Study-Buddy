@@ -80,14 +80,9 @@ export const api = {
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
-    // Omit camelCase `createdAt` from the upsert to avoid a PostgREST
-    // column-not-found error on tables that use snake_case `created_at DEFAULT now()`.
-    const { createdAt: _ts, ...quizData } = quiz;
-    void _ts;
-
     const { data, error } = await supabase
       .from("quizzes")
-      .upsert({ ...quizData, user_id })
+      .upsert({ ...quiz, user_id })
       .select()
       .single();
     if (error) throw error;
@@ -178,12 +173,9 @@ export const api = {
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
-    const { createdAt: _ts, ...noteData } = note;
-    void _ts;
-
     const { data, error } = await supabase
       .from("notes")
-      .upsert({ ...noteData, user_id })
+      .upsert({ ...note, user_id })
       .select()
       .single();
     if (error) throw error;
