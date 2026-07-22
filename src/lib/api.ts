@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { toast } from "sonner";
 import { todayIST, yesterdayIST, currentHourIST } from "./date-utils";
 import {
   Subject,
@@ -61,18 +62,16 @@ export const api = {
       .from("quizzes")
       .select("*")
       .eq("user_id", user_id);
-    // NOTE: we intentionally omit .order() here because the quizzes table may use
-    // either camelCase (createdAt) or snake_case (created_at) depending on how the
-    // table was created. A server-side order on the wrong column name throws and
-    // silently returns [] via React Query's default value. Sort client-side instead.
-    if (error) throw error;
+    if (error) {
+      toast.error("Error fetching quizzes: " + error.message);
+      throw error;
+    }
     return ((data as SavedQuiz[]) || []).sort((a, b) => {
-      // Support both camelCase (number) and snake_case (ISO string) from DB
       const aRaw = a.createdAt ?? (a as Record<string, unknown>).created_at;
       const bRaw = b.createdAt ?? (b as Record<string, unknown>).created_at;
       const aMs = typeof aRaw === "number" ? aRaw : aRaw ? new Date(aRaw as string).getTime() : 0;
       const bMs = typeof bRaw === "number" ? bRaw : bRaw ? new Date(bRaw as string).getTime() : 0;
-      return bMs - aMs; // newest first
+      return bMs - aMs;
     });
   },
   saveQuiz: async (quiz: SavedQuiz) => {
@@ -159,7 +158,10 @@ export const api = {
       .from("notes")
       .select("*")
       .eq("user_id", user_id);
-    if (error) throw error;
+    if (error) {
+      toast.error("Error fetching notes: " + error.message);
+      throw error;
+    }
     return ((data as Note[]) || []).sort((a, b) => {
       const aRaw = a.createdAt ?? (a as Record<string, unknown>).created_at;
       const bRaw = b.createdAt ?? (b as Record<string, unknown>).created_at;
@@ -227,7 +229,10 @@ export const api = {
       .from("mock_tests")
       .select("*")
       .eq("user_id", user_id);
-    if (error) throw error;
+    if (error) {
+      toast.error("Error fetching mock tests: " + error.message);
+      throw error;
+    }
     return ((data as MockTest[]) || []).sort((a, b) => {
       const aMs = a.created_at ? new Date(a.created_at).getTime() : 0;
       const bMs = b.created_at ? new Date(b.created_at).getTime() : 0;
