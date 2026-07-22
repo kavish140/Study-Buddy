@@ -163,19 +163,27 @@ export const api = {
     const { data, error } = await supabase
       .from("notes")
       .select("*")
-      .eq("user_id", user_id)
-      .order("created_at", { ascending: false });
+      .eq("user_id", user_id);
     if (error) throw error;
-    return (data as Note[]) || [];
+    return ((data as Note[]) || []).sort((a, b) => {
+      const aRaw = a.createdAt ?? (a as Record<string, unknown>).created_at;
+      const bRaw = b.createdAt ?? (b as Record<string, unknown>).created_at;
+      const aMs = typeof aRaw === "number" ? aRaw : aRaw ? new Date(aRaw as string).getTime() : 0;
+      const bMs = typeof bRaw === "number" ? bRaw : bRaw ? new Date(bRaw as string).getTime() : 0;
+      return bMs - aMs;
+    });
   },
   saveNote: async (note: Note) => {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
+    const { createdAt: _ts, ...noteData } = note;
+    void _ts;
+
     const { data, error } = await supabase
       .from("notes")
-      .upsert({ ...note, user_id })
+      .upsert({ ...noteData, user_id })
       .select()
       .single();
     if (error) throw error;
@@ -226,10 +234,13 @@ export const api = {
     const { data, error } = await supabase
       .from("mock_tests")
       .select("*")
-      .eq("user_id", user_id)
-      .order("created_at", { ascending: false });
+      .eq("user_id", user_id);
     if (error) throw error;
-    return (data as MockTest[]) || [];
+    return ((data as MockTest[]) || []).sort((a, b) => {
+      const aMs = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const bMs = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return bMs - aMs;
+    });
   },
   saveMockTest: async (test: MockTest): Promise<MockTest> => {
     const { data: userData } = await supabase.auth.getUser();
