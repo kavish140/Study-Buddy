@@ -202,14 +202,17 @@ Balance review and new material. 2-4 tasks per day. Tasks must be specific and a
           ? "Questions must be at NEET level: application-based, clinical reasoning for biology, formula-based for physics/chemistry. Questions should reflect actual NEET exam difficulty and style."
           : "Questions should be challenging and application-based, suitable for competitive exam preparation. Avoid trivial recall questions.";
       const system = `You are an elite question setter for ${data.examName || "competitive exams"}. ${difficultyNote} Every question must have exactly 4 options (A,B,C,D), one correct answer, and a detailed step-by-step explanation citing the formula/principle used. In the explanation field, use markdown: **bold** key formulas and the final answer, use numbered steps for multi-step solutions. IMPORTANT: For math/physics equations, you MUST use $ for inline math and $$ for block math. Since you are outputting JSON, you MUST double-escape all LaTeX backslashes (e.g. $\\\\sin x$, $$\\frac{1}{2}$$). Generate questions that would genuinely appear in the actual exam. Respond ONLY with valid JSON.`;
-      const sectionInstructions = (data.sections || [])
-        .map(
-          (s: Section) =>
-            `Section "${sanitizeInput(s.name, 200)}": ${s.questions} questions from topics: ${(s.topics || []).map((t: string) => sanitizeInput(t, 200)).join(", ")}. Mix numerical, conceptual, and application questions.`,
-        )
-        .join("\n");
-      const user = `Generate a mock test for ${data.examName} with these sections:\n${sectionInstructions}\n\nReturn JSON in this exact shape:\n{"sections":[{"name":"Section Name","questions":[{"id":"q1","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answerIndex":0,"explanation":"Step-by-step explanation with **bold** formulas and final answer","section":"Section Name","topic":"Topic Name"}]}]}\nEach question must have exactly 4 options. answerIndex is 0-3. Give each question a unique id like q1, q2, etc.`;
-      result = await callGroq(system, user);
+      
+      // Generate sections in parallel to avoid token limits and timeouts
+      const sectionPromises = (data.sections || []).map(async (s: Section) => {
+        const sectionInstruction = `Section "${sanitizeInput(s.name, 200)}": ${s.questions} questions from topics: ${(s.topics || []).map((t: string) => sanitizeInput(t, 200)).join(", ")}. Mix numerical, conceptual, and application questions.`;
+        const user = `Generate a mock test section for ${data.examName}.\n\n${sectionInstruction}\n\nReturn JSON in this exact shape:\n{"sections":[{"name":"${sanitizeInput(s.name, 200)}","questions":[{"id":"q1","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answerIndex":0,"explanation":"Step-by-step explanation with **bold** formulas and final answer","section":"${sanitizeInput(s.name, 200)}","topic":"Topic Name"}]}]}\nEach question must have exactly 4 options. answerIndex is 0-3. Give each question a unique id like q1, q2, etc.`;
+        return callGroq(system, user);
+      });
+
+      const sectionResults = await Promise.all(sectionPromises);
+      const mergedSections = sectionResults.flatMap(res => res.sections || []);
+      result = { sections: mergedSections };
     } else if (action === "chat") {
       if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is missing!");
 
@@ -305,7 +308,7 @@ Rules you MUST follow at all times:
 
     return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: 200, // Return 200 so supabase-js doesn't mask the error body
     });
   }
 });
