@@ -432,6 +432,13 @@ function EmptyState({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onPaste={(e) => {
+                  const file = e.clipboardData.files?.[0];
+                  if (file) {
+                    e.preventDefault();
+                    onFileSelected(file);
+                  }
+                }}
                 placeholder="Ask a question... (Enter to send)"
                 rows={1}
                 autoFocus
@@ -1062,6 +1069,13 @@ function ChatView({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onPaste={(e) => {
+                  const file = e.clipboardData.files?.[0];
+                  if (file) {
+                    e.preventDefault();
+                    handleFileSelect(file);
+                  }
+                }}
                 placeholder={
                   pendingImage
                     ? "Add a message about this image... (optional)"
