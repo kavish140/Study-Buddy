@@ -251,11 +251,12 @@ function TeachPage() {
   /* ── Build full message history for the AI ── */
   const buildHistory = useCallback(
     (msgs: Message[], newUserContent: string) => {
-      // Gemini only accepts role "user" and "model" (not "system").
-      // Embed the Socratic instructions as the opening user turn, paired with
-      // a model acknowledgement, so the conversation history stays valid.
+      // The study-ai edge function uses Groq (OpenAI-compatible).
+      // Groq requires role "user" / "assistant" — NOT Gemini's "model".
+      // We embed the Socratic instructions as the opening user turn and pair it
+      // with a synthetic assistant acknowledgement to seed the conversation.
       const history = msgs.map((m) => ({
-        role: m.role === "ai" ? "model" : "user",
+        role: m.role === "ai" ? "assistant" : "user",
         content: m.content,
       }));
       return [
@@ -264,7 +265,7 @@ function TeachPage() {
           content: `${SOCRATIC_SYSTEM_PROMPT}\n\nThe topic for this session is: "${topic}". Acknowledge with a single short sentence.`,
         },
         {
-          role: "model",
+          role: "assistant",
           content: `Understood. I will act as a Socratic tutor for the topic "${topic}" and ask one focused question at a time to probe your understanding.`,
         },
         ...history,
