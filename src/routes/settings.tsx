@@ -101,7 +101,7 @@ function SettingsPage() {
       qc.invalidateQueries({ queryKey: ["userProfile"] });
       toast.success("Settings saved!");
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to save"),
+    onError: (e: any) => toast.error(e?.message || "Failed to save"),
   });
 
   /* ── Local form state ── */
