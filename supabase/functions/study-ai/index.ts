@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
           : data.source === "notes"
             ? `You are an expert question setter ${examContext} creating questions directly based on the student's own notes. ${difficultyGuide} Questions should test exactly what a student studying these notes needs to know — application, not memorisation.`
             : `You are an expert question setter ${examContext}. Generate rigorous multiple-choice questions suitable for competitive exam preparation. ${difficultyGuide} Every question must be self-contained with 4 distinct options (only one correct), precise scientific language, and a detailed explanation.`;
-      const system = `${sourceContext} In your explanation field, use markdown formatting: **bold** key terms and formulas, use numbered steps for multi-step solutions. Respond ONLY with valid JSON.`;
+      const system = `${sourceContext} In your explanation field, use markdown formatting: **bold** key terms and formulas, use numbered steps for multi-step solutions. IMPORTANT: For math/physics equations, you MUST use $ for inline math and $$ for block math. Since you are outputting JSON, you MUST double-escape all LaTeX backslashes (e.g. $\\\\sin x$, $$\\frac{1}{2}$$). Respond ONLY with valid JSON.`;
       const user = `Generate ${count} ${data.difficulty}-difficulty MCQ questions on the topic: "${topic}" ${examContext}.
 
 Rules:
@@ -158,7 +158,7 @@ answerIndex is 0-3.`;
 
 For valid syllabus topics:
 - Write a concise exam-focused summary: highlight key formulas in **bold**, mention common exam traps, and list the most important facts.
-- Use markdown in the summary: **bold** formulas and key terms, numbered lists for steps.
+- Use markdown in the summary: **bold** formulas and key terms, numbered lists for steps. IMPORTANT: For math/physics equations, you MUST use $ for inline math and $$ for block math. Since you are outputting JSON, you MUST double-escape all LaTeX backslashes (e.g. $\\\\sin x$, $$\\frac{1}{2}$$).
 - Generate 6 high-quality flashcards mixing: formula recall, conceptual understanding, and numerical application at ${examName} level.
 Respond ONLY with valid JSON.`;
       const user = `Generate study notes for topic: "${noteTopic}" for ${examName}.
@@ -201,7 +201,7 @@ Balance review and new material. 2-4 tasks per day. Tasks must be specific and a
         : isNEET
           ? "Questions must be at NEET level: application-based, clinical reasoning for biology, formula-based for physics/chemistry. Questions should reflect actual NEET exam difficulty and style."
           : "Questions should be challenging and application-based, suitable for competitive exam preparation. Avoid trivial recall questions.";
-      const system = `You are an elite question setter for ${data.examName || "competitive exams"}. ${difficultyNote} Every question must have exactly 4 options (A,B,C,D), one correct answer, and a detailed step-by-step explanation citing the formula/principle used. In the explanation field, use markdown: **bold** key formulas and the final answer, use numbered steps for multi-step solutions. Generate questions that would genuinely appear in the actual exam. Respond ONLY with valid JSON.`;
+      const system = `You are an elite question setter for ${data.examName || "competitive exams"}. ${difficultyNote} Every question must have exactly 4 options (A,B,C,D), one correct answer, and a detailed step-by-step explanation citing the formula/principle used. In the explanation field, use markdown: **bold** key formulas and the final answer, use numbered steps for multi-step solutions. IMPORTANT: For math/physics equations, you MUST use $ for inline math and $$ for block math. Since you are outputting JSON, you MUST double-escape all LaTeX backslashes (e.g. $\\\\sin x$, $$\\frac{1}{2}$$). Generate questions that would genuinely appear in the actual exam. Respond ONLY with valid JSON.`;
       const sectionInstructions = (data.sections || [])
         .map(
           (s: Section) =>
