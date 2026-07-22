@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TeachRouteImport } from './routes/teach'
 import { Route as SyllabusRouteImport } from './routes/syllabus'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -21,13 +22,18 @@ import { Route as NotesRouteImport } from './routes/notes'
 import { Route as MockTestRouteImport } from './routes/mock-test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
+import { Route as LandingRouteImport } from './routes/landing'
 import { Route as FocusRouteImport } from './routes/focus'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
-import { Route as AnalysisTestRouteImport } from './routes/analysis-test'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TeachRoute = TeachRouteImport.update({
+  id: '/teach',
+  path: '/teach',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SyllabusRoute = SyllabusRouteImport.update({
   id: '/syllabus',
   path: '/syllabus',
@@ -88,6 +94,11 @@ const LeaderboardRoute = LeaderboardRouteImport.update({
   path: '/leaderboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LandingRoute = LandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FocusRoute = FocusRouteImport.update({
   id: '/focus',
   path: '/focus',
@@ -108,11 +119,6 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AnalysisTestRoute = AnalysisTestRouteImport.update({
-  id: '/analysis-test',
-  path: '/analysis-test',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -121,11 +127,11 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/analysis-test': typeof AnalysisTestRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/community': typeof CommunityRoute
   '/focus': typeof FocusRoute
+  '/landing': typeof LandingRoute
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/mock-test': typeof MockTestRoute
@@ -138,14 +144,15 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/syllabus': typeof SyllabusRoute
+  '/teach': typeof TeachRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/analysis-test': typeof AnalysisTestRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/community': typeof CommunityRoute
   '/focus': typeof FocusRoute
+  '/landing': typeof LandingRoute
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/mock-test': typeof MockTestRoute
@@ -158,15 +165,16 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/syllabus': typeof SyllabusRoute
+  '/teach': typeof TeachRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/analysis-test': typeof AnalysisTestRoute
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/community': typeof CommunityRoute
   '/focus': typeof FocusRoute
+  '/landing': typeof LandingRoute
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/mock-test': typeof MockTestRoute
@@ -179,16 +187,17 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/syllabus': typeof SyllabusRoute
+  '/teach': typeof TeachRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/analysis-test'
     | '/analytics'
     | '/chat'
     | '/community'
     | '/focus'
+    | '/landing'
     | '/leaderboard'
     | '/login'
     | '/mock-test'
@@ -201,14 +210,15 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sitemap.xml'
     | '/syllabus'
+    | '/teach'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/analysis-test'
     | '/analytics'
     | '/chat'
     | '/community'
     | '/focus'
+    | '/landing'
     | '/leaderboard'
     | '/login'
     | '/mock-test'
@@ -221,14 +231,15 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sitemap.xml'
     | '/syllabus'
+    | '/teach'
   id:
     | '__root__'
     | '/'
-    | '/analysis-test'
     | '/analytics'
     | '/chat'
     | '/community'
     | '/focus'
+    | '/landing'
     | '/leaderboard'
     | '/login'
     | '/mock-test'
@@ -241,15 +252,16 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sitemap.xml'
     | '/syllabus'
+    | '/teach'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AnalysisTestRoute: typeof AnalysisTestRoute
   AnalyticsRoute: typeof AnalyticsRoute
   ChatRoute: typeof ChatRoute
   CommunityRoute: typeof CommunityRoute
   FocusRoute: typeof FocusRoute
+  LandingRoute: typeof LandingRoute
   LeaderboardRoute: typeof LeaderboardRoute
   LoginRoute: typeof LoginRoute
   MockTestRoute: typeof MockTestRoute
@@ -262,10 +274,18 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SyllabusRoute: typeof SyllabusRoute
+  TeachRoute: typeof TeachRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/teach': {
+      id: '/teach'
+      path: '/teach'
+      fullPath: '/teach'
+      preLoaderRoute: typeof TeachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/syllabus': {
       id: '/syllabus'
       path: '/syllabus'
@@ -350,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeaderboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/landing': {
+      id: '/landing'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/focus': {
       id: '/focus'
       path: '/focus'
@@ -378,13 +405,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/analysis-test': {
-      id: '/analysis-test'
-      path: '/analysis-test'
-      fullPath: '/analysis-test'
-      preLoaderRoute: typeof AnalysisTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -397,11 +417,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AnalysisTestRoute: AnalysisTestRoute,
   AnalyticsRoute: AnalyticsRoute,
   ChatRoute: ChatRoute,
   CommunityRoute: CommunityRoute,
   FocusRoute: FocusRoute,
+  LandingRoute: LandingRoute,
   LeaderboardRoute: LeaderboardRoute,
   LoginRoute: LoginRoute,
   MockTestRoute: MockTestRoute,
@@ -414,6 +434,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SyllabusRoute: SyllabusRoute,
+  TeachRoute: TeachRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -35,7 +35,10 @@ export const Route = createFileRoute("/quiz")({
 
 function QuizPage() {
   const queryClient = useQueryClient();
-  const { data: quizzes = [] } = useQuery({ queryKey: ["quizzes"], queryFn: api.getQuizzes });
+  const { data: quizzes = [], isError: quizzesError } = useQuery({
+    queryKey: ["quizzes"],
+    queryFn: api.getQuizzes,
+  });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
   const { triggerPageTour } = useTutorial();
 
@@ -54,7 +57,7 @@ function QuizPage() {
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState<SavedQuiz | null>(null);
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (retryCount = 0) => {
     if (!topic.trim()) return;
     setLoading(true);
     try {
@@ -67,26 +70,60 @@ function QuizPage() {
           source: "quiz",
         },
       });
+
+      // Defensive: ensure AI returned a valid non-empty questions array
+      if (!Array.isArray(res.questions) || res.questions.length === 0) {
+        throw new Error("AI returned an empty quiz — please try again.");
+      }
+
+      // Defensive: coerce answerIndex to number in case AI returns a string
+      const questions: QuizQuestion[] = res.questions.map((q: QuizQuestion) => ({
+        ...q,
+        answerIndex: typeof q.answerIndex === "string" ? parseInt(q.answerIndex, 10) : q.answerIndex,
+      }));
+
       const quiz: SavedQuiz = {
         id: uid(),
         topic: topic.trim(),
-        created_at: new Date().toISOString(),
-        questions: res.questions,
+        createdAt: Date.now(),
+        questions,
       };
-      await saveMutation.mutateAsync(quiz);
+
+      // Fire-and-forget save — don't block quiz activation if the initial DB write
+      // fails (e.g. network blip). The score-save upsert in saveScore will
+      // re-insert the quiz+score as a fallback if this silent save failed.
+      saveMutation.mutate(quiz);
       setActive(quiz);
       setTopic("");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to generate quiz");
+      // Only catches quiz GENERATION errors (edge function failures), not save errors.
+      // Save errors are surfaced via saveMutation’s top-level onError toast.
+      const msg = e instanceof Error ? e.message : "Failed to generate quiz";
+      toast.error(msg, {
+        action:
+          retryCount < 2
+            ? {
+                label: "Retry",
+                onClick: () => handleGenerate(retryCount + 1),
+              }
+            : undefined,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const saveScore = (quiz: SavedQuiz, score: number) => {
-    // Use the quiz object directly rather than looking it up from the cached list,
-    // since the cache may not have refreshed yet for newly-generated quizzes.
-    saveMutation.mutate({ ...quiz, score });
+    // Upsert the quiz with the final score. If the initial fire-and-forget save in
+    // handleGenerate failed, this acts as a fallback INSERT of the quiz+score.
+    saveMutation.mutate(
+      { ...quiz, score },
+      {
+        onSuccess: () => toast.success(`Quiz saved! Score: ${score}/${quiz.questions.length}`),
+        // No per-call onError here — the top-level saveMutation onError handles it
+        // to avoid showing two error toasts for the same failure.
+      },
+    );
 
     // Award XP for correct answers (fire-and-forget; non-blocking).
     const isPerfect = score === quiz.questions.length;
@@ -157,7 +194,7 @@ function QuizPage() {
             </SelectContent>
           </Select>
           <Button
-            onClick={handleGenerate}
+            onClick={() => handleGenerate()}
             disabled={loading || !topic.trim()}
             className="bg-gradient-primary"
             data-tour="tour-quiz-generate"
@@ -168,7 +205,12 @@ function QuizPage() {
       </div>
 
       <h2 className="text-sm font-medium text-muted-foreground mt-8 mb-3">Past quizzes</h2>
-      {quizzes.length === 0 ? (
+      {quizzesError ? (
+        <div className="text-center py-12 text-muted-foreground border border-dashed border-destructive/30 rounded-xl">
+          <p className="text-destructive text-sm font-medium mb-1">Failed to load past quizzes</p>
+          <p className="text-xs">Check your connection and refresh the page.</p>
+        </div>
+      ) : quizzes.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl">
           No quizzes yet. Generate one above to get started.
         </div>
@@ -224,9 +266,6 @@ function QuizRunner({
         explanation: q.explanation || undefined,
         subject: quiz.topic,
         source: "quiz" as const,
-        // Preserve MCQ options so Smart Review can offer quiz-mode practice
-        options: q.options,
-        correctOptionIndex: q.answerIndex,
         ease_factor: 2.5,
         interval_days: 1,
         repetitions: 0,
@@ -253,6 +292,7 @@ function QuizRunner({
         {quiz.questions.map((q: QuizQuestion, i) => (
           <div key={i} className="p-5 rounded-2xl card-light">
             <div className="text-xs text-muted-foreground mb-1">Question {i + 1}</div>
+            {/* Question text — MarkdownContent renders inline LaTeX like $\sin x$ */}
             <div className="font-medium text-sm leading-relaxed">
               <MarkdownContent content={q.question} />
             </div>
@@ -262,12 +302,24 @@ function QuizRunner({
                 const correct = q.answerIndex === oi;
                 const showState = submitted;
                 return (
-                  <button
+                  // Using div[role=button] instead of <button> so that MarkdownContent's
+                  // block-level elements (e.g. display math <div>) are valid HTML children.
+                  <div
                     key={oi}
-                    disabled={submitted}
-                    onClick={() => setAnswers({ ...answers, [i]: oi })}
+                    role="button"
+                    tabIndex={submitted ? -1 : 0}
+                    aria-pressed={chosen}
+                    aria-disabled={submitted}
+                    onClick={() => !submitted && setAnswers({ ...answers, [i]: oi })}
+                    onKeyDown={(e) =>
+                      !submitted &&
+                      (e.key === "Enter" || e.key === " ") &&
+                      setAnswers({ ...answers, [i]: oi })
+                    }
                     className={cn(
-                      "text-left px-4 py-2.5 rounded-lg border text-sm transition-colors",
+                      "text-left px-4 py-2.5 rounded-lg border text-sm transition-colors select-none",
+                      !submitted && "cursor-pointer",
+                      submitted && "cursor-default",
                       !showState && chosen && "border-[color:var(--feat-quiz)]",
                       !showState && !chosen && "border-border hover:border-primary/50",
                       showState && correct && "border-[color:var(--feat-quiz)]",
@@ -294,11 +346,21 @@ function QuizRunner({
                     }}
                   >
                     <span className="inline-flex items-start gap-2">
-                      {showState && correct && <Check className="h-4 w-4 shrink-0 mt-0.5" />}
-                      {showState && chosen && !correct && <X className="h-4 w-4 shrink-0 mt-0.5" />}
-                      <MarkdownContent content={opt} />
+                      <span className="shrink-0 mt-0.5">
+                        {showState && correct && <Check className="h-4 w-4" />}
+                        {showState && chosen && !correct && <X className="h-4 w-4" />}
+                        {(!showState || (!correct && !chosen)) && (
+                          <span className="text-xs font-bold opacity-50">
+                            {String.fromCharCode(65 + oi)}.
+                          </span>
+                        )}
+                      </span>
+                      {/* Option text — MarkdownContent renders inline LaTeX */}
+                      <span className="flex-1">
+                        <MarkdownContent content={opt} />
+                      </span>
                     </span>
-                  </button>
+                  </div>
                 );
               })}
             </div>

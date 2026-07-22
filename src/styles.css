@@ -1219,3 +1219,49 @@
   background: rgba(37, 99, 235, 0.03);
   animation: dnd-dash 1.2s ease-in-out infinite;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   KaTeX / LaTeX Math Rendering
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Make KaTeX inherit the app's foreground color (critical for dark mode) */
+.katex {
+  color: inherit !important;
+  font-size: 1em;
+}
+
+/* Inline math container */
+.inline-math {
+  display: inline;
+  vertical-align: baseline;
+  line-height: inherit;
+}
+
+.inline-math .katex {
+  font-size: 1em;
+}
+
+/* Display (block) math container */
+.display-math {
+  padding: 0.5rem 0;
+}
+
+.display-math .katex-display {
+  margin: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Dark mode: KaTeX SVG paths and text should use --foreground */
+.dark .katex,
+.dark .katex * {
+  color: var(--foreground) !important;
+}
+
+/* KaTeX error fallback — show raw LaTeX in muted red */
+.katex-error {
+  color: #ef4444 !important;
+  font-family: monospace;
+  font-size: 0.85em;
+}
+

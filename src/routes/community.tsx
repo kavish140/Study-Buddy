@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -18,6 +18,7 @@ import {
   Loader2,
   Clock,
   X,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTutorial } from "@/components/TutorialProvider";
@@ -258,6 +259,7 @@ function CommunityPage() {
 
 function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [reply, setReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -336,13 +338,22 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
     }
   };
 
-  const handleAskAI = async () => {
+  const handleAskAI = useCallback(async () => {
     if (!post) return;
+
+    // ── Cache check: surface an existing AI reply instantly without calling the API ──
+    const cachedAIReply = replies.find((r) => r.is_ai);
+    if (cachedAIReply) {
+      setAiAnswer(cachedAIReply.content);
+      toast.info("Showing cached AI answer.");
+      return;
+    }
+
     setAiLoading(true);
     setAiAnswer("");
+    let fullAnswer = "";
     try {
       const prompt = `A student asked: "${post.title}"\n\n${post.content}\n\nProvide a thorough, step-by-step explanation at JEE/competitive exam level. Use markdown formatting.`;
-      let fullAnswer = "";
       await streamChat({
         messages: [{ role: "user", content: prompt }],
         examName: post.exam_id || "JEE Main",
@@ -351,13 +362,16 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
           fullAnswer += chunk;
           setAiAnswer((a) => a + chunk);
         },
-        onDone: async () => {
+        onDone: () => {
           setAiLoading(false);
-          try {
-            await api.createForumReply(post.id, "[AI_REPLY]" + fullAnswer);
-            qc.invalidateQueries({ queryKey: ["forumReplies", post.id] });
-          } catch (e) {
-            console.error("Failed to save AI reply", e);
+          // ── Save the answer as a cached AI reply so future visitors see it instantly ──
+          if (fullAnswer.trim()) {
+            api.createAIForumReply(postId, fullAnswer.trim()).then(() => {
+              // Refresh replies so the cached badge appears
+              qc.invalidateQueries({ queryKey: ["forumReplies", postId] });
+            }).catch(() => {
+              // Caching is best-effort — not a hard failure
+            });
           }
         },
       });
@@ -365,7 +379,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
       toast.error("AI failed to respond");
       setAiLoading(false);
     }
-  };
+  }, [post, postId, replies, qc]);
 
   // Bug fix #6: separate loading spinner from "post not found" state
   if (postLoading) {
@@ -478,13 +492,36 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
         </div>
       </div>
 
-      {/* AI Answer (Streaming state only) */}
-      {aiLoading && (
+      {/* AI Answer */}
+      {(aiAnswer || aiLoading) && (
         <div className="card-light rounded-2xl p-5 mb-6 border border-primary/20">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">AI Answer</span>
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-auto" />
+            {aiLoading && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground ml-auto" />
+            )}
+            {/* Continue in AI Tutor deep-link */}
+            {!aiLoading && aiAnswer && post && (
+              <button
+                onClick={() =>
+                  navigate({
+                    to: "/chat",
+                    search: { q: encodeURIComponent(`${post.title}\n\n${post.content}`) },
+                  })
+                }
+                className="ml-auto flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all hover:opacity-80"
+                style={{
+                  background: "var(--feat-chat-bg)",
+                  color: "var(--feat-chat)",
+                  border: "1px solid var(--feat-chat)",
+                }}
+                title="Open this question in the AI Tutor for a deeper conversation"
+              >
+                <ExternalLink size={11} />
+                Continue in AI Tutor
+              </button>
+            )}
           </div>
           <div className="text-sm leading-relaxed">
             {aiAnswer ? (
@@ -499,73 +536,68 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
       {/* Replies */}
       <div className="space-y-3 mb-6">
         <h2 className="text-sm font-medium text-muted-foreground">{replies.length} Replies</h2>
-        {replies.map((r) => {
-          const isAI = r.content.startsWith("[AI_REPLY]");
-          const displayContent = isAI ? r.content.replace("[AI_REPLY]", "") : r.content;
-
-          return (
-            <div
-              key={r.id}
-              className={cn(
-                "card-light rounded-xl p-5",
-                r.is_accepted && "border border-emerald-500/30 bg-emerald-500/5",
-                isAI && "border border-primary/20"
-              )}
-            >
-              {isAI && (
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-6 w-6 rounded-md bg-primary/10 grid place-items-center">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <span className="text-sm font-bold text-primary">AcePrep AI</span>
-                </div>
-              )}
-              {r.is_accepted && !isAI && (
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600 mb-2">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Accepted answer
-                </div>
-              )}
-              
+        {replies.map((r) => (
+          <div
+            key={r.id}
+            className={cn(
+              "card-light rounded-xl p-4",
+              r.is_accepted && "border border-emerald-500/30 bg-emerald-500/5",
+              r.is_ai && !r.is_accepted && "border border-primary/20",
+            )}
+          >
+            {/* AI reply badge */}
+            {r.is_ai && (
+              <div className="flex items-center gap-1.5 text-xs text-primary mb-2">
+                <Sparkles className="h-3.5 w-3.5" /> AI Answer (cached)
+              </div>
+            )}
+            {r.is_accepted && !r.is_ai && (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 mb-2">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Accepted answer
+              </div>
+            )}
+            {/* Render AI replies with MarkdownContent for LaTeX/formatting; human replies as plain text */}
+            {r.is_ai ? (
               <div className="text-sm leading-relaxed">
-                <MarkdownContent content={displayContent} />
+                <MarkdownContent content={r.content} />
               </div>
-
-              {isAI && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <Link
-                    to="/chat"
-                    search={{
-                      initialPrompt: `I was looking at this post: "${post.title}". Can you explain this part further: \n\n${displayContent.slice(0, 150)}...`,
-                    }}
-                    className="inline-flex items-center gap-2 text-xs font-medium bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
-                  >
-                    Continue in AI Tutor <MessageSquare className="h-3 w-3" />
-                  </Link>
-                </div>
+            ) : (
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{r.content}</p>
+            )}
+            <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+              <span>
+                <ThumbsUp className="inline h-3 w-3 mr-1" />
+                {r.upvotes}
+              </span>
+              <span>{timeAgo(r.created_at)}</span>
+              {/* Continue in AI Tutor button for cached AI replies */}
+              {r.is_ai && post && (
+                <button
+                  onClick={() =>
+                    navigate({
+                      to: "/chat",
+                      search: { q: encodeURIComponent(`${post.title}\n\n${post.content}`) },
+                    })
+                  }
+                  className="flex items-center gap-1 text-xs transition-colors hover:opacity-80"
+                  style={{ color: "var(--feat-chat)" }}
+                >
+                  <ExternalLink className="h-3 w-3" /> Continue in AI Tutor
+                </button>
               )}
-
-              <div className="flex items-center gap-3 mt-4 text-xs text-muted-foreground">
-                {!isAI && (
-                  <span>
-                    <ThumbsUp className="inline h-3 w-3 mr-1" />
-                    {r.upvotes}
-                  </span>
-                )}
-                <span>{timeAgo(r.created_at)}</span>
-                {/* Accept reply button */}
-                {!r.is_accepted && !isAI && (
-                  <button
-                    onClick={() => handleAcceptReply(r.id)}
-                    className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-emerald-600 transition-colors"
-                    title="Mark as accepted answer"
-                  >
-                    <CheckCircle2 className="h-3 w-3" /> Accept
-                  </button>
-                )}
-              </div>
+              {/* Bug fix #2: Accept reply button (not for AI replies) */}
+              {!r.is_accepted && !r.is_ai && (
+                <button
+                  onClick={() => handleAcceptReply(r.id)}
+                  className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-emerald-600 transition-colors"
+                  title="Mark as accepted answer"
+                >
+                  <CheckCircle2 className="h-3 w-3" /> Accept
+                </button>
+              )}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       {/* Reply input */}

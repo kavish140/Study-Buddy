@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
           : data.source === "notes"
             ? `You are an expert question setter ${examContext} creating questions directly based on the student's own notes. ${difficultyGuide} Questions should test exactly what a student studying these notes needs to know — application, not memorisation.`
             : `You are an expert question setter ${examContext}. Generate rigorous multiple-choice questions suitable for competitive exam preparation. ${difficultyGuide} Every question must be self-contained with 4 distinct options (only one correct), precise scientific language, and a detailed explanation.`;
-      const system = `${sourceContext} In your explanation field, use markdown formatting: **bold** key terms and formulas, use numbered steps for multi-step solutions. IMPORTANT: For math/physics equations, you MUST use $ for inline math (e.g. $\\sin x$) and $$ for block math (e.g. $$\\frac{1}{2}$$). Respond ONLY with valid JSON.`;
+      const system = `${sourceContext} In your explanation field, use markdown formatting: **bold** key terms and formulas, use numbered steps for multi-step solutions. Respond ONLY with valid JSON.`;
       const user = `Generate ${count} ${data.difficulty}-difficulty MCQ questions on the topic: "${topic}" ${examContext}.
 
 Rules:
@@ -154,20 +154,13 @@ answerIndex is 0-3.`;
     } else if (action === "generateNotes") {
       const examName = data.examName || "JEE/NEET";
       const noteTopic = sanitizeInput(data.topic || "", 200);
-      const system = `You are an expert study coach for ${examName} preparation. You ONLY generate notes for topics that are part of the ${examName} syllabus. If the requested topic is NOT from the exam syllabus, return {"error": "Topic not in syllabus."}.
-Target exam level: ${data.examName || "high school / early college"}. 
-Topic: "${noteTopic}".
+      const system = `You are an expert study coach for ${examName} preparation. You ONLY generate notes for topics that are part of the ${examName} syllabus — Physics, Chemistry, Mathematics (and Biology for NEET). If the requested topic is NOT from the exam syllabus (e.g. random trivia, opinions, unrelated subjects), return {"error": "Topic not in ${examName} syllabus. Please enter a valid exam topic."}.
 
-IMPORTANT: For math/physics equations, you MUST use $ for inline math (e.g. $\\sin x$) and $$ for block math (e.g. $$\\frac{1}{2}$$).
-Use markdown formatting (**bolding**, bullet points, numbered lists) for the summary to make it highly readable.
-
-Respond ONLY with valid JSON in this exact format:
-{
-  "summary": "Detailed markdown formatted summary of the topic...",
-  "flashcards": [
-    { "q": "Question 1", "a": "Answer 1" }
-  ]
-}`;
+For valid syllabus topics:
+- Write a concise exam-focused summary: highlight key formulas in **bold**, mention common exam traps, and list the most important facts.
+- Use markdown in the summary: **bold** formulas and key terms, numbered lists for steps.
+- Generate 6 high-quality flashcards mixing: formula recall, conceptual understanding, and numerical application at ${examName} level.
+Respond ONLY with valid JSON.`;
       const user = `Generate study notes for topic: "${noteTopic}" for ${examName}.
 
 If this is a valid ${examName} syllabus topic, return:

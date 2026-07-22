@@ -40,7 +40,7 @@ export type QuizQuestion = {
 export type SavedQuiz = {
   id: string;
   topic: string;
-  created_at?: string;
+  createdAt: number;
   score?: number;
   questions: QuizQuestion[];
 };
@@ -52,7 +52,7 @@ export type Note = {
   topic: string;
   summary: string;
   flashcards: { q: string; a: string }[];
-  created_at?: string;
+  createdAt: number;
 };
 
 export const uid = () => crypto.randomUUID();
@@ -65,6 +65,10 @@ export type UserProfile = {
   target_date: string | null;
   selected_subjects: string[];
   onboarding_completed: boolean;
+  /** User's chosen display name (shown in sidebar and leaderboard) */
+  display_name?: string;
+  /** Emoji avatar selected in Settings (e.g. "🎓") */
+  avatar_emoji?: string;
   created_at?: string;
 };
 
@@ -139,11 +143,6 @@ export type ReviewCard = {
   subject?: string;
   topic?: string;
   source?: "quiz" | "mock_test" | "flashcard" | "manual";
-  /** MCQ options — populated when card is saved from a quiz/mock test wrong answer.
-   *  When present, the Smart Review Quiz Mode renders this as an interactive MCQ. */
-  options?: string[];
-  /** Index of the correct option within `options` */
-  correctOptionIndex?: number;
   ease_factor: number; // SM-2 ease factor, starts at 2.5
   interval_days: number; // days until next review
   repetitions: number; // times reviewed successfully
@@ -246,23 +245,69 @@ export function xpForNextLevel(xp: number): { current: number; needed: number; p
   return { current, needed, pct: Math.min(100, Math.round((current / needed) * 100)) };
 }
 
-export const RANKS = [
-  { id: "bronze", name: "Bronze", minXp: 0, color: "text-amber-700", bg: "bg-amber-700/10", icon: "🥉" },
-  { id: "silver", name: "Silver", minXp: 1000, color: "text-slate-400", bg: "bg-slate-400/10", icon: "🥈" },
-  { id: "gold", name: "Gold", minXp: 3000, color: "text-amber-400", bg: "bg-amber-400/10", icon: "🥇" },
-  { id: "platinum", name: "Platinum", minXp: 6000, color: "text-cyan-400", bg: "bg-cyan-400/10", icon: "💎" },
-  { id: "diamond", name: "Diamond", minXp: 12000, color: "text-violet-400", bg: "bg-violet-400/10", icon: "🔮" },
-  { id: "master", name: "Master", minXp: 25000, color: "text-rose-500", bg: "bg-rose-500/10", icon: "👑" },
-  { id: "grandmaster", name: "Grandmaster", minXp: 50000, color: "text-red-600", bg: "bg-red-600/10", icon: "🌟" },
+/* ─── Rank Tier System ───────────────────────────────────────────────────── */
+
+export type Tier = {
+  name: string;
+  /** Minimum XP to reach this tier */
+  minXP: number;
+  /** Emoji shown as the tier badge */
+  emoji: string;
+  /** CSS color value for the tier accent */
+  color: string;
+  /** Subtle background tint */
+  bg: string;
+};
+
+/**
+ * Ordered from lowest to highest.
+ * Grandmaster has no upper XP bound.
+ */
+export const TIERS: Tier[] = [
+  { name: "Bronze",      minXP: 0,     emoji: "🥉", color: "#cd7f32", bg: "rgba(205,127,50,0.12)"  },
+  { name: "Iron",        minXP: 200,   emoji: "⚙️",  color: "#71717a", bg: "rgba(113,113,122,0.12)" },
+  { name: "Silver",      minXP: 500,   emoji: "🥈", color: "#94a3b8", bg: "rgba(148,163,184,0.12)" },
+  { name: "Gold",        minXP: 1000,  emoji: "🥇", color: "#f59e0b", bg: "rgba(245,158,11,0.12)"  },
+  { name: "Platinum",    minXP: 2000,  emoji: "💎", color: "#38bdf8", bg: "rgba(56,189,248,0.12)"  },
+  { name: "Diamond",     minXP: 3500,  emoji: "💠", color: "#818cf8", bg: "rgba(129,140,248,0.12)" },
+  { name: "Master",      minXP: 5500,  emoji: "👑", color: "#f43f5e", bg: "rgba(244,63,94,0.12)"   },
+  { name: "Grandmaster", minXP: 8000,  emoji: "🌟", color: "#a855f7", bg: "rgba(168,85,247,0.12)"  },
 ];
 
-export function getRankForXp(xp: number) {
-  let currentRank = RANKS[0];
-  for (const rank of RANKS) {
-    if (xp >= rank.minXp) currentRank = rank;
-    else break;
+export type TierInfo = {
+  tier: Tier;
+  nextTier: Tier | null;
+  /** XP earned within the current tier range */
+  currentTierXP: number;
+  /** XP needed to complete the current tier range */
+  tierRangeXP: number;
+  /** Progress percentage within current tier (0–100) */
+  pct: number;
+};
+
+/** Returns tier info for a given XP value. */
+export function getTier(xp: number): TierInfo {
+  // Find the highest tier the user qualifies for
+  let tierIdx = 0;
+  for (let i = TIERS.length - 1; i >= 0; i--) {
+    if (xp >= TIERS[i].minXP) {
+      tierIdx = i;
+      break;
+    }
   }
-  return currentRank;
+  const tier = TIERS[tierIdx];
+  const nextTier = TIERS[tierIdx + 1] ?? null;
+
+  if (!nextTier) {
+    // Grandmaster — already at max
+    return { tier, nextTier: null, currentTierXP: 0, tierRangeXP: 1, pct: 100 };
+  }
+
+  const currentTierXP = xp - tier.minXP;
+  const tierRangeXP = nextTier.minXP - tier.minXP;
+  const pct = Math.min(100, Math.round((currentTierXP / tierRangeXP) * 100));
+
+  return { tier, nextTier, currentTierXP, tierRangeXP, pct };
 }
 
 export type BadgeDef = {
@@ -386,5 +431,7 @@ export type ForumReply = {
   content: string;
   upvotes: number;
   is_accepted: boolean;
+  /** True for AI-generated cached replies (used by community Ask AI caching) */
+  is_ai?: boolean;
   created_at?: string;
 };

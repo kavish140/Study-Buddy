@@ -35,6 +35,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavigate } from "@tanstack/react-router";
 import { useTutorial } from "./TutorialProvider";
 import { useTheme } from "@/hooks/use-theme";
+import { useFocusTimer, FOCUS_MODES } from "@/contexts/FocusTimerContext";
 
 type NavItem = {
   to: string;
@@ -133,6 +134,13 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         bgVar: "--feat-chat-bg",
       },
       {
+        to: "/teach",
+        label: "Teaching Mode",
+        icon: Brain,
+        colorVar: "--feat-quiz",
+        bgVar: "--feat-quiz-bg",
+      },
+      {
         to: "/focus",
         label: "Focus Timer",
         icon: Flame,
@@ -169,18 +177,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         colorVar: "--feat-leaderboard",
         bgVar: "--feat-leaderboard-bg",
       },
-    ],
-  },
-  {
-    label: "Account",
-    items: [
       {
         to: "/settings",
         label: "Settings",
         icon: Settings,
-        tourId: "tour-nav-settings",
-        colorVar: "--feat-settings",
-        bgVar: "--feat-settings-bg",
+        colorVar: "--primary",
+        bgVar: "--accent",
       },
     ],
   },
@@ -220,6 +222,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/review": "Smart Review",
   "/pyq": "PYQ Bank",
   "/chat": "AI Tutor",
+  "/teach": "Teaching Mode",
   "/focus": "Focus Timer",
   "/analytics": "Analytics",
   "/community": "Community",
@@ -298,7 +301,7 @@ function FeaturePanel({
   dueCards: unknown[];
   user: { email?: string | null } | null;
   userStats: { xp: number; level: number; current_streak: number } | null | undefined;
-  profile: { exam_name?: string | null } | null | undefined;
+  profile: { exam_name?: string | null; display_name?: string | null; avatar_emoji?: string | null } | null | undefined;
   onSignOut: () => void;
 }) {
   // Close on Escape
@@ -405,12 +408,26 @@ function FeaturePanel({
             })()}
 
           <div className="flex items-center gap-2">
-            <div className="top-bar__avatar text-xs">
-              {user?.email?.charAt(0).toUpperCase() ?? "?"}
+            <div
+              className="top-bar__avatar text-xs"
+              title={profile?.display_name || user?.email || undefined}
+            >
+              {profile?.avatar_emoji ?? user?.email?.charAt(0).toUpperCase() ?? "?"}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-medium truncate">{user?.email}</div>
+              <div className="text-xs font-medium truncate">
+                {profile?.display_name || user?.email}
+              </div>
             </div>
+            <Link
+              to="/settings"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs transition-colors hover:opacity-80"
+              style={{ borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+              title="Settings"
+              onClick={onClose}
+            >
+              <Settings size={12} />
+            </Link>
             <button
               onClick={onSignOut}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs transition-colors hover:opacity-80"
@@ -433,6 +450,8 @@ export function AppLayout() {
   const qc = useQueryClient();
   const { triggerPageTour } = useTutorial();
   const { effectiveTheme, toggle } = useTheme();
+  // Global focus timer — used to show the floating mini-widget when away from /focus
+  const { isRunning: timerRunning, secondsLeft: timerSeconds, mode: timerMode } = useFocusTimer();
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -483,10 +502,10 @@ export function AppLayout() {
     refetchInterval: 60_000,
   });
 
-  // Auth guard
+  // Auth guard — send unauthenticated visitors to the landing page
   useEffect(() => {
-    if (!loading && !user && path !== "/login") {
-      navigate({ to: "/login" });
+    if (!loading && !user && path !== "/login" && path !== "/landing") {
+      navigate({ to: "/landing" });
     }
   }, [user, loading, path, navigate]);
 
@@ -592,6 +611,29 @@ export function AppLayout() {
             </div>
           )}
 
+          {/* Floating focus timer mini-widget — visible when timer is running on another page */}
+          {timerRunning && path !== "/focus" && (() => {
+            const m = Math.floor(timerSeconds / 60);
+            const s = timerSeconds % 60;
+            return (
+              <Link
+                to="/focus"
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+                style={{
+                  background: "var(--feat-focus-bg)",
+                  color: "var(--feat-focus)",
+                  border: "1px solid var(--feat-focus)",
+                }}
+                title={`${FOCUS_MODES[timerMode].label} — click to open timer`}
+              >
+                <Flame size={11} className="animate-pulse" />
+                <span className="tabular-nums">
+                  {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
+                </span>
+              </Link>
+            );
+          })()}
+
           {/* Due cards badge */}
           {dueCards.length > 0 && (
             <Link
@@ -618,8 +660,10 @@ export function AppLayout() {
             {effectiveTheme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
           </button>
 
-          {/* Avatar */}
-          <div className="top-bar__avatar">{user?.email?.charAt(0).toUpperCase() ?? "?"}</div>
+          {/* Avatar — shows emoji if set, else email initial */}
+          <div className="top-bar__avatar" title={profile?.display_name || user?.email || undefined}>
+            {profile?.avatar_emoji ?? user?.email?.charAt(0).toUpperCase() ?? "?"}
+          </div>
         </div>
       </header>
 

@@ -13,14 +13,13 @@ import {
   Flame,
   ArrowRight,
   GraduationCap,
-  Trophy,
   Clock,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { getExamById } from "@/lib/exam-catalog";
 import { daysUntilIST, todayIST } from "@/lib/date-utils";
-import { xpForNextLevel } from "@/lib/storage";
+import { getTier, TIERS } from "@/lib/storage";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -63,7 +62,7 @@ function Dashboard() {
   const todayItems = plan.filter((p) => p.date === todayKey);
   const todayDone = todayItems.filter((p) => p.done).length;
 
-  const xpInfo = userStats ? xpForNextLevel(userStats.xp) : null;
+  const tierInfo = userStats ? getTier(userStats.xp) : null;
 
   // Determine "Today's Focus" message
   const todayFocus = (() => {
@@ -210,50 +209,134 @@ function Dashboard() {
           <StatCard
             label="XP"
             value={userStats ? `${userStats.xp}` : "—"}
-            hint={userStats ? `Level ${userStats.level}` : "Start earning"}
+            hint={
+              tierInfo
+                ? `${tierInfo.tier.emoji} ${tierInfo.tier.name}`
+                : "Start earning"
+            }
             icon={<Zap className="h-4 w-4" />}
             accentColor="warning"
           />
         </div>
 
-        {/* ── XP progress bar ─────────────────────────────────────────── */}
-        {xpInfo && userStats && (
-          <div className="card-light p-4 rounded-2xl">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-amber-500" />
-                <span className="text-sm font-semibold">Level {userStats.level} Progress</span>
-              </div>
-              <div
-                className="flex items-center gap-2 text-xs"
-                style={{ color: "var(--muted-foreground)" }}
-              >
-                {userStats.current_streak > 0 && (
-                  <span className="flex items-center gap-1 text-amber-500">
-                    <Flame size={12} />
-                    {userStats.current_streak}d streak
-                  </span>
-                )}
-                <span className="text-gradient font-semibold">{xpInfo.pct}%</span>
-              </div>
-            </div>
+        {/* ── Rank Tier card ───────────────────────────────────────────── */}
+        {tierInfo && userStats && (
+          <div
+            className="card-light p-5 rounded-2xl relative overflow-hidden"
+            data-tour="tour-rank-tier"
+            style={{ borderLeft: `4px solid ${tierInfo.tier.color}` }}
+          >
+            {/* Decorative background glow */}
             <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{ background: "var(--muted)" }}
+              className="absolute -right-6 -top-6 h-24 w-24 rounded-full pointer-events-none"
+              style={{ background: tierInfo.tier.bg, filter: "blur(20px)" }}
+            />
+
+            <div className="relative flex items-center justify-between gap-4">
+              {/* Left: tier badge + info */}
+              <div className="flex items-center gap-3">
+                <div
+                  className="h-14 w-14 rounded-2xl grid place-items-center text-3xl shrink-0 shadow-glow-sm"
+                  style={{ background: tierInfo.tier.bg, border: `2px solid ${tierInfo.tier.color}40` }}
+                >
+                  {tierInfo.tier.emoji}
+                </div>
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-widest mb-0.5" style={{ color: tierInfo.tier.color }}>
+                    Current Rank
+                  </div>
+                  <div className="text-xl font-bold font-heading" style={{ color: tierInfo.tier.color }}>
+                    {tierInfo.tier.name}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+                    <span>{userStats.xp} XP total</span>
+                    {userStats.current_streak > 0 && (
+                      <span className="flex items-center gap-0.5 text-amber-500">
+                        <Flame size={11} />{userStats.current_streak}d streak
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: next tier preview */}
+              {tierInfo.nextTier && (
+                <div className="text-right shrink-0">
+                  <div className="text-xs text-muted-foreground mb-0.5">Next</div>
+                  <div className="text-base font-bold">
+                    {tierInfo.nextTier.emoji} {tierInfo.nextTier.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {tierInfo.tierRangeXP - tierInfo.currentTierXP} XP away
+                  </div>
+                </div>
+              )}
+              {!tierInfo.nextTier && (
+                <div className="text-right shrink-0">
+                  <div className="text-xs font-bold" style={{ color: tierInfo.tier.color }}>Max Rank!</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Legendary</div>
+                </div>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {tierInfo.nextTier && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
+                  <span>{tierInfo.tier.name}</span>
+                  <span className="font-medium">{tierInfo.pct}%</span>
+                  <span>{tierInfo.nextTier.name}</span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--muted)" }}>
+                  <div
+                    className="h-full rounded-full progress-fill transition-all duration-700"
+                    style={{
+                      "--pct": `${tierInfo.pct}%`,
+                      background: `linear-gradient(90deg, ${tierInfo.tier.color}, ${tierInfo.nextTier.color})`,
+                    } as React.CSSProperties}
+                  />
+                </div>
+                <div className="text-[11px] mt-1 text-right" style={{ color: "var(--muted-foreground)" }}>
+                  {tierInfo.currentTierXP} / {tierInfo.tierRangeXP} XP
+                </div>
+              </div>
+            )}
+
+            {/* All tiers mini-map */}
+            {(() => {
+              const currentTierIdx = TIERS.findIndex((t) => t.name === tierInfo.tier.name);
+              return (
+                <div className="mt-3 flex items-center gap-1">
+                  {TIERS.map((t, i) => {
+                    const reached = i <= currentTierIdx;
+                    const isCurrent = i === currentTierIdx;
+                    return (
+                      <div
+                        key={t.name}
+                        className="flex-1 text-center rounded py-0.5 transition-all"
+                        title={t.name}
+                        style={{
+                          opacity: reached ? 1 : 0.25,
+                          fontSize: isCurrent ? "1rem" : "0.65rem",
+                          transform: isCurrent ? "scale(1.2)" : "scale(1)",
+                        }}
+                      >
+                        {t.emoji}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* Leaderboard link */}
+            <Link
+              to="/leaderboard"
+              className="mt-3 text-xs flex items-center justify-end gap-1 hover:underline"
+              style={{ color: tierInfo.tier.color }}
             >
-              <div
-                className="h-full rounded-full progress-fill"
-                style={
-                  {
-                    "--pct": `${xpInfo.pct}%`,
-                    background: "linear-gradient(90deg, #f59e0b, #f97316)",
-                  } as React.CSSProperties
-                }
-              />
-            </div>
-            <div className="text-[11px] mt-1" style={{ color: "var(--muted-foreground)" }}>
-              {xpInfo.current}/{xpInfo.needed} XP to Level {userStats.level + 1}
-            </div>
+              View Leaderboard <ArrowRight size={11} />
+            </Link>
           </div>
         )}
 

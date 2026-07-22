@@ -18,6 +18,9 @@ import {
   Sparkles,
   Timer,
   CircleDot,
+  Eye,
+  EyeOff,
+  Target,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -85,9 +88,6 @@ function MockTestPage() {
           subject: q.section,
           topic: q.topic || undefined,
           source: "mock_test" as const,
-          // Preserve MCQ options so Smart Review can offer quiz-mode practice
-          options: q.options,
-          correctOptionIndex: q.answerIndex,
           ease_factor: 2.5,
           interval_days: 1,
           repetitions: 0,
@@ -134,6 +134,169 @@ function MockTestPage() {
           <ResultScreen test={currentTest} onBack={handleBackToSetup} />
         )}
       </div>
+    </div>
+  );
+}
+
+/* ──────────── WRONG QUESTIONS PANEL ──────────── */
+function WrongQuestionsPanel({ mockTests }: { mockTests: MockTest[] }) {
+  const wrongItems = useMemo(() => {
+    const all: Array<{ q: MockTestQuestion; label: string }> = [];
+    for (const test of mockTests) {
+      if (test.status !== "completed") continue;
+      for (const section of test.sections) {
+        for (const q of section.questions) {
+          const userAns = test.answers[q.id];
+          const wasAttempted = userAns !== null && userAns !== undefined;
+          const wasWrong = wasAttempted && userAns !== q.answerIndex;
+          if (wasWrong) all.push({ q, label: `${test.exam_name} · ${section.name}` });
+        }
+      }
+    }
+    return all;
+  }, [mockTests]);
+
+  const [idx, setIdx] = useState(0);
+  const [localAnswer, setLocalAnswer] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [sessionCorrect, setSessionCorrect] = useState(0);
+  const [open, setOpen] = useState(false);
+
+  if (wrongItems.length === 0) return null;
+
+  const item = wrongItems[idx];
+
+  const handleAnswer = (oi: number) => {
+    if (revealed) return;
+    setLocalAnswer(oi);
+    setRevealed(true);
+    if (oi === item.q.answerIndex) setSessionCorrect((c) => c + 1);
+  };
+
+  const next = () => {
+    setIdx((i) => (i + 1) % wrongItems.length);
+    setLocalAnswer(null);
+    setRevealed(false);
+  };
+
+  return (
+    <div className="mt-8">
+      {/* Collapsible header */}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-3 p-4 rounded-2xl card-light text-left transition-all hover:opacity-90"
+        style={{ borderLeft: "3px solid var(--destructive)" }}
+      >
+        <div className="h-10 w-10 rounded-xl bg-destructive/10 grid place-items-center shrink-0">
+          <Target className="h-5 w-5 text-destructive" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold font-heading">Practice Wrong Questions</div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            {wrongItems.length} mistakes from past mock tests
+            {sessionCorrect > 0 && ` · ${sessionCorrect} corrected this session`}
+          </div>
+        </div>
+        <ChevronRight
+          className={cn(
+            "h-4 w-4 text-muted-foreground transition-transform shrink-0 duration-200",
+            open && "rotate-90",
+          )}
+        />
+      </button>
+
+      {/* Mini-quiz panel */}
+      {open && (
+        <div className="mt-3 card-light p-5 rounded-2xl">
+          {/* Progress info */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+            <span>
+              Question {idx + 1} of {wrongItems.length}
+            </span>
+            <span
+              className="text-[10px] px-2 py-0.5 rounded-full truncate max-w-[180px]"
+              style={{ background: "var(--muted)" }}
+            >
+              {item.label}
+            </span>
+          </div>
+
+          {/* Question text */}
+          <div className="text-sm font-medium mb-4 leading-relaxed">
+            <MarkdownContent content={item.q.question} />
+          </div>
+
+          {/* Options */}
+          <div className="space-y-2 mb-4">
+            {item.q.options.map((opt, oi) => {
+              const isSelected = localAnswer === oi;
+              const isCorrect = item.q.answerIndex === oi;
+              return (
+                <div
+                  key={oi}
+                  role="button"
+                  tabIndex={revealed ? -1 : 0}
+                  onClick={() => handleAnswer(oi)}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleAnswer(oi)}
+                  className={cn(
+                    "text-left px-3 py-2.5 rounded-lg border text-sm transition-all select-none",
+                    !revealed && "cursor-pointer hover:border-primary/40 border-border",
+                    revealed && isCorrect && "border-success/40 bg-success/10 text-success cursor-default",
+                    revealed &&
+                      isSelected &&
+                      !isCorrect &&
+                      "border-destructive/40 bg-destructive/10 text-destructive cursor-default",
+                    revealed && !isSelected && !isCorrect && "border-border opacity-40 cursor-default",
+                  )}
+                >
+                  <span className="flex items-start gap-2">
+                    <span className="shrink-0 text-xs font-bold opacity-50 mt-0.5">
+                      {String.fromCharCode(65 + oi)}.
+                    </span>
+                    <span className="flex-1">
+                      <MarkdownContent content={opt} />
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Explanation after answering */}
+          {revealed && item.q.explanation && (
+            <div
+              className="text-xs text-muted-foreground p-3 rounded-lg mb-4"
+              style={{ background: "var(--muted)" }}
+            >
+              <div className="font-semibold text-foreground text-[11px] uppercase tracking-wide mb-1">
+                Explanation
+              </div>
+              <MarkdownContent content={item.q.explanation} />
+            </div>
+          )}
+
+          {/* Nav footer */}
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <span
+              className={cn(
+                "text-xs font-medium",
+                !revealed && "text-muted-foreground",
+                revealed && localAnswer === item.q.answerIndex && "text-success",
+                revealed && localAnswer !== item.q.answerIndex && "text-destructive",
+              )}
+            >
+              {!revealed
+                ? "Tap an option to answer"
+                : localAnswer === item.q.answerIndex
+                  ? "✓ Correct!"
+                  : "✗ Incorrect"}
+            </span>
+            <Button size="sm" variant="secondary" onClick={next}>
+              Next <ChevronRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -347,6 +510,9 @@ function SetupScreen({
           </div>
         </div>
       )}
+
+      {/* Practice wrong questions from all past mock tests */}
+      <WrongQuestionsPanel mockTests={mockTests} />
     </div>
   );
 }
@@ -625,11 +791,17 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
                 {currentQ.options.map((opt, oi) => {
                   const isSelected = answers[currentQ.id] === oi;
                   return (
-                    <button
+                    // div[role=button] allows MarkdownContent block elements (display math) inside
+                    <div
                       key={oi}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleAnswer(currentQ.id, oi)}
+                      onKeyDown={(e) =>
+                        (e.key === "Enter" || e.key === " ") && handleAnswer(currentQ.id, oi)
+                      }
                       className={cn(
-                        "w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center gap-3",
+                        "w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-start gap-3 cursor-pointer select-none",
                         isSelected
                           ? "border-[color:var(--feat-mock)] shadow-sm"
                           : "border-border hover:border-primary/20",
@@ -642,17 +814,17 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
                     >
                       <div
                         className={cn(
-                          "h-8 w-8 rounded-lg grid place-items-center text-sm font-bold shrink-0",
+                          "h-8 w-8 rounded-lg grid place-items-center text-sm font-bold shrink-0 mt-0.5",
                           isSelected ? "bg-primary text-white" : "text-muted-foreground",
                         )}
-                        style={isSelected ? undefined : { background: "var(--muted)" }}
+                        style={isSelected ? undefined : { background: "var(--accent)" }}
                       >
                         {String.fromCharCode(65 + oi)}
                       </div>
-                      <span className="text-sm">
+                      <span className="text-sm flex-1">
                         <MarkdownContent content={opt} />
                       </span>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -793,6 +965,7 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
 function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) {
   const [reviewSection, setReviewSection] = useState(0);
   const [showReview, setShowReview] = useState(false);
+  const [hideHighlights, setHideHighlights] = useState(false);
   const pct = test.total_marks ? Math.round(((test.score ?? 0) / test.total_marks) * 100) : 0;
   // displayPct is clamped to [0, 100] for the visual ring — the actual score text is still accurate
   const displayPct = Math.max(0, Math.min(100, pct));
@@ -898,18 +1071,39 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
       </div>
 
       {/* Action buttons */}
-      <div className="flex gap-3 mb-8">
+      <div className="flex flex-wrap gap-3 mb-6">
         <Button variant="ghost" onClick={onBack} className="flex-1">
           <RotateCcw className="h-4 w-4 mr-2" /> New Test
         </Button>
-        <Button className="flex-1 bg-gradient-primary" onClick={() => setShowReview(!showReview)}>
-          <BookOpen className="h-4 w-4 mr-2" /> {showReview ? "Hide" : "Review"} Answers
+        <Button
+          className="flex-1 bg-gradient-primary"
+          onClick={() => {
+            setShowReview((r) => !r);
+            setHideHighlights(false); // reset practice mode when toggling section
+          }}
+        >
+          <BookOpen className="h-4 w-4 mr-2" /> {showReview ? "Close" : "Review"} Answers
         </Button>
+        {showReview && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => setHideHighlights((h) => !h)}
+          >
+            {hideHighlights ? (
+              <><Eye className="h-4 w-4 mr-1.5" /> Show Highlights</>
+            ) : (
+              <><EyeOff className="h-4 w-4 mr-1.5" /> Hide Highlights — Practice Mode</>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Answer review */}
-      <div>
-        <div className="flex border-b border-border mb-4 overflow-x-auto">
+      {showReview && (
+        <div>
+          <div className="flex border-b border-border mb-4 overflow-x-auto">
             {test.sections.map((section, si) => (
               <button
                 key={section.name}
@@ -934,31 +1128,25 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
               return (
                 <div key={q.id} className="card-light p-5 rounded-2xl">
                   <div className="flex items-center gap-2 mb-3">
-                    {showReview ? (
-                      <span
-                        className={cn(
-                          "h-6 w-6 rounded-full grid place-items-center text-xs",
-                          isCorrect
-                            ? "bg-success/10 text-success"
-                            : isUnanswered
-                              ? "bg-muted/30 text-muted-foreground"
-                              : "bg-destructive/10 text-destructive",
-                        )}
-                      >
-                        {isCorrect ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        ) : isUnanswered ? (
-                          "−"
-                        ) : (
-                          <XCircle className="h-3.5 w-3.5" />
-                        )}
-                      </span>
-                    ) : (
-                      <span className="h-6 w-6 rounded-full grid place-items-center text-xs bg-muted/30 text-muted-foreground">
-                        {qi + 1}
-                      </span>
-                    )}
-                    {showReview && <span className="text-sm font-medium">Q{qi + 1}</span>}
+                    <span
+                      className={cn(
+                        "h-6 w-6 rounded-full grid place-items-center text-xs font-medium",
+                        !hideHighlights && isCorrect
+                          ? "bg-success/10 text-success"
+                          : !hideHighlights && !isUnanswered
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-muted/30 text-muted-foreground",
+                      )}
+                    >
+                      {!hideHighlights && isCorrect ? (
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      ) : !hideHighlights && !isUnanswered ? (
+                        <XCircle className="h-3.5 w-3.5" />
+                      ) : (
+                        qi + 1
+                      )}
+                    </span>
+                    <span className="text-sm font-medium">Q{qi + 1}</span>
                     <span className="text-xs text-muted-foreground">{q.topic}</span>
                   </div>
 
@@ -971,14 +1159,12 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
                       <div
                         key={oi}
                         className={cn(
-                          "text-sm px-3 py-2 rounded-lg transition-all",
-                          showReview
-                            ? oi === q.answerIndex
-                              ? "bg-success/10 text-success border border-success/20"
-                              : oi === userAnswer && oi !== q.answerIndex
-                                ? "bg-destructive/10 text-destructive border border-destructive/20"
-                                : "text-muted-foreground border border-transparent"
-                            : "text-muted-foreground border border-border bg-muted/30"
+                          "text-sm px-3 py-2 rounded-lg border",
+                          !hideHighlights && oi === q.answerIndex
+                            ? "bg-success/10 text-success border-success/20"
+                            : !hideHighlights && oi === userAnswer && oi !== q.answerIndex
+                              ? "bg-destructive/10 text-destructive border-destructive/20"
+                              : "text-muted-foreground border-transparent",
                         )}
                       >
                         <span className="font-medium mr-2">{String.fromCharCode(65 + oi)}.</span>
@@ -987,7 +1173,7 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
                     ))}
                   </div>
 
-                  {showReview && q.explanation && (
+                  {!hideHighlights && (
                     <div
                       className="text-xs text-muted-foreground p-3 rounded-lg"
                       style={{
@@ -1001,7 +1187,7 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
                       <span className="text-xs font-semibold text-foreground uppercase tracking-wide block mb-1">
                         Explanation
                       </span>
-                      <MarkdownContent content={q.explanation} />
+                      <MarkdownContent content={q.explanation || ""} />
                     </div>
                   )}
                 </div>
@@ -1009,6 +1195,7 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
             })}
           </div>
         </div>
-      </div>
+      )}
+    </div>
   );
 }

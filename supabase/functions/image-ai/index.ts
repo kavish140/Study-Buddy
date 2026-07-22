@@ -73,8 +73,8 @@ The student has uploaded a scanned PDF (which may be a handwritten notebook). Yo
 2. Accurately extract any handwritten or printed text, equations, and diagrams.
 3. Answer the student's question based on the full content of the notebook.
 4. For math/physics problems, show all working steps clearly.
-5. Use markdown formatting (headers, bold, lists).
-6. IMPORTANT: For math/physics equations, you MUST use $ for inline math (e.g. $\\sin x$) and $$ for block math (e.g. $$\\frac{1}{2}$$).
+5. Use markdown formatting (headers, bold, lists, LaTeX-style notation where helpful).
+6. For math, use clear notation (e.g., x² for x squared, √ for square root).
 7. If pages contain diagrams or figures, describe and explain them.
 8. At the end, provide the final answer clearly highlighted.
 9. If applicable, relate content to relevant concepts from the exam syllabus.
@@ -87,8 +87,8 @@ Your task:
 2. If there is handwritten or printed text, extract it accurately.
 3. Solve the problem step by step.
 4. For math/physics problems, show all calculations clearly.
-5. Use markdown formatting (headers, bold, lists).
-6. IMPORTANT: For math/physics equations, you MUST use $ for inline math (e.g. $\\sin x$) and $$ for block math (e.g. $$\\frac{1}{2}$$).
+5. Use markdown formatting (headers, bold, lists, code blocks).
+6. For math, use clear notation (e.g., x² for x squared, √ for square root).
 7. If the image contains a diagram, describe it and explain its relevance.
 8. At the end, provide the final answer clearly highlighted.
 9. If applicable, mention which concept/formula from the exam syllabus this tests.

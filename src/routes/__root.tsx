@@ -9,9 +9,11 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { FocusTimerProvider } from "../contexts/FocusTimerContext";
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
+import katexCss from "katex/dist/katex.min.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppLayout } from "../components/AppLayout";
 import { TutorialProvider } from "../components/TutorialProvider";
@@ -116,8 +118,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css",
-        crossOrigin: "anonymous",
+        href: katexCss,
       },
       {
         rel: "stylesheet",
@@ -144,21 +145,25 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const isAuthPage = path === "/login" || path === "/onboarding";
+  const isAuthPage = path === "/login" || path === "/onboarding" || path === "/landing";
   const { effectiveTheme } = useTheme();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TutorialProvider>
-        {isAuthPage ? <Outlet /> : <AppLayout />}
-        {!isAuthPage && (
-          <>
-            <TutorialOverlay />
-            <HelpButton />
-          </>
-        )}
-        <Toaster richColors position="top-right" theme={effectiveTheme} />
-      </TutorialProvider>
+      {/* FocusTimerProvider is inside QueryClientProvider (needs useMutation) and above
+          the router outlet so the countdown survives navigation between routes. */}
+      <FocusTimerProvider>
+        <TutorialProvider>
+          {isAuthPage ? <Outlet /> : <AppLayout />}
+          {!isAuthPage && (
+            <>
+              <TutorialOverlay />
+              <HelpButton />
+            </>
+          )}
+          <Toaster richColors position="top-right" theme={effectiveTheme} />
+        </TutorialProvider>
+      </FocusTimerProvider>
     </QueryClientProvider>
   );
 }

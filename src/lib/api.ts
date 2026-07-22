@@ -60,19 +60,34 @@ export const api = {
     const { data, error } = await supabase
       .from("quizzes")
       .select("*")
-      .eq("user_id", user_id)
-      .order("created_at", { ascending: false });
+      .eq("user_id", user_id);
+    // NOTE: we intentionally omit .order() here because the quizzes table may use
+    // either camelCase (createdAt) or snake_case (created_at) depending on how the
+    // table was created. A server-side order on the wrong column name throws and
+    // silently returns [] via React Query's default value. Sort client-side instead.
     if (error) throw error;
-    return (data as SavedQuiz[]) || [];
+    return ((data as SavedQuiz[]) || []).sort((a, b) => {
+      // Support both camelCase (number) and snake_case (ISO string) from DB
+      const aRaw = a.createdAt ?? (a as Record<string, unknown>).created_at;
+      const bRaw = b.createdAt ?? (b as Record<string, unknown>).created_at;
+      const aMs = typeof aRaw === "number" ? aRaw : aRaw ? new Date(aRaw as string).getTime() : 0;
+      const bMs = typeof bRaw === "number" ? bRaw : bRaw ? new Date(bRaw as string).getTime() : 0;
+      return bMs - aMs; // newest first
+    });
   },
   saveQuiz: async (quiz: SavedQuiz) => {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
+    // Omit camelCase `createdAt` from the upsert to avoid a PostgREST
+    // column-not-found error on tables that use snake_case `created_at DEFAULT now()`.
+    const { createdAt: _ts, ...quizData } = quiz;
+    void _ts;
+
     const { data, error } = await supabase
       .from("quizzes")
-      .upsert({ ...quiz, user_id })
+      .upsert({ ...quizData, user_id })
       .select()
       .single();
     if (error) throw error;
@@ -433,51 +448,7 @@ export const api = {
       .select("*")
       .eq("user_id", user_id)
       .maybeSingle();
-      
-    if (data) {
-      const stats = data as UserStats;
-      const today = todayIST();
-      
-      if (stats.last_active_date && stats.last_active_date < today) {
-        const msPerDay = 1000 * 60 * 60 * 24;
-        const diffDays = Math.floor(
-          (new Date(today).getTime() - new Date(stats.last_active_date).getTime()) / msPerDay
-        );
-        
-        // If diffDays > 1, the user missed at least yesterday
-        if (diffDays > 1) {
-          const missedDays = diffDays - 1;
-          const FLAT_DECAY = 50; // XP per missed day
-          const decayXP = missedDays * FLAT_DECAY;
-          
-          if (decayXP > 0) {
-            const newXp = Math.max(0, stats.xp - decayXP);
-            // Advance last_active_date to (today - 2 days) so we don't double decay
-            // tomorrow if they remain inactive today, but streak remains broken (diff >= 2).
-            const newLastActive = new Date(new Date(today).getTime() - 2 * msPerDay)
-              .toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
-              
-            await supabase
-              .from("user_stats")
-              .update({
-                xp: newXp,
-                last_active_date: newLastActive,
-                current_streak: 0,
-              })
-              .eq("id", stats.id);
-            
-            return {
-              ...stats,
-              xp: newXp,
-              last_active_date: newLastActive,
-              current_streak: 0,
-            };
-          }
-        }
-      }
-      return stats;
-    }
-    return null;
+    return (data as UserStats) || null;
   },
 
   /**
@@ -745,6 +716,54 @@ export const api = {
     await supabase.rpc("increment_reply_count", { post_id }).throwOnError();
     return data as ForumReply;
   },
+  /**
+   * Save (or overwrite) the AI-generated answer for a post as a cached reply.
+   * Uses is_ai=true so clients can distinguish bot from human replies.
+   * Does NOT increment reply_count — bot answers shouldn't inflate the counter.
+   */
+  createAIForumReply: async (post_id: string, content: string): Promise<ForumReply> => {
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+
+    // Check if an AI reply already exists for this post; if so, update it
+    const { data: existing } = await supabase
+      .from("forum_replies")
+      .select("id")
+      .eq("post_id", post_id)
+      .eq("is_ai", true)
+      .maybeSingle();
+
+    if (existing) {
+      // Update existing AI reply with fresh answer
+      const { data, error } = await supabase
+        .from("forum_replies")
+        .update({ content, created_at: new Date().toISOString() })
+        .eq("id", existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as ForumReply;
+    } else {
+      // Insert new AI reply
+      const { data, error } = await supabase
+        .from("forum_replies")
+        .insert({
+          id: uid(),
+          post_id,
+          user_id,
+          content,
+          upvotes: 0,
+          is_accepted: false,
+          is_ai: true,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as ForumReply;
+    }
+  },
+
   acceptReply: async (reply_id: string): Promise<void> => {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;

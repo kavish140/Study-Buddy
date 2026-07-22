@@ -102,16 +102,17 @@ function PYQPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pyq"] }),
   });
 
-  // Generate AI PYQ-style questions
-  const handleGenerate = async () => {
+  // Generate AI PYQ-style questions — uses selected exam/subject/year filters, no manual topic needed
+  const handleGenerate = async (retryCount = 0) => {
     setGenerating(true);
     try {
       const examLabel = EXAM_LABELS[examId] || examId;
       const yearLabel = year || new Date().getFullYear();
       const subjectLabel = subject || (SUBJECTS[examId]?.[0] ?? "General");
-      const generatedTopic = `${subjectLabel} PYQs from ${yearLabel}`;
 
-      // Use study-ai generateQuiz action with user's auth token
+      // Build context from selected filters — no manual topic required
+      const prompt = `${examLabel} ${yearLabel} ${subjectLabel}`;
+
       const {
         data: { session },
       } = await (await import("@/lib/supabase")).supabase.auth.getSession();
@@ -128,7 +129,7 @@ function PYQPage() {
         body: JSON.stringify({
           action: "generateQuiz",
           data: {
-            topic: generatedTopic,
+            topic: prompt,
             count: 5,
             difficulty: difficulty || "hard",
             examName: examLabel,
@@ -154,7 +155,7 @@ function PYQPage() {
         exam_id: examId,
         year: Number(yearLabel),
         subject: subjectLabel,
-        topic: generatedTopic,
+        topic: subjectLabel,
         question: q.question,
         question_type: "mcq",
         options: q.options,
@@ -168,9 +169,15 @@ function PYQPage() {
       }));
 
       await saveMutation.mutateAsync(qs);
-      toast.success(`✅ Generated ${qs.length} ${examLabel} questions for ${subjectLabel}`);
+      toast.success(`Generated ${qs.length} ${examLabel} ${subjectLabel} questions`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Generation failed");
+      const msg = e instanceof Error ? e.message : "Generation failed";
+      toast.error(msg, {
+        action:
+          retryCount < 2
+            ? { label: "Retry", onClick: () => handleGenerate(retryCount + 1) }
+            : undefined,
+      });
     } finally {
       setGenerating(false);
     }
@@ -215,19 +222,28 @@ function PYQPage() {
         )}
       </div>
 
-      {/* AI Generate strip */}
+      {/* AI Generate strip — no manual topic: uses selected filters below */}
       <div
         className="card-light rounded-2xl p-4 mb-6 border border-primary/20"
         data-tour="tour-pyq-generate"
       >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <p className="text-sm font-medium flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" /> Generate AI-powered PYQ-style questions
+        <p className="text-sm font-medium mb-3 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" /> Generate AI-powered PYQ-style questions
+        </p>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-xs text-muted-foreground flex-1">
+            Generating for:{" "}
+            <span className="text-foreground font-medium">
+              {EXAM_LABELS[examId]}
+              {subject ? ` · ${subject}` : " · All subjects"}
+              {year ? ` · ${year}` : " · Latest year"}
+            </span>
+            {" "}— select filters below to customize.
           </p>
           <Button
-            onClick={handleGenerate}
+            onClick={() => handleGenerate()}
             disabled={generating}
-            className="bg-gradient-primary gap-2"
+            className="bg-gradient-primary gap-2 shrink-0"
           >
             {generating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -414,7 +430,9 @@ function QuestionCard({ question: q, index }: { question: PYQQuestion; index: nu
               {q.difficulty}
             </span>
           </div>
-          <p className="text-sm leading-relaxed">{q.question}</p>
+          <div className="text-sm leading-relaxed">
+            <MarkdownContent content={q.question} />
+          </div>
           {expanded && q.options && (
             <div className="mt-3 space-y-1.5">
               {q.options.map((opt, oi) => (
@@ -434,8 +452,12 @@ function QuestionCard({ question: q, index }: { question: PYQQuestion; index: nu
                       : { background: "var(--muted)" }
                   }
                 >
-                  {opt === q.answer && <CheckCircle2 className="inline h-3.5 w-3.5 mr-1.5" />}
-                  {opt}
+                  <span className="flex items-start gap-1.5">
+                    {opt === q.answer && (
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    )}
+                    <MarkdownContent content={opt} />
+                  </span>
                 </div>
               ))}
               {q.explanation && (
@@ -550,7 +572,9 @@ function PracticeMode({
           <span>·</span>
           <span>{q.subject}</span>
         </div>
-        <p className="text-base leading-relaxed font-medium">{q.question}</p>
+        <div className="text-base leading-relaxed font-medium">
+          <MarkdownContent content={q.question} />
+        </div>
         <div className="space-y-2">
           {(q.options || []).map((opt, idx) => {
             const isSelected = state.selected === idx;
@@ -585,22 +609,37 @@ function PracticeMode({
               optCls = "border text-sm";
             }
             return (
-              <button
+              // div[role=button] instead of <button> so MarkdownContent block math is valid HTML
+              <div
                 key={idx}
+                role="button"
+                tabIndex={state.revealed ? -1 : 0}
                 onClick={() => handleSelect(idx)}
-                disabled={state.revealed}
+                onKeyDown={(e) =>
+                  !state.revealed &&
+                  (e.key === "Enter" || e.key === " ") &&
+                  handleSelect(idx)
+                }
                 style={optStyle}
                 className={cn(
-                  "w-full text-left px-4 py-3 rounded-xl transition-all flex items-center gap-3",
+                  "w-full text-left px-4 py-3 rounded-xl transition-all flex items-start gap-3 select-none",
+                  state.revealed ? "cursor-default" : "cursor-pointer",
                   optCls,
                 )}
               >
-                {state.revealed && isCorrect && <CheckCircle2 className="h-4 w-4 shrink-0" />}
-                {state.revealed && isSelected && !isCorrect && (
-                  <XCircle className="h-4 w-4 shrink-0" />
-                )}
-                <span>{opt}</span>
-              </button>
+                <span className="shrink-0 mt-0.5">
+                  {state.revealed && isCorrect && <CheckCircle2 className="h-4 w-4" />}
+                  {state.revealed && isSelected && !isCorrect && <XCircle className="h-4 w-4" />}
+                  {(!state.revealed || (!isCorrect && !isSelected)) && (
+                    <span className="text-xs font-bold opacity-40">
+                      {String.fromCharCode(65 + idx)}.
+                    </span>
+                  )}
+                </span>
+                <span className="flex-1">
+                  <MarkdownContent content={opt} />
+                </span>
+              </div>
             );
           })}
         </div>

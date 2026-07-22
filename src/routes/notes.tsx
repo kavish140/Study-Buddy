@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Trash2, RotateCw, BookOpen } from "lucide-react";
+import { Loader2, Sparkles, Trash2, RotateCw, BookOpen, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { uid, type Note } from "@/lib/storage";
 import { generateNotes } from "@/lib/ai.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/notes")({
   head: () => ({
@@ -26,7 +27,10 @@ export const Route = createFileRoute("/notes")({
 
 function NotesPage() {
   const queryClient = useQueryClient();
-  const { data: notes = [] } = useQuery({ queryKey: ["notes"], queryFn: api.getNotes });
+  const { data: notes = [], isLoading: notesLoading } = useQuery({
+    queryKey: ["notes"],
+    queryFn: api.getNotes,
+  });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
   const { triggerPageTour } = useTutorial();
 
@@ -36,59 +40,73 @@ function NotesPage() {
 
   const saveMutation = useMutation({
     mutationFn: api.saveNote,
-    onError: (error) => toast.error(error.message || "Operation failed"),
+    onError: (error) => toast.error(error.message || "Failed to save note"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: api.deleteNote,
-    onError: (error) => toast.error(error.message || "Operation failed"),
+    onError: (error) => toast.error(error.message || "Failed to delete note"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
   });
+
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const handleGenerate = async () => {
-    if (!topic.trim()) return;
+  const handleGenerate = async (topicOverride?: string) => {
+    const t = (topicOverride ?? topic).trim();
+    if (!t) return;
     setLoading(true);
     try {
       const res = await generateNotes({
-        data: { topic, examName: profile?.exam_name, source: "notes" },
+        data: { topic: t, examName: profile?.exam_name, source: "notes" },
       });
 
-      // Validate response shape — AI can occasionally return empty objects
-      if (!res || typeof res.summary !== "string" || res.summary.trim().length === 0) {
-        toast.error("The AI returned an empty response. Please try again or rephrase the topic.");
-        return;
-      }
+      // Defensive: handle all possible AI response shapes
+      const summary =
+        typeof res.summary === "string" && res.summary.trim()
+          ? res.summary
+          : "Summary not available. Please try regenerating.";
+
+      const flashcards = Array.isArray(res.flashcards)
+        ? res.flashcards.filter(
+            (fc) => fc && typeof fc.q === "string" && typeof fc.a === "string",
+          )
+        : [];
 
       const note: Note = {
         id: uid(),
-        topic: topic.trim(),
-        summary: res.summary,
-        // Ensure flashcards is always an array even if the AI omits it
-        flashcards: Array.isArray(res.flashcards) ? res.flashcards : [],
-        created_at: new Date().toISOString(),
+        topic: t,
+        summary,
+        flashcards,
+        createdAt: Date.now(),
       };
+
       // Use mutate (not mutateAsync) so the mutation's onError handler is the
       // single place that shows the error toast — prevents duplicate toasts.
       saveMutation.mutate(note, {
         onSuccess: () => {
           setTopic("");
-          toast.success(`Notes generated${note.flashcards.length > 0 ? ` with ${note.flashcards.length} flashcards` : ""}!`);
+          setRetryCount(0);
+          toast.success(`✅ Notes & ${flashcards.length} flashcards generated!`);
         },
       });
     } catch (e) {
-      // Only AI-generation errors reach here (saveMutation errors are handled by onError)
       const msg = e instanceof Error ? e.message : "Failed to generate notes";
-      // Provide context-specific error messages for common failures
-      if (msg.toLowerCase().includes("timeout") || msg.toLowerCase().includes("time out")) {
-        toast.error("The AI took too long to respond. Try a shorter or simpler topic.");
-      } else if (msg.toLowerCase().includes("auth")) {
-        toast.error("Session expired. Please refresh the page and try again.");
-      } else {
-        toast.error(msg);
-      }
+      // Suggest retry on edge function / timeout errors
+      toast.error(msg, {
+        action:
+          retryCount < 2
+            ? {
+                label: "Retry",
+                onClick: () => {
+                  setRetryCount((c) => c + 1);
+                  handleGenerate(t);
+                },
+              }
+            : undefined,
+      });
     } finally {
       setLoading(false);
     }
@@ -106,6 +124,7 @@ function NotesPage() {
         )}
       </p>
 
+      {/* Generate panel */}
       <div className="p-5 rounded-2xl card-light mt-6" data-tour="tour-notes-topic">
         <div className="flex items-center gap-2 text-sm font-medium mb-3">
           <Sparkles className="h-4 w-4 text-primary" /> Generate
@@ -122,19 +141,33 @@ function NotesPage() {
             onKeyDown={(e) => e.key === "Enter" && !loading && handleGenerate()}
           />
           <Button
-            onClick={handleGenerate}
+            onClick={() => handleGenerate()}
             disabled={loading || !topic.trim()}
-            className="bg-gradient-primary"
+            className="bg-gradient-primary shrink-0"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate"}
           </Button>
         </div>
+        {loading && (
+          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Generating notes and flashcards — this may take a few seconds…
+          </p>
+        )}
       </div>
 
+      {/* Notes list */}
       <div className="mt-8 space-y-4">
-        {notes.length === 0 ? (
+        {notesLoading ? (
+          <div className="space-y-3">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-32 card-light rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        ) : notes.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl">
-            No notes yet.
+            <BookOpen className="h-8 w-8 mx-auto mb-3 opacity-30" />
+            <p>No notes yet. Enter a topic above to get started!</p>
           </div>
         ) : (
           notes.map((n) => <NoteCard key={n.id} note={n} onRemove={() => remove(n.id)} />)
@@ -147,68 +180,125 @@ function NotesPage() {
 function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+
   const total = note.flashcards.length;
   const card = total > 0 ? note.flashcards[idx] : null;
 
-  // Reset revealed state whenever the active card index changes
+  // Move to next card, always starting in question (unrevealed) state
   const next = () => {
     if (total === 0) return;
     setRevealed(false);
     setIdx((i) => (i + 1) % total);
   };
 
+  // Move to previous card, always starting in question (unrevealed) state
+  const prev = () => {
+    if (total === 0) return;
+    setRevealed(false);
+    setIdx((i) => (i - 1 + total) % total);
+  };
+
+  // Summary text: collapse long summaries
+  const SUMMARY_LIMIT = 400;
+  const summaryText = note.summary ?? "";
+  const isLong = summaryText.length > SUMMARY_LIMIT;
+  const displayedSummary =
+    isLong && !summaryExpanded ? summaryText.slice(0, SUMMARY_LIMIT) + "…" : summaryText;
+
   return (
     <div
       className="p-5 rounded-2xl card-light"
       style={{ borderLeft: "3px solid var(--feat-notes)" }}
     >
+      {/* Header row */}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-semibold">{note.topic}</div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-base">{note.topic}</div>
+
+          {/* Summary — rendered through MarkdownContent for LaTeX support */}
           <div className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            <MarkdownContent content={note.summary} />
+            <MarkdownContent content={displayedSummary} />
+            {isLong && (
+              <button
+                onClick={() => setSummaryExpanded((e) => !e)}
+                className="mt-1 text-xs text-primary hover:underline"
+              >
+                {summaryExpanded ? "Show less" : "Show more"}
+              </button>
+            )}
           </div>
         </div>
-        <Button size="icon" variant="ghost" onClick={onRemove}>
+        <Button size="icon" variant="ghost" onClick={onRemove} className="shrink-0">
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
 
+      {/* Flashcard section */}
       <div className="mt-5" data-tour="tour-notes-flashcard">
         {total === 0 ? (
-          // Guard: render a placeholder if the AI returned no flashcards
           <div className="text-sm text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl">
             <BookOpen className="h-5 w-5 mx-auto mb-2 opacity-50" />
             No flashcards available for this note.
           </div>
         ) : (
           <>
-            <div className="text-xs text-muted-foreground mb-2">
-              Flashcard {idx + 1} / {total}
+            {/* Card counter */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+              <span>
+                Flashcard {idx + 1} / {total}
+              </span>
+              <span
+                className="text-[10px] uppercase tracking-wider font-medium px-2 py-0.5 rounded-full"
+                style={{
+                  background: "var(--feat-notes-bg)",
+                  color: "var(--feat-notes)",
+                }}
+              >
+                {revealed ? "Answer" : "Question"}
+              </span>
             </div>
-            <button
+
+            {/* Flip card — using div+role="button" so MarkdownContent block elements are valid */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setRevealed((r) => !r)}
-              className="w-full text-left p-5 rounded-2xl border transition-all min-h-32"
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setRevealed((r) => !r)}
+              className={cn(
+                "w-full text-left p-5 rounded-2xl border cursor-pointer transition-all duration-200 min-h-32",
+                "hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+              )}
               style={{
                 background: "var(--feat-notes-bg)",
                 borderColor: "var(--feat-notes)",
                 borderWidth: "1px",
               }}
             >
-              <div
-                className="text-xs uppercase tracking-wide font-medium mb-2"
-                style={{ color: "var(--feat-notes)" }}
-              >
-                {revealed ? "Answer" : "Question"}
-              </div>
-              <div className="text-base">
+              {/* Q or A — rendered through MarkdownContent for LaTeX support */}
+              <div className="text-sm leading-relaxed">
                 <MarkdownContent content={revealed ? card!.a : card!.q} />
               </div>
-              {!revealed && <div className="text-xs text-muted-foreground mt-3">Tap to reveal</div>}
-            </button>
-            <div className="flex justify-end mt-3">
+
+              {/* "Tap to reveal" hint only on question side */}
+              {!revealed && (
+                <div className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
+                  <RefreshCw className="h-3 w-3" />
+                  Tap to reveal answer
+                </div>
+              )}
+            </div>
+
+            {/* Navigation controls */}
+            <div className="flex items-center justify-between mt-3">
+              <Button variant="secondary" size="sm" onClick={prev} disabled={total <= 1}>
+                <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Prev
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {idx + 1} / {total}
+              </span>
               <Button variant="secondary" size="sm" onClick={next}>
-                <RotateCw className="h-3.5 w-3.5 mr-1" /> Next
+                Next <RotateCw className="h-3.5 w-3.5 ml-1" />
               </Button>
             </div>
           </>

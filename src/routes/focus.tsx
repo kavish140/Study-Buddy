@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { todayIST } from "@/lib/date-utils";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { useTutorial } from "@/components/TutorialProvider";
+import { useFocusTimer, type FocusMode as Mode } from "@/contexts/FocusTimerContext";
 import {
   Timer,
   Play,
@@ -30,26 +30,41 @@ export const Route = createFileRoute("/focus")({
   component: FocusPage,
 });
 
-type Mode = "work" | "short_break" | "long_break";
-
-const MODES: Record<
-  Mode,
-  { label: string; minutes: number; color: string; icon: React.ElementType }
-> = {
-  work: { label: "Focus", minutes: 25, color: "text-primary", icon: Flame },
-  short_break: { label: "Short Break", minutes: 5, color: "text-emerald-500", icon: Coffee },
-  long_break: { label: "Long Break", minutes: 15, color: "text-amber-500", icon: Coffee },
+/** UI-specific mode metadata (color + icon). Core timer data lives in FocusTimerContext. */
+const MODES: Record<Mode, { label: string; icon: React.ElementType }> = {
+  work: { label: "Focus", icon: Flame },
+  short_break: { label: "Short Break", icon: Coffee },
+  long_break: { label: "Long Break", icon: Coffee },
 };
 
 const SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "English", "Other"];
 
 function FocusPage() {
-  const qc = useQueryClient();
   const { triggerPageTour } = useTutorial();
+
+  // All timer state and actions come from the global context — timer keeps
+  // running even when the user navigates away from this page.
+  const {
+    mode,
+    secondsLeft,
+    isRunning,
+    sessionsCompleted,
+    subject,
+    topic,
+    customMinutes,
+    setSubject,
+    setTopic,
+    updateCustomDuration,
+    switchMode,
+    handleToggle,
+    handleReset,
+  } = useFocusTimer();
 
   useEffect(() => {
     triggerPageTour("focus");
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [showSettings, setShowSettings] = useState(false);
 
   // Use user's actual subjects if configured, with fallback to defaults
   const { data: userSubjects = [] } = useQuery({
@@ -59,49 +74,11 @@ function FocusPage() {
   const subjectNames =
     userSubjects.length > 0 ? [...userSubjects.map((s) => s.name), "Other"] : SUBJECTS;
 
-  // Timer state
-  const [mode, setMode] = useState<Mode>("work");
-  const [secondsLeft, setSecondsLeft] = useState(MODES.work.minutes * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [sessionsCompleted, setSessionsCompleted] = useState(0);
-  // Keep a ref in sync with sessionsCompleted so callbacks always see the latest value
-  const sessionsCompletedRef = useRef(0);
-  const [subject, setSubject] = useState("");
-  const [topic, setTopic] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
-  const [customMinutes, setCustomMinutes] = useState<Record<Mode, number>>({
-    work: 25,
-    short_break: 5,
-    long_break: 15,
-  });
-
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sessionStartRef = useRef<Date | null>(null);
-  const targetTimeRef = useRef<number | null>(null);
-  // Flag to guard against double-invocation of the completion handler (React StrictMode)
-  const completionFiredRef = useRef(false);
-  // Reuse a single AudioContext to respect browser autoplay policies
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  // Hold the latest callback in a ref so the interval doesn't need to re-run on every change
-  const handleSessionCompleteRef = useRef<() => Promise<void>>(async () => {});
-
-  const totalSeconds = customMinutes[mode] * 60;
-  const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
-  const minutes = Math.floor(secondsLeft / 60);
-  const seconds = secondsLeft % 60;
-
-  // Today's focus sessions
+  // Today's focus sessions for the stats panel
   const { data: allSessions = [] } = useQuery({
     queryKey: ["focusSessions"],
     queryFn: api.getFocusSessions,
   });
-
-  const saveMutation = useMutation({
-    mutationFn: api.saveFocusSession,
-    onError: (error) => toast.error(error.message || "Operation failed"),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["focusSessions"] }),
-  });
-
   const todaySessions = allSessions.filter((s) => {
     if (!s.started_at || !s.completed) return false;
     const date = new Date(s.started_at).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -109,137 +86,22 @@ function FocusPage() {
   });
   const totalFocusMinutes = todaySessions.reduce((sum, s) => sum + s.duration_minutes, 0);
 
-  const switchMode = useCallback(
-    (newMode: Mode) => {
-      // Confirm before discarding an active work session
-      if (isRunning && mode === "work" && sessionStartRef.current) {
-        if (!window.confirm("You have an active focus session. Discard progress?")) return;
-      }
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      setIsRunning(false);
-      setMode(newMode);
-      setSecondsLeft(customMinutes[newMode] * 60);
-      sessionStartRef.current = null;
-      targetTimeRef.current = null;
-      completionFiredRef.current = false;
-    },
-    [customMinutes, isRunning, mode],
-  );
-
-  const handleSessionComplete = useCallback(async () => {
-    // Guard: prevent double-firing (React StrictMode or race conditions)
-    if (completionFiredRef.current) return;
-    completionFiredRef.current = true;
-
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setIsRunning(false);
-    targetTimeRef.current = null;
-
-    // Play sound notification (browser beep) — reuse AudioContext to respect browser policies
-    try {
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
-      const ctx = audioCtxRef.current;
-      if (ctx.state === "suspended") await ctx.resume();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.8);
-      // Close the AudioContext after the sound finishes to free resources
-      osc.onended = () => {
-        ctx.close().catch(() => {});
-        audioCtxRef.current = null;
-      };
-    } catch {
-      // AudioContext may be unavailable in some browser environments
+  /**
+   * Wraps switchMode with a browser confirm to avoid silently discarding an
+   * active work session. The confirm dialog lives here (UI layer), not in the
+   * shared context.
+   */
+  const handleSwitchMode = (newMode: Mode) => {
+    if (isRunning && mode === "work") {
+      if (!window.confirm("You have an active focus session. Discard progress?")) return;
     }
-
-    if (mode === "work") {
-      const duration = customMinutes.work;
-      await saveMutation.mutateAsync({
-        subject: subject || undefined,
-        topic: topic || undefined,
-        duration_minutes: duration,
-        completed: true,
-        started_at: sessionStartRef.current?.toISOString() || new Date().toISOString(),
-        ended_at: new Date().toISOString(),
-      });
-      // Use the ref value (always up-to-date) instead of the stale closure value
-      const newCount = sessionsCompletedRef.current + 1;
-      sessionsCompletedRef.current = newCount;
-      setSessionsCompleted(newCount);
-      toast.success(`🎉 Focus session complete! +${duration} minutes logged.`);
-
-      // Auto switch to break — every 4th work session triggers a long break
-      const newMode: Mode = newCount % 4 === 0 ? "long_break" : "short_break";
-      switchMode(newMode);
-    } else {
-      toast.success("Break over! Ready to focus?");
-      switchMode("work");
-    }
-  }, [mode, customMinutes, subject, topic, saveMutation, switchMode]);
-
-  // Keep the ref in sync with the latest callback (runs after every render)
-  useEffect(() => {
-    handleSessionCompleteRef.current = handleSessionComplete;
-  });
-
-  // Countdown tick — uses absolute time to prevent background throttling drift
-  useEffect(() => {
-    if (isRunning && targetTimeRef.current) {
-      intervalRef.current = setInterval(() => {
-        const now = Date.now();
-        const remaining = Math.max(0, Math.ceil((targetTimeRef.current! - now) / 1000));
-        
-        setSecondsLeft(remaining);
-        
-        if (remaining <= 0) {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          setTimeout(() => handleSessionCompleteRef.current(), 0);
-        }
-      }, 500); // 500ms for more responsive UI
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isRunning]);
-
-  // Update document title while running; restore app title on unmount
-  useEffect(() => {
-    if (isRunning) {
-      document.title = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")} · ${MODES[mode].label} · AcePrep`;
-    } else {
-      document.title = "Focus Timer · AcePrep";
-    }
-    return () => {
-      document.title = "AcePrep";
-    };
-  }, [isRunning, minutes, seconds, mode]);
-
-  const handleToggle = () => {
-    if (!isRunning) {
-      if (!sessionStartRef.current) {
-        sessionStartRef.current = new Date();
-      }
-      targetTimeRef.current = Date.now() + secondsLeft * 1000;
-    } else {
-      targetTimeRef.current = null;
-    }
-    setIsRunning((r) => !r);
+    switchMode(newMode);
   };
 
-  const handleReset = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setIsRunning(false);
-    setSecondsLeft(customMinutes[mode] * 60);
-    sessionStartRef.current = null;
-    targetTimeRef.current = null;
-  };
+  const totalSeconds = customMinutes[mode] * 60;
+  const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
 
   // SVG circle progress
   const r = 90;
@@ -288,10 +150,7 @@ function FocusPage() {
                   value={v}
                   onChange={(e) => {
                     const val = Math.max(1, parseInt(e.target.value) || 1);
-                    setCustomMinutes((prev) => ({ ...prev, [k]: val }));
-                    // Only reset the timer display if the timer is NOT running,
-                    // to avoid discarding progress mid-session.
-                    if (mode === k && !isRunning) setSecondsLeft(val * 60);
+                    updateCustomDuration(k, val);
                   }}
                   className="w-full mt-1 rounded-lg px-3 py-2 text-sm bg-transparent outline-none border border-border"
                 />
@@ -306,7 +165,7 @@ function FocusPage() {
         {(Object.entries(MODES) as [Mode, (typeof MODES)[Mode]][]).map(([k, v]) => (
           <button
             key={k}
-            onClick={() => switchMode(k)}
+            onClick={() => handleSwitchMode(k)}
             style={
               mode === k
                 ? {
