@@ -680,7 +680,7 @@ export function AppLayout() {
       />
 
       {/* ── Main content ─────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-0 animate-fade-up">
+      <main className="flex-1 flex flex-col overflow-y-auto pb-20 md:pb-0 animate-fade-up">
         <Outlet />
       </main>
 

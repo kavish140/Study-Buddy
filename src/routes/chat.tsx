@@ -163,7 +163,7 @@ function ChatPage() {
 
   return (
     <div
-      className="relative h-[calc(100vh-64px)] lg:h-screen flex overflow-hidden animate-fade-up"
+      className="relative h-full flex flex-1 overflow-hidden animate-fade-up"
       style={{ background: "var(--background)" }}
     >
       {/* \u2500\u2500 Sidebar */}
