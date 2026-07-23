@@ -33,9 +33,10 @@ export const Route = createFileRoute("/planner")({
 });
 
 function dayKey(offsetDays: number) {
-  const d = new Date(todayIST() + "T00:00:00");
+  // Pin to IST midnight (+05:30) so setDate arithmetic is timezone-safe
+  const d = new Date(todayIST() + "T00:00:00+05:30");
   d.setDate(d.getDate() + offsetDays);
-  return d.toLocaleDateString("en-CA");
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
 
 function PlannerPage() {
@@ -56,10 +57,13 @@ function PlannerPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, done }: { id: string; done: boolean }) => api.updatePlanItem(id, done),
-    // Optimistic update: flip the item immediately in the cache
+    // Optimistic update: flip the item immediately in the cache.
+    // We capture a snapshot of each item individually rather than the whole list,
+    // so rapid toggles on different items don't clobber each other's rollback state.
     onMutate: async ({ id, done }) => {
       await queryClient.cancelQueries({ queryKey: ["plan"] });
-      const previous = queryClient.getQueryData<PlanItem[]>(["plan"]);
+      // Snapshot the current cache at this exact moment (always freshest state)
+      const previous = queryClient.getQueryData<PlanItem[]>(["plan"])?.slice();
       queryClient.setQueryData<PlanItem[]>(["plan"], (old) =>
         (old ?? []).map((item) => (item.id === id ? { ...item, done } : item)),
       );
@@ -209,11 +213,12 @@ function PlannerPage() {
           </div>
         ) : (
           byDay.map(([date, items]) => {
-            const d = new Date(date + "T00:00:00");
+            const d = new Date(date + "T00:00:00+05:30");
             const label = d.toLocaleDateString(undefined, {
               weekday: "long",
               month: "short",
               day: "numeric",
+              timeZone: "Asia/Kolkata",
             });
             const isToday = date === dayKey(0);
             return (

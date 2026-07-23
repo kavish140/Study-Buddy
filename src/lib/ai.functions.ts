@@ -132,7 +132,12 @@ export async function solveFromImage({
     throw new Error(errText || "Image analysis failed");
   }
 
-  const result = await res.json();
+  let result;
+  try {
+    result = await res.json();
+  } catch {
+    throw new Error("Invalid response from AI service (non-JSON)");
+  }
   if (result?.error) throw new Error(result.error);
   return result;
 }
@@ -196,7 +201,12 @@ export async function solveFromPdf({
     throw new Error(errText || "PDF analysis failed");
   }
 
-  const result = await res.json();
+  let result;
+  try {
+    result = await res.json();
+  } catch {
+    throw new Error("Invalid response from AI service (non-JSON)");
+  }
   if (result?.error) throw new Error(result.error);
   return result;
 }

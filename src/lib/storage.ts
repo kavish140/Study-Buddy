@@ -4,17 +4,30 @@ import { todayIST } from "./date-utils";
 export function useLocalStorage<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(initial);
   const hydrated = useRef(false);
+  const prevKey = useRef(key);
 
   // Load from localStorage after mount (avoids SSR/hydration mismatch).
+  // Also re-reads when the key changes to avoid writing stale data.
   useEffect(() => {
+    // If the key changed, reset hydration so the write effect waits
+    // until we've read the correct value for the new key.
+    if (prevKey.current !== key) {
+      hydrated.current = false;
+      prevKey.current = key;
+    }
     try {
       const raw = window.localStorage.getItem(key);
-      if (raw !== null) setValue(JSON.parse(raw) as T);
+      if (raw !== null) {
+        setValue(JSON.parse(raw) as T);
+      } else if (prevKey.current === key && !hydrated.current) {
+        // New key with no stored value — reset to initial
+        setValue(initial);
+      }
     } catch {
       // Ignore localStorage errors (e.g. private browsing mode)
     }
     hydrated.current = true;
-  }, [key]);
+  }, [key, initial]);
 
   useEffect(() => {
     if (!hydrated.current) return;
@@ -170,7 +183,7 @@ export function sm2(card: ReviewCard, rating: 0 | 1 | 3 | 5): Partial<ReviewCard
   let { ease_factor, interval_days, repetitions } = card;
 
   if (rating < 3) {
-    // Failed — reset
+    // Failed — reset repetition count and interval
     repetitions = 0;
     interval_days = 1;
   } else {
@@ -178,11 +191,16 @@ export function sm2(card: ReviewCard, rating: 0 | 1 | 3 | 5): Partial<ReviewCard
     else if (repetitions === 1) interval_days = 6;
     else interval_days = Math.round(interval_days * ease_factor);
 
-    ease_factor = Math.max(1.3, ease_factor + 0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02));
     repetitions += 1;
   }
 
-  const next = new Date(todayIST() + "T00:00:00");
+  // SM-2 spec: ease factor is adjusted on EVERY review, including failures.
+  // On failure (rating < 3) this decreases EF so the card surfaces more frequently.
+  ease_factor = Math.max(1.3, ease_factor + 0.1 - (5 - rating) * (0.08 + (5 - rating) * 0.02));
+
+  // Pin to IST midnight (+05:30) to match the date-utils.ts convention and avoid
+  // off-by-one for users in timezones ahead of IST.
+  const next = new Date(todayIST() + "T00:00:00+05:30");
   next.setDate(next.getDate() + interval_days);
   const next_review = next.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 

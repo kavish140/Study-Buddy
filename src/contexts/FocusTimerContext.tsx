@@ -169,8 +169,9 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
   const updateCustomDuration = useCallback(
     (m: FocusMode, minutes: number) => {
       setCustomMinutes((prev) => ({ ...prev, [m]: minutes }));
-      // Sync display only when the changed mode is the active one and timer isn't running
-      if (m === mode && !isRunning) {
+      // Only reset the display when: the changed mode is active, timer isn't running,
+      // AND no session has been started yet (i.e. a paused mid-session timer is preserved).
+      if (m === mode && !isRunning && !sessionStartRef.current) {
         setSecondsLeft(minutes * 60);
       }
     },
@@ -252,13 +253,16 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
   });
 
   // ── Countdown interval ─────────────────────────────────────────────────────
+  // Flag to signal when the timer reaches zero. The actual side-effect runs
+  // in a separate useEffect below, keeping the state updater pure.
+  const timerHitZeroRef = useRef(false);
+
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
         setSecondsLeft((s) => {
           if (s <= 1) {
-            // Schedule outside the updater to avoid React calling it multiple times
-            setTimeout(() => handleSessionCompleteRef.current(), 0);
+            timerHitZeroRef.current = true;
             return 0;
           }
           return s - 1;
@@ -269,6 +273,15 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isRunning]);
+
+  // Fire the session-complete callback outside the state updater to keep it pure
+  // and avoid double-firing in React StrictMode / Concurrent Mode.
+  useEffect(() => {
+    if (timerHitZeroRef.current && secondsLeft === 0 && isRunning) {
+      timerHitZeroRef.current = false;
+      handleSessionCompleteRef.current();
+    }
+  }, [secondsLeft, isRunning]);
 
   // ── Document title ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -296,6 +309,8 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
     setSecondsLeft(customMinutes[mode] * 60);
     sessionStartRef.current = null;
     lsSet(LS.startTs, null);
+    // Reset the completion guard so a subsequent run-to-zero fires the session-complete callback
+    completionFiredRef.current = false;
   }, [customMinutes, mode]);
 
   // ── Context value ──────────────────────────────────────────────────────────

@@ -24,9 +24,10 @@ export function todayIST(): string {
  */
 export function yesterdayIST(): string {
   const todayStr = todayIST();
-  const d = new Date(todayStr + "T00:00:00");
+  // Pin to IST midnight so arithmetic works correctly regardless of the user's system timezone
+  const d = new Date(todayStr + "T00:00:00+05:30");
   d.setDate(d.getDate() - 1);
-  return d.toLocaleDateString("en-CA");
+  return d.toLocaleDateString("en-CA", { timeZone: IST_TZ });
 }
 
 /**
@@ -50,8 +51,10 @@ export function formatDateIST(
   dateStr: string,
   options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric" },
 ): string {
-  // Append T00:00:00 so the date is parsed as local midnight, not UTC midnight.
-  return new Date(dateStr + "T00:00:00").toLocaleDateString(IST_LOCALE, {
+  // Pin to IST midnight (+05:30) so the date is always correct regardless of the user's
+  // system timezone. Using "T00:00:00" (no offset) would parse as local midnight, which
+  // shifts the displayed date by ±1 day for users east/west of IST.
+  return new Date(dateStr + "T00:00:00+05:30").toLocaleDateString(IST_LOCALE, {
     ...options,
     timeZone: IST_TZ,
   });
@@ -84,9 +87,9 @@ export function formatTimeIST(iso: string): string {
  */
 export function daysUntilIST(dateStr: string | null | undefined): number | null {
   if (!dateStr) return null;
-  // Parse the target as local midnight to avoid UTC off-by-one.
-  const target = new Date(dateStr + "T00:00:00").getTime();
-  const todayMidnight = new Date(todayIST() + "T00:00:00").getTime();
+  // Pin both dates to IST midnight to avoid timezone-dependent off-by-one.
+  const target = new Date(dateStr + "T00:00:00+05:30").getTime();
+  const todayMidnight = new Date(todayIST() + "T00:00:00+05:30").getTime();
   return Math.max(0, Math.ceil((target - todayMidnight) / (1000 * 60 * 60 * 24)));
 }
 

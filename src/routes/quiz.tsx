@@ -76,11 +76,22 @@ function QuizPage() {
         throw new Error("AI returned an empty quiz — please try again.");
       }
 
-      // Defensive: coerce answerIndex to number in case AI returns a string
-      const questions: QuizQuestion[] = res.questions.map((q: QuizQuestion) => ({
-        ...q,
-        answerIndex: typeof q.answerIndex === "string" ? parseInt(q.answerIndex, 10) : q.answerIndex,
-      }));
+      // Defensive: coerce answerIndex to number in case AI returns a string,
+      // and derive from answer text if the AI omitted answerIndex entirely.
+      const questions: QuizQuestion[] = res.questions.map((q: QuizQuestion & { answer?: string }) => {
+        let idx: number | undefined =
+          typeof q.answerIndex === "string" ? parseInt(q.answerIndex, 10) : q.answerIndex;
+
+        // Fallback: if answerIndex is missing or NaN, try to match the answer string against options
+        if (idx === undefined || Number.isNaN(idx)) {
+          const fallbackIdx = q.answer
+            ? q.options.findIndex((o) => o.trim().toLowerCase() === q.answer!.trim().toLowerCase())
+            : -1;
+          idx = fallbackIdx >= 0 ? fallbackIdx : 0;
+        }
+
+        return { ...q, answerIndex: idx };
+      });
 
       const quiz: SavedQuiz = {
         id: uid(),
@@ -290,7 +301,7 @@ function QuizRunner({
 
       <div className="mt-6 space-y-4">
         {quiz.questions.map((q: QuizQuestion, i) => (
-          <div key={i} className="p-5 rounded-2xl card-light">
+          <div key={`q-${i}-${q.question.slice(0, 20)}`} className="p-5 rounded-2xl card-light">
             <div className="text-xs text-muted-foreground mb-1">Question {i + 1}</div>
             {/* Question text — MarkdownContent renders inline LaTeX like $\sin x$ */}
             <div className="font-medium text-sm leading-relaxed">

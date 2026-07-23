@@ -66,6 +66,9 @@ function ChatPage() {
   const [pendingInitialFile, setPendingInitialFile] = useState<File | null>(null);
   const { triggerPageTour } = useTutorial();
   const deepLinkConsumedRef = useRef(false);
+  // Local cache of image data-URLs keyed by "sessionId:messageIndex" so they
+  // survive query cache invalidation (imageUrl is stripped before DB save).
+  const imageUrlCacheRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     triggerPageTour("chat");
@@ -96,7 +99,18 @@ function ChatPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["chatSessions"] }),
   });
 
-  const activeSession = sessions.find((s) => s.id === activeSessionId) || null;
+  const rawActiveSession = sessions.find((s) => s.id === activeSessionId) || null;
+  // Merge cached imageUrls back into the session so image previews survive DB re-fetches
+  const activeSession = rawActiveSession
+    ? {
+        ...rawActiveSession,
+        messages: rawActiveSession.messages.map((msg, i) => {
+          if (msg.imageUrl) return msg; // already has it (in-memory update)
+          const cached = imageUrlCacheRef.current.get(`${rawActiveSession.id}:${i}`);
+          return cached ? { ...msg, imageUrl: cached } : msg;
+        }),
+      }
+    : null;
 
   const handleNewChat = async () => {
     const newSession: ChatSession = {
@@ -152,7 +166,14 @@ function ChatPage() {
   };
 
   const handleUpdateSession = (session: ChatSession) => {
-    // Strip imageUrl from messages before persisting \u2014 data-URLs can be hundreds of KB
+    // Cache imageUrls locally before stripping — the query invalidation on save
+    // would otherwise wipe them since they aren't persisted to the DB.
+    session.messages.forEach((msg, i) => {
+      if (msg.imageUrl) {
+        imageUrlCacheRef.current.set(`${session.id}:${i}`, msg.imageUrl);
+      }
+    });
+    // Strip imageUrl from messages before persisting — data-URLs can be hundreds of KB
     // and bloat the Supabase row. The in-memory state retains the URL for display.
     const sanitized: ChatSession = {
       ...session,
@@ -507,6 +528,16 @@ function ChatView({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sentInitialRef = useRef(false);
   const initialFileHandledRef = useRef(false);
+  // AbortController for cancelling ongoing AI requests when session changes or component unmounts
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight AI request when the component unmounts or the session changes
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+    };
+  }, [session.id]);
 
   const scrollToBottom = useCallback((instant = false) => {
     // Use instant scroll during streaming to avoid jumpy smooth-scroll re-triggers
@@ -602,6 +633,11 @@ function ChatView({
     // Prevent concurrent AI requests
     if (isStreaming) return;
 
+    // Abort any previous in-flight request before starting a new one
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     // ── PDF flow
     if (pendingPdf) {
       const pdfFile = pendingPdf.file;
@@ -637,6 +673,7 @@ function ChatView({
             prompt: userMsg,
             examName,
             source: "chat",
+            signal: controller.signal,
           });
 
           onUpdate({
@@ -661,6 +698,7 @@ function ChatView({
           await streamChat({
             messages: messagesWithPdf,
             examName,
+            signal: controller.signal,
             source: "chat",
             onChunk: (chunk) => {
               fullResponse += chunk;
@@ -680,6 +718,7 @@ function ChatView({
           });
         }
       } catch (e) {
+        if ((e as Error).name === "AbortError") return; // silently ignore aborted requests
         toast.error(e instanceof Error ? e.message : "Failed to read PDF");
         setIsStreaming(false);
         setStreamingContent("");
@@ -726,6 +765,7 @@ function ChatView({
           prompt: userMsg,
           examName,
           source: "chat",
+          signal: controller.signal,
         });
 
         const assistantMessage: ChatMessage = {
@@ -739,6 +779,7 @@ function ChatView({
           messages: [...updatedMessages, assistantMessage],
         });
       } catch (e) {
+        if ((e as Error).name === "AbortError") return; // silently ignore aborted requests
         toast.error(e instanceof Error ? e.message : "Failed to analyze image");
       } finally {
         setIsStreaming(false);
@@ -781,6 +822,7 @@ function ChatView({
         messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
         examName,
         source: "chat",
+        signal: controller.signal,
         onChunk: (chunk) => {
           fullResponse += chunk;
           setStreamingContent(fullResponse);
@@ -802,6 +844,7 @@ function ChatView({
         },
       });
     } catch (e) {
+      if ((e as Error).name === "AbortError") return; // silently ignore aborted requests
       toast.error(e instanceof Error ? e.message : "Failed to get response");
       setIsStreaming(false);
       setStreamingContent("");

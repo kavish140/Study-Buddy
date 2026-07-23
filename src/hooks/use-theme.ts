@@ -17,10 +17,13 @@ function applyTheme(theme: Theme) {
   }
 }
 
+const VALID_THEMES: Theme[] = ["light", "dark", "system"];
+
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window === "undefined") return "system";
-    return (localStorage.getItem("aceprep-theme") as Theme) ?? "system";
+    const stored = localStorage.getItem("aceprep-theme");
+    return stored && VALID_THEMES.includes(stored as Theme) ? (stored as Theme) : "system";
   });
 
   // A counter that forces React to re-derive effectiveTheme when the OS

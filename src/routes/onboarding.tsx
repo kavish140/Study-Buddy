@@ -94,6 +94,9 @@ function OnboardingPage() {
 
   const handleFinish = async () => {
     if (!selectedExam) return;
+    // Guard against double-submit: loading state may not have flushed yet when the
+    // button is double-clicked, so we check the ref immediately.
+    if (loading) return;
     setLoading(true);
     try {
       // 1. Save profile
@@ -131,11 +134,13 @@ function OnboardingPage() {
             data: { topics, days: planDays, source: "onboarding" },
           });
           const planItems = res.plan.flatMap((d: { day: number; tasks: string[] }) => {
-            const base = new Date(todayIST() + "T00:00:00");
+            // Pin to IST midnight so setDate arithmetic produces the correct calendar date
+            // regardless of the user's system timezone.
+            const base = new Date(todayIST() + "T00:00:00+05:30");
             base.setDate(base.getDate() + d.day - 1);
             return d.tasks.map((t: string) => ({
               id: uid(),
-              date: base.toLocaleDateString("en-CA"), // YYYY-MM-DD
+              date: base.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }), // YYYY-MM-DD
               task: t,
               done: false,
             }));

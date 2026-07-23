@@ -378,7 +378,15 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const markCompleted = useCallback((tourId: string) => {
     setCompletedTours((prev) => {
       const next = [...new Set([...prev, tourId])];
-      localStorage.setItem(COMPLETED_KEY, JSON.stringify(next));
+      // Persist outside the updater via a microtask to keep the updater pure
+      // (avoids double-writes in React StrictMode / Concurrent Mode).
+      queueMicrotask(() => {
+        try {
+          localStorage.setItem(COMPLETED_KEY, JSON.stringify(next));
+        } catch {
+          // Ignore localStorage errors
+        }
+      });
       return next;
     });
   }, []);

@@ -6,6 +6,15 @@ import katex from "katex";
 
 /* ─── KaTeX rendering helpers ─── */
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function renderKatex(latex: string, display: boolean): string {
   try {
     return katex.renderToString(latex.trim(), {
@@ -16,7 +25,9 @@ function renderKatex(latex: string, display: boolean): string {
       trust: false,
     });
   } catch {
-    return latex;
+    // SECURITY: Never return raw user input — it's injected via dangerouslySetInnerHTML.
+    // Escape all HTML entities to prevent XSS.
+    return `<span class="katex-error" style="color:#ef4444">${escapeHtml(latex)}</span>`;
   }
 }
 

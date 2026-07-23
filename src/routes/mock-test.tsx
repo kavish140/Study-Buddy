@@ -80,7 +80,11 @@ function MockTestPage() {
       // Auto-save wrong answers as spaced-repetition review cards
       const allQuestions = test.sections.flatMap((s) => s.questions);
       const wrongCards = allQuestions
-        .filter((q) => test.answers[q.id] !== q.answerIndex)
+        .filter((q) => {
+          const userAns = test.answers[q.id];
+          // Only count as wrong if the question was actually attempted
+          return userAns !== null && userAns !== undefined && userAns !== q.answerIndex;
+        })
         .map((q) => ({
           question: q.question,
           answer: q.options[q.answerIndex],

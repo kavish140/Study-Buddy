@@ -456,6 +456,12 @@ export function AppLayout() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
+  // Close mobile nav overlays when the route changes (e.g. browser back button)
+  useEffect(() => {
+    setPanelOpen(false);
+    setMoreOpen(false);
+  }, [path]);
+
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["userProfile"],
     queryFn: api.getUserProfile,
