@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { XP_REWARDS } from "@/lib/storage";
+import { useAppContext } from "@/hooks/use-app-context";
 
 export const Route = createFileRoute("/teach")({
   head: () => ({
@@ -49,9 +50,9 @@ type Message = {
 };
 
 type SessionPhase =
-  | "idle"       // Choose topic
-  | "teaching"   // Active Socratic exchange
-  | "done";      // Score shown
+  | "idle" // Choose topic
+  | "teaching" // Active Socratic exchange
+  | "done"; // Score shown
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
 
@@ -99,8 +100,8 @@ function ScoreCard({ json, onRetry }: { json: string; onRetry: () => void }) {
     const raw = json.trim();
     const scoreIdx = raw.indexOf('"score"');
     if (scoreIdx !== -1) {
-      const startIdx = raw.lastIndexOf('{', scoreIdx);
-      const endIdx = raw.lastIndexOf('}');
+      const startIdx = raw.lastIndexOf("{", scoreIdx);
+      const endIdx = raw.lastIndexOf("}");
       if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
         data = JSON.parse(raw.substring(startIdx, endIdx + 1));
       }
@@ -135,7 +136,8 @@ function ScoreCard({ json, onRetry }: { json: string; onRetry: () => void }) {
       {/* Score header */}
       <div className="p-6 text-center" style={{ background: `${gradeColor}10` }}>
         <div className="text-5xl font-bold font-heading mb-1" style={{ color: gradeColor }}>
-          {score}<span className="text-2xl text-muted-foreground">/10</span>
+          {score}
+          <span className="text-2xl text-muted-foreground">/10</span>
         </div>
         <div className="text-lg font-semibold mt-1" style={{ color: gradeColor }}>
           {data.grade}
@@ -206,6 +208,7 @@ function ScoreCard({ json, onRetry }: { json: string; onRetry: () => void }) {
 function TeachPage() {
   const qc = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
+  const { contextSummary } = useAppContext();
 
   const [phase, setPhase] = useState<SessionPhase>("idle");
   const [topic, setTopic] = useState("");
@@ -302,7 +305,7 @@ function TeachPage() {
               {
                 role: "user",
                 content:
-                  "Please evaluate my understanding now based on our conversation. Output ONLY a JSON block (no extra text) in this exact format:\n{\n  \"score\": <0-10>,\n  \"grade\": \"<Excellent|Good|Needs Work|Weak>\",\n  \"strengths\": [\"...\"],\n  \"gaps\": [\"...\"],\n  \"summary\": \"One paragraph summary of the student's conceptual understanding.\"\n}",
+                  'Please evaluate my understanding now based on our conversation. Output ONLY a JSON block (no extra text) in this exact format:\n{\n  "score": <0-10>,\n  "grade": "<Excellent|Good|Needs Work|Weak>",\n  "strengths": ["..."],\n  "gaps": ["..."],\n  "summary": "One paragraph summary of the student\'s conceptual understanding."\n}',
               },
             ]
           : history;
@@ -315,6 +318,7 @@ function TeachPage() {
         examName: profile?.exam_name || "JEE Main",
         source: "teach",
         signal: abortRef.current.signal,
+        appContext: contextSummary,
         onChunk: (chunk) => {
           aiResponse += chunk;
           setMessages((prev) =>
@@ -325,9 +329,7 @@ function TeachPage() {
           setStreaming(false);
           if (newExchanges >= MAX_EXCHANGES) {
             // Mark the AI message as the score message and switch to done phase
-            setMessages((prev) =>
-              prev.map((m) => (m.id === aiId ? { ...m, isScore: true } : m)),
-            );
+            setMessages((prev) => prev.map((m) => (m.id === aiId ? { ...m, isScore: true } : m)));
             setScoreJson(aiResponse);
             setPhase("done");
             // Award XP for completing a teaching session
@@ -368,9 +370,10 @@ function TeachPage() {
   }, []);
 
   /* ── Progress indicator ── */
-  const progressPct = phase === "teaching" || phase === "done"
-    ? Math.min(100, Math.round((exchangeCount / MAX_EXCHANGES) * 100))
-    : 0;
+  const progressPct =
+    phase === "teaching" || phase === "done"
+      ? Math.min(100, Math.round((exchangeCount / MAX_EXCHANGES) * 100))
+      : 0;
 
   /* ─────────────────────── RENDER ─────────────────────── */
 
@@ -407,11 +410,11 @@ function TeachPage() {
             <div className="flex items-start gap-3">
               <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div className="text-sm leading-relaxed">
-                <span className="font-semibold">How it works:</span> You pick a topic and explain
-                it to the AI in your own words. The AI asks Socratic follow-up questions to probe
-                your understanding. After {MAX_EXCHANGES} exchanges, you receive a detailed{" "}
-                <span className="text-primary font-medium">score out of 10</span> with strengths
-                and gaps.
+                <span className="font-semibold">How it works:</span> You pick a topic and explain it
+                to the AI in your own words. The AI asks Socratic follow-up questions to probe your
+                understanding. After {MAX_EXCHANGES} exchanges, you receive a detailed{" "}
+                <span className="text-primary font-medium">score out of 10</span> with strengths and
+                gaps.
               </div>
             </div>
           </div>
@@ -524,15 +527,9 @@ function TeachPage() {
                   <div
                     className={cn(
                       "max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                      isAI
-                        ? "card-light rounded-tl-sm"
-                        : "rounded-tr-sm text-white",
+                      isAI ? "card-light rounded-tl-sm" : "rounded-tr-sm text-white",
                     )}
-                    style={
-                      !isAI
-                        ? { background: "var(--gradient-primary)" }
-                        : undefined
-                    }
+                    style={!isAI ? { background: "var(--gradient-primary)" } : undefined}
                   >
                     {isAI ? (
                       msg.content ? (

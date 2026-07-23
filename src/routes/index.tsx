@@ -209,11 +209,7 @@ function Dashboard() {
           <StatCard
             label="XP"
             value={userStats ? `${userStats.xp}` : "—"}
-            hint={
-              tierInfo
-                ? `${tierInfo.tier.emoji} ${tierInfo.tier.name}`
-                : "Start earning"
-            }
+            hint={tierInfo ? `${tierInfo.tier.emoji} ${tierInfo.tier.name}` : "Start earning"}
             icon={<Zap className="h-4 w-4" />}
             accentColor="warning"
           />
@@ -237,22 +233,35 @@ function Dashboard() {
               <div className="flex items-center gap-3">
                 <div
                   className="h-14 w-14 rounded-2xl grid place-items-center text-3xl shrink-0 shadow-glow-sm"
-                  style={{ background: tierInfo.tier.bg, border: `2px solid ${tierInfo.tier.color}40` }}
+                  style={{
+                    background: tierInfo.tier.bg,
+                    border: `2px solid ${tierInfo.tier.color}40`,
+                  }}
                 >
                   {tierInfo.tier.emoji}
                 </div>
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-widest mb-0.5" style={{ color: tierInfo.tier.color }}>
+                  <div
+                    className="text-xs font-semibold uppercase tracking-widest mb-0.5"
+                    style={{ color: tierInfo.tier.color }}
+                  >
                     Current Rank
                   </div>
-                  <div className="text-xl font-bold font-heading" style={{ color: tierInfo.tier.color }}>
+                  <div
+                    className="text-xl font-bold font-heading"
+                    style={{ color: tierInfo.tier.color }}
+                  >
                     {tierInfo.tier.name}
                   </div>
-                  <div className="flex items-center gap-2 text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+                  <div
+                    className="flex items-center gap-2 text-xs mt-0.5"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
                     <span>{userStats.xp} XP total</span>
                     {userStats.current_streak > 0 && (
                       <span className="flex items-center gap-0.5 text-amber-500">
-                        <Flame size={11} />{userStats.current_streak}d streak
+                        <Flame size={11} />
+                        {userStats.current_streak}d streak
                       </span>
                     )}
                   </div>
@@ -273,7 +282,9 @@ function Dashboard() {
               )}
               {!tierInfo.nextTier && (
                 <div className="text-right shrink-0">
-                  <div className="text-xs font-bold" style={{ color: tierInfo.tier.color }}>Max Rank!</div>
+                  <div className="text-xs font-bold" style={{ color: tierInfo.tier.color }}>
+                    Max Rank!
+                  </div>
                   <div className="text-xs text-muted-foreground mt-0.5">Legendary</div>
                 </div>
               )}
@@ -287,16 +298,24 @@ function Dashboard() {
                   <span className="font-medium">{tierInfo.pct}%</span>
                   <span>{tierInfo.nextTier.name}</span>
                 </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--muted)" }}>
+                <div
+                  className="h-2 rounded-full overflow-hidden"
+                  style={{ background: "var(--muted)" }}
+                >
                   <div
                     className="h-full rounded-full progress-fill transition-all duration-700"
-                    style={{
-                      "--pct": `${tierInfo.pct}%`,
-                      background: `linear-gradient(90deg, ${tierInfo.tier.color}, ${tierInfo.nextTier.color})`,
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        "--pct": `${tierInfo.pct}%`,
+                        background: `linear-gradient(90deg, ${tierInfo.tier.color}, ${tierInfo.nextTier.color})`,
+                      } as React.CSSProperties
+                    }
                   />
                 </div>
-                <div className="text-[11px] mt-1 text-right" style={{ color: "var(--muted-foreground)" }}>
+                <div
+                  className="text-[11px] mt-1 text-right"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
                   {tierInfo.currentTierXP} / {tierInfo.tierRangeXP} XP
                 </div>
               </div>

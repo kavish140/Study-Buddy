@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { imageBase64, mimeType, prompt, examName } = await req.json();
+    const { imageBase64, mimeType, prompt, examName, appContext } = await req.json();
 
     if (!imageBase64) {
       throw new Error("No image provided. Please upload an image or PDF.");
@@ -95,6 +95,11 @@ Your task:
 
 Be thorough, accurate, and encouraging.`;
 
+    // Append student context if available
+    const fullSystemPrompt = appContext
+      ? `${systemPrompt}\n\nStudent context — use this to give personalised, relevant answers:${appContext}`
+      : systemPrompt;
+
     const userPrompt = prompt
       ? isPdf
         ? `${prompt}\n\nPlease analyze the attached PDF document (all pages) and respond accordingly.`
@@ -112,7 +117,7 @@ Be thorough, accurate, and encouraging.`;
         {
           role: "user",
           parts: [
-            { text: systemPrompt + "\n\n" + userPrompt },
+            { text: fullSystemPrompt + "\n\n" + userPrompt },
             {
               inlineData: {
                 mimeType: mimeType || "image/jpeg",

@@ -35,10 +35,7 @@ export const Route = createFileRoute("/settings")({
 });
 
 /* ─── Avatar options ─────────────────────────────────────────────────────── */
-const AVATAR_EMOJIS = [
-  "🎓", "🧠", "📚", "🚀", "⭐", "🔥",
-  "💡", "🏆", "⚡", "🎯", "🦁", "🐉",
-];
+const AVATAR_EMOJIS = ["🎓", "🧠", "📚", "🚀", "⭐", "🔥", "💡", "🏆", "⚡", "🎯", "🦁", "🐉"];
 
 /* ─── Section wrapper ────────────────────────────────────────────────────── */
 function Section({
@@ -72,7 +69,15 @@ function Section({
 }
 
 /* ─── Field wrapper ──────────────────────────────────────────────────────── */
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground block mb-1.5">{label}</label>
@@ -168,7 +173,12 @@ function SettingsPage() {
   };
 
   const handleClearData = () => {
-    if (!confirm("This will clear all your local quiz and study data stored in this browser. Your account data in the cloud will NOT be deleted. Continue?")) return;
+    if (
+      !confirm(
+        "This will clear all your local quiz and study data stored in this browser. Your account data in the cloud will NOT be deleted. Continue?",
+      )
+    )
+      return;
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -283,7 +293,10 @@ function SettingsPage() {
             </select>
           </Field>
 
-          <Field label="Target Date" hint="The date of your exam. Used for the countdown timer on the Dashboard.">
+          <Field
+            label="Target Date"
+            hint="The date of your exam. Used for the countdown timer on the Dashboard."
+          >
             <input
               type="date"
               value={targetDate}
@@ -399,11 +412,7 @@ function SettingsPage() {
                   Sign out of your account on this device
                 </div>
               </div>
-              <Button
-                variant="outline"
-                onClick={handleSignOut}
-                className="gap-2 shrink-0 ml-4"
-              >
+              <Button variant="outline" onClick={handleSignOut} className="gap-2 shrink-0 ml-4">
                 <LogOut className="h-4 w-4" />
                 Sign out
               </Button>

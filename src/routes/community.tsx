@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { useAppContext } from "@/hooks/use-app-context";
 
 export const Route = createFileRoute("/community")({
   head: () => ({
@@ -260,6 +261,7 @@ function CommunityPage() {
 function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { contextSummary } = useAppContext();
   const [reply, setReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -358,6 +360,7 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
         messages: [{ role: "user", content: prompt }],
         examName: post.exam_id || "JEE Main",
         source: "community",
+        appContext: contextSummary,
         onChunk: (chunk) => {
           fullAnswer += chunk;
           setAiAnswer((a) => a + chunk);
@@ -366,12 +369,15 @@ function PostDetail({ postId, onBack }: { postId: string; onBack: () => void }) 
           setAiLoading(false);
           // ── Save the answer as a cached AI reply so future visitors see it instantly ──
           if (fullAnswer.trim()) {
-            api.createAIForumReply(postId, fullAnswer.trim()).then(() => {
-              // Refresh replies so the cached badge appears
-              qc.invalidateQueries({ queryKey: ["forumReplies", postId] });
-            }).catch(() => {
-              // Caching is best-effort — not a hard failure
-            });
+            api
+              .createAIForumReply(postId, fullAnswer.trim())
+              .then(() => {
+                // Refresh replies so the cached badge appears
+                qc.invalidateQueries({ queryKey: ["forumReplies", postId] });
+              })
+              .catch(() => {
+                // Caching is best-effort — not a hard failure
+              });
           }
         },
       });

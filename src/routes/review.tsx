@@ -295,9 +295,7 @@ function ReviewPage() {
               role="button"
               tabIndex={0}
               onClick={() => setIsFlipped((f) => !f)}
-              onKeyDown={(e) =>
-                (e.key === "Enter" || e.key === " ") && setIsFlipped((f) => !f)
-              }
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setIsFlipped((f) => !f)}
               className={cn(
                 "relative w-full transition-all duration-500 transform-gpu",
                 "cursor-pointer focus:outline-none",

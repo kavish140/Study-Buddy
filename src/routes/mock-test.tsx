@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { useAppContext } from "@/hooks/use-app-context";
 
 export const Route = createFileRoute("/mock-test")({
   head: () => ({
@@ -245,12 +246,17 @@ function WrongQuestionsPanel({ mockTests }: { mockTests: MockTest[] }) {
                   className={cn(
                     "text-left px-3 py-2.5 rounded-lg border text-sm transition-all select-none",
                     !revealed && "cursor-pointer hover:border-primary/40 border-border",
-                    revealed && isCorrect && "border-success/40 bg-success/10 text-success cursor-default",
+                    revealed &&
+                      isCorrect &&
+                      "border-success/40 bg-success/10 text-success cursor-default",
                     revealed &&
                       isSelected &&
                       !isCorrect &&
                       "border-destructive/40 bg-destructive/10 text-destructive cursor-default",
-                    revealed && !isSelected && !isCorrect && "border-border opacity-40 cursor-default",
+                    revealed &&
+                      !isSelected &&
+                      !isCorrect &&
+                      "border-border opacity-40 cursor-default",
                   )}
                 >
                   <span className="flex items-start gap-2">
@@ -319,6 +325,7 @@ function SetupScreen({
 }) {
   const [generating, setGenerating] = useState(false);
   const [questionsPerSection, setQuestionsPerSection] = useState(5);
+  const { contextSummary } = useAppContext();
 
   const handleGenerate = async () => {
     if (!examInfo) {
@@ -338,7 +345,12 @@ function SetupScreen({
         }));
 
       const res = await generateMockTest({
-        data: { examName: examInfo.name, sections, source: "mock-test" },
+        data: {
+          examName: examInfo.name,
+          sections,
+          source: "mock-test",
+          appContext: contextSummary,
+        },
       });
 
       const totalQuestions = (res.sections || []).reduce(
@@ -1096,9 +1108,13 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
             onClick={() => setHideHighlights((h) => !h)}
           >
             {hideHighlights ? (
-              <><Eye className="h-4 w-4 mr-1.5" /> Show Highlights</>
+              <>
+                <Eye className="h-4 w-4 mr-1.5" /> Show Highlights
+              </>
             ) : (
-              <><EyeOff className="h-4 w-4 mr-1.5" /> Hide Highlights — Practice Mode</>
+              <>
+                <EyeOff className="h-4 w-4 mr-1.5" /> Hide Highlights — Practice Mode
+              </>
             )}
           </Button>
         )}

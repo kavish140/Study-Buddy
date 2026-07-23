@@ -10,7 +10,8 @@ interface Rect {
 }
 
 /** How long to wait (ms) before auto-advancing past a step whose target element is missing. */
-const ELEMENT_NOT_FOUND_ADVANCE_DELAY = 600;
+const ELEMENT_NOT_FOUND_ADVANCE_DELAY = 2500;
+const MIN_STEP_DISPLAY_MS = 2000;
 
 const TOOLTIP_W = 320;
 const TOOLTIP_H_EST = 200; // estimated height for positioning math
@@ -59,6 +60,7 @@ export function TutorialOverlay() {
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
   const animFrame = useRef<number | null>(null);
   const skipCountRef = useRef(0);
+  const stepShownAt = useRef<number>(Date.now());
 
   const currentStep = activeTour?.steps[currentStepIndex];
 
@@ -104,6 +106,8 @@ export function TutorialOverlay() {
       return;
     }
 
+    stepShownAt.current = Date.now();
+
     let scrollTimer: ReturnType<typeof setTimeout> | null = null;
     let advanceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -122,7 +126,9 @@ export function TutorialOverlay() {
           skipTour();
           return;
         }
-        advanceTimer = setTimeout(() => nextStep(), ELEMENT_NOT_FOUND_ADVANCE_DELAY);
+        const elapsed = Date.now() - stepShownAt.current;
+        const remaining = Math.max(0, MIN_STEP_DISPLAY_MS - elapsed);
+        advanceTimer = setTimeout(() => nextStep(), ELEMENT_NOT_FOUND_ADVANCE_DELAY + remaining);
         updatePosition();
       }
     } else {

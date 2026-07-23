@@ -58,10 +58,7 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
-    const { data, error } = await supabase
-      .from("quizzes")
-      .select("*")
-      .eq("user_id", user_id);
+    const { data, error } = await supabase.from("quizzes").select("*").eq("user_id", user_id);
     if (error) {
       toast.error("Error fetching quizzes: " + error.message);
       throw error;
@@ -154,10 +151,7 @@ export const api = {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
-    const { data, error } = await supabase
-      .from("notes")
-      .select("*")
-      .eq("user_id", user_id);
+    const { data, error } = await supabase.from("notes").select("*").eq("user_id", user_id);
     if (error) {
       toast.error("Error fetching notes: " + error.message);
       throw error;
@@ -225,10 +219,7 @@ export const api = {
     const user_id = userData.user?.id;
     if (!user_id) return [];
 
-    const { data, error } = await supabase
-      .from("mock_tests")
-      .select("*")
-      .eq("user_id", user_id);
+    const { data, error } = await supabase.from("mock_tests").select("*").eq("user_id", user_id);
     if (error) {
       toast.error("Error fetching mock tests: " + error.message);
       throw error;

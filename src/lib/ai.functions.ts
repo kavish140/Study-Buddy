@@ -35,7 +35,14 @@ async function invokeEdgeFunction<T = Record<string, unknown>>(
 export const generateQuiz = async ({
   data,
 }: {
-  data: { topic: string; count: number; difficulty: string; examName?: string; source?: string };
+  data: {
+    topic: string;
+    count: number;
+    difficulty: string;
+    examName?: string;
+    source?: string;
+    appContext?: string;
+  };
 }) => {
   return invokeEdgeFunction<{
     questions: { question: string; options: string[]; answerIndex: number; explanation: string }[];
@@ -45,7 +52,7 @@ export const generateQuiz = async ({
 export const generateNotes = async ({
   data,
 }: {
-  data: { topic: string; examName?: string; source?: string };
+  data: { topic: string; examName?: string; source?: string; appContext?: string };
 }) => {
   return invokeEdgeFunction<{ summary: string; flashcards: { q: string; a: string }[] }>(
     "generateNotes",
@@ -63,7 +70,7 @@ export const parseSyllabus = async ({ data }: { data: { text: string; source?: s
 export const generatePlan = async ({
   data,
 }: {
-  data: { topics: string[]; days: number; source?: string };
+  data: { topics: string[]; days: number; source?: string; appContext?: string };
 }) => {
   return invokeEdgeFunction<{ plan: { day: number; tasks: string[] }[] }>("generatePlan", data);
 };
@@ -75,6 +82,7 @@ export const generateMockTest = async ({
     examName: string;
     sections: { name: string; questions: number; topics: string[] }[];
     source?: string;
+    appContext?: string;
   };
 }) => {
   return invokeEdgeFunction<{
@@ -99,6 +107,7 @@ export async function solveFromImage({
   examName,
   source,
   signal,
+  appContext,
 }: {
   imageBase64: string;
   mimeType: string;
@@ -106,6 +115,7 @@ export async function solveFromImage({
   examName?: string;
   source?: string;
   signal?: AbortSignal;
+  appContext?: string;
 }): Promise<{ response: string }> {
   const { data: userData } = await supabase.auth.getSession();
   if (!userData?.session) throw new Error("Authentication required");
@@ -119,7 +129,7 @@ export async function solveFromImage({
         Authorization: `Bearer ${userData.session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ imageBase64, mimeType, prompt, examName, source }),
+      body: JSON.stringify({ imageBase64, mimeType, prompt, examName, source, appContext }),
       signal,
     });
   } catch (err) {
@@ -152,12 +162,14 @@ export async function solveFromPdf({
   examName,
   source,
   signal,
+  appContext,
 }: {
   file: File;
   prompt?: string;
   examName?: string;
   source?: string;
   signal?: AbortSignal;
+  appContext?: string;
 }): Promise<{ response: string }> {
   const { data: userData } = await supabase.auth.getSession();
   if (!userData?.session) throw new Error("Authentication required");
@@ -188,6 +200,7 @@ export async function solveFromPdf({
         prompt,
         examName,
         source,
+        appContext,
       }),
       signal,
     });
@@ -216,6 +229,7 @@ export async function streamChat({
   examName,
   source,
   signal,
+  appContext,
   onChunk,
   onDone,
 }: {
@@ -223,6 +237,8 @@ export async function streamChat({
   examName?: string;
   source?: string;
   signal?: AbortSignal;
+  /** Rich student context summary injected into the AI system prompt */
+  appContext?: string;
   onChunk: (text: string) => void;
   onDone: () => void;
 }) {
@@ -240,7 +256,7 @@ export async function streamChat({
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ action: "chat", data: { messages, examName, source } }),
+      body: JSON.stringify({ action: "chat", data: { messages, examName, source, appContext } }),
       signal,
     });
   } catch (err) {

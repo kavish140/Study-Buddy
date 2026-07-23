@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTutorial } from "@/components/TutorialProvider";
+import { useAppContext } from "@/hooks/use-app-context";
 import {
   Select,
   SelectContent,
@@ -44,6 +45,7 @@ function PlannerPage() {
   const { data: subjects = [] } = useQuery({ queryKey: ["subjects"], queryFn: api.getSubjects });
   const { data: plan = [] } = useQuery({ queryKey: ["plan"], queryFn: api.getPlan });
   const { triggerPageTour } = useTutorial();
+  const { contextSummary } = useAppContext();
 
   useEffect(() => {
     triggerPageTour("planner");
@@ -104,7 +106,12 @@ function PlannerPage() {
     setLoading(true);
     try {
       const res = await generatePlan({
-        data: { topics: topics.slice(0, 40), days: Number(days), source: "planner" },
+        data: {
+          topics: topics.slice(0, 40),
+          days: Number(days),
+          source: "planner",
+          appContext: contextSummary,
+        },
       });
       const next: PlanItem[] = res.plan.flatMap((d) =>
         d.tasks.map((t) => ({ id: uid(), date: dayKey(d.day - 1), task: t, done: false })),

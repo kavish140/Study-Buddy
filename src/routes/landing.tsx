@@ -151,8 +151,13 @@ function useInView(threshold = 0.15) {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect(); } },
-      { threshold }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          obs.disconnect();
+        }
+      },
+      { threshold },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -162,7 +167,15 @@ function useInView(threshold = 0.15) {
 
 /* ─── Components ─────────────────────────────────────────────────────────── */
 
-function FadeIn({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
+function FadeIn({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
   const { ref, inView } = useInView();
   return (
     <div
@@ -192,7 +205,11 @@ function LandingPage() {
   return (
     <div
       className="min-h-screen relative overflow-x-hidden"
-      style={{ background: "var(--background)", color: "var(--foreground)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+      style={{
+        background: "var(--background)",
+        color: "var(--foreground)",
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+      }}
     >
       {/* ── Sticky Nav ── */}
       <nav
@@ -234,21 +251,33 @@ function LandingPage() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
             className="absolute top-1/4 left-1/6 w-96 h-96 rounded-full opacity-30 animate-float"
-            style={{ background: "radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)", filter: "blur(40px)" }}
+            style={{
+              background: "radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
           />
           <div
             className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full opacity-25 animate-float"
-            style={{ background: "radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%)", filter: "blur(40px)", animationDelay: "-3s" }}
+            style={{
+              background: "radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%)",
+              filter: "blur(40px)",
+              animationDelay: "-3s",
+            }}
           />
           <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10 animate-float"
-            style={{ background: "radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 60%)", filter: "blur(60px)", animationDelay: "-1.5s" }}
+            style={{
+              background: "radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 60%)",
+              filter: "blur(60px)",
+              animationDelay: "-1.5s",
+            }}
           />
           {/* Grid */}
           <div
             className="absolute inset-0 opacity-[0.04]"
             style={{
-              backgroundImage: "linear-gradient(rgba(148,163,184,1) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,1) 1px, transparent 1px)",
+              backgroundImage:
+                "linear-gradient(rgba(148,163,184,1) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,1) 1px, transparent 1px)",
               backgroundSize: "60px 60px",
             }}
           />
@@ -256,8 +285,14 @@ function LandingPage() {
 
         <div className="relative max-w-4xl mx-auto animate-fade-up">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold mb-6"
-            style={{ borderColor: "var(--primary)", color: "var(--primary)", background: "var(--accent)" }}>
+          <div
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold mb-6"
+            style={{
+              borderColor: "var(--primary)",
+              color: "var(--primary)",
+              background: "var(--accent)",
+            }}
+          >
             <Zap className="h-3 w-3" /> AI-Powered Exam Prep · Free Forever
           </div>
 
@@ -266,7 +301,11 @@ function LandingPage() {
             Ace Any{" "}
             <span
               className="text-gradient"
-              style={{ background: "var(--gradient-primary)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+              style={{
+                background: "var(--gradient-primary)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
             >
               Competitive Exam
             </span>
@@ -275,8 +314,8 @@ function LandingPage() {
           </h1>
 
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Mock tests, AI tutor, smart flashcards, deep analytics, and a study community —
-            all in one platform designed for JEE, NEET, UPSC, CAT, and beyond.
+            Mock tests, AI tutor, smart flashcards, deep analytics, and a study community — all in
+            one platform designed for JEE, NEET, UPSC, CAT, and beyond.
           </p>
 
           {/* CTAs */}
@@ -291,7 +330,11 @@ function LandingPage() {
             <a
               href="#features"
               className="flex items-center gap-2 px-7 py-3.5 rounded-2xl font-semibold text-base border transition-all hover:opacity-80"
-              style={{ borderColor: "var(--border)", color: "var(--foreground)", background: "var(--muted)" }}
+              style={{
+                borderColor: "var(--border)",
+                color: "var(--foreground)",
+                background: "var(--muted)",
+              }}
             >
               See Features <ChevronDown className="h-4 w-4" />
             </a>
@@ -318,7 +361,10 @@ function LandingPage() {
       </section>
 
       {/* ── Stats strip ── */}
-      <section className="relative py-12 border-y" style={{ borderColor: "var(--border)", background: "var(--accent)" }}>
+      <section
+        className="relative py-12 border-y"
+        style={{ borderColor: "var(--border)", background: "var(--accent)" }}
+      >
         <div className="max-w-5xl mx-auto px-5 grid grid-cols-2 sm:grid-cols-4 gap-8">
           {STATS.map((s, i) => (
             <FadeIn key={s.label} delay={i * 80} className="text-center">
@@ -334,15 +380,18 @@ function LandingPage() {
       <section id="features" className="py-24 px-5">
         <div className="max-w-6xl mx-auto">
           <FadeIn className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-              style={{ background: "var(--accent)", color: "var(--primary)" }}>
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+              style={{ background: "var(--accent)", color: "var(--primary)" }}
+            >
               <Target className="h-3 w-3" /> Everything you need
             </div>
             <h2 className="text-4xl sm:text-5xl font-extrabold font-heading mb-4">
               One platform, <span className="text-gradient">every feature</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              No more juggling apps. AcePrep puts your entire exam prep workflow in one beautifully designed place.
+              No more juggling apps. AcePrep puts your entire exam prep workflow in one beautifully
+              designed place.
             </p>
           </FadeIn>
 
@@ -376,14 +425,17 @@ function LandingPage() {
       </section>
 
       {/* ── How it works ── */}
-      <section
-        className="py-24 px-5 relative"
-        style={{ background: "var(--accent)" }}
-      >
+      <section className="py-24 px-5 relative" style={{ background: "var(--accent)" }}>
         <div className="max-w-4xl mx-auto">
           <FadeIn className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-              style={{ background: "var(--background)", color: "var(--primary)", border: "1px solid var(--border)" }}>
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+              style={{
+                background: "var(--background)",
+                color: "var(--primary)",
+                border: "1px solid var(--border)",
+              }}
+            >
               <BookOpen className="h-3 w-3" /> Simple by design
             </div>
             <h2 className="text-4xl sm:text-5xl font-extrabold font-heading mb-4">
@@ -425,8 +477,10 @@ function LandingPage() {
       <section className="py-24 px-5">
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-              style={{ background: "var(--accent)", color: "var(--primary)" }}>
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+              style={{ background: "var(--accent)", color: "var(--primary)" }}
+            >
               <Trophy className="h-3 w-3" /> Student success stories
             </div>
             <h2 className="text-4xl sm:text-5xl font-extrabold font-heading mb-4">
@@ -498,7 +552,10 @@ function LandingPage() {
         <div className="absolute inset-0 pointer-events-none">
           <div
             className="absolute top-0 left-0 right-0 bottom-0 opacity-30"
-            style={{ background: "radial-gradient(ellipse at center, rgba(139,92,246,0.25) 0%, transparent 70%)" }}
+            style={{
+              background:
+                "radial-gradient(ellipse at center, rgba(139,92,246,0.25) 0%, transparent 70%)",
+            }}
           />
         </div>
 
@@ -510,8 +567,8 @@ function LandingPage() {
             <span className="text-gradient">Start today.</span>
           </h2>
           <p className="text-muted-foreground text-lg mb-10">
-            Join thousands of students using AcePrep to crack JEE, NEET, UPSC and more.
-            Sign in with Google — it takes 10 seconds.
+            Join thousands of students using AcePrep to crack JEE, NEET, UPSC and more. Sign in with
+            Google — it takes 10 seconds.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link
@@ -522,7 +579,9 @@ function LandingPage() {
               <Flame className="h-5 w-5" /> Get Started Free
             </Link>
           </div>
-          <p className="text-xs text-muted-foreground mt-5">No credit card. No download. Free forever.</p>
+          <p className="text-xs text-muted-foreground mt-5">
+            No credit card. No download. Free forever.
+          </p>
         </FadeIn>
       </section>
 
@@ -541,7 +600,10 @@ function LandingPage() {
           <div className="text-xs text-muted-foreground text-center">
             AI-powered exam prep · Built for serious students
           </div>
-          <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <Link
+            to="/login"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
             Sign in →
           </Link>
         </div>

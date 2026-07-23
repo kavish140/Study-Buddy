@@ -180,6 +180,10 @@ function Login() {
         <p className="text-xs text-muted-foreground text-center mt-6">
           By signing in, you agree to our Terms of Service and Privacy Policy.
         </p>
+        <p className="text-xs text-muted-foreground/70 text-center mt-2 flex items-center justify-center gap-1.5">
+          <span>✨</span>
+          <span>After signing in, you'll set up your exam profile</span>
+        </p>
       </div>
     </div>
   );

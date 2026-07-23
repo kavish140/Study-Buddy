@@ -282,14 +282,14 @@ export type Tier = {
  * Grandmaster has no upper XP bound.
  */
 export const TIERS: Tier[] = [
-  { name: "Bronze",      minXP: 0,     emoji: "🥉", color: "#cd7f32", bg: "rgba(205,127,50,0.12)"  },
-  { name: "Iron",        minXP: 200,   emoji: "⚙️",  color: "#71717a", bg: "rgba(113,113,122,0.12)" },
-  { name: "Silver",      minXP: 500,   emoji: "🥈", color: "#94a3b8", bg: "rgba(148,163,184,0.12)" },
-  { name: "Gold",        minXP: 1000,  emoji: "🥇", color: "#f59e0b", bg: "rgba(245,158,11,0.12)"  },
-  { name: "Platinum",    minXP: 2000,  emoji: "💎", color: "#38bdf8", bg: "rgba(56,189,248,0.12)"  },
-  { name: "Diamond",     minXP: 3500,  emoji: "💠", color: "#818cf8", bg: "rgba(129,140,248,0.12)" },
-  { name: "Master",      minXP: 5500,  emoji: "👑", color: "#f43f5e", bg: "rgba(244,63,94,0.12)"   },
-  { name: "Grandmaster", minXP: 8000,  emoji: "🌟", color: "#a855f7", bg: "rgba(168,85,247,0.12)"  },
+  { name: "Bronze", minXP: 0, emoji: "🥉", color: "#cd7f32", bg: "rgba(205,127,50,0.12)" },
+  { name: "Iron", minXP: 200, emoji: "⚙️", color: "#71717a", bg: "rgba(113,113,122,0.12)" },
+  { name: "Silver", minXP: 500, emoji: "🥈", color: "#94a3b8", bg: "rgba(148,163,184,0.12)" },
+  { name: "Gold", minXP: 1000, emoji: "🥇", color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+  { name: "Platinum", minXP: 2000, emoji: "💎", color: "#38bdf8", bg: "rgba(56,189,248,0.12)" },
+  { name: "Diamond", minXP: 3500, emoji: "💠", color: "#818cf8", bg: "rgba(129,140,248,0.12)" },
+  { name: "Master", minXP: 5500, emoji: "👑", color: "#f43f5e", bg: "rgba(244,63,94,0.12)" },
+  { name: "Grandmaster", minXP: 8000, emoji: "🌟", color: "#a855f7", bg: "rgba(168,85,247,0.12)" },
 ];
 
 export type TierInfo = {

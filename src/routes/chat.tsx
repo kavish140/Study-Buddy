@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { useAppContext } from "@/hooks/use-app-context";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -57,6 +58,7 @@ function ChatPage() {
     queryFn: api.getChatSessions,
   });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
+  const { contextSummary } = useAppContext();
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
@@ -84,7 +86,7 @@ function ChatPage() {
     navigate({ search: {}, replace: true });
     // Reuse the existing flow that creates a session + sends first message
     handleSendFromEmpty(decodedQ);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkQ, sessions]);
 
   const saveMutation = useMutation({
@@ -282,6 +284,7 @@ function ChatPage() {
           <ChatView
             session={activeSession}
             examName={profile?.exam_name}
+            appContext={contextSummary}
             onUpdate={handleUpdateSession}
             onToggleSidebar={() => setShowSidebar(!showSidebar)}
             initialMessage={pendingFirstMsg ?? undefined}
@@ -499,6 +502,7 @@ function EmptyState({
 function ChatView({
   session,
   examName,
+  appContext,
   onUpdate,
   onToggleSidebar,
   initialMessage,
@@ -508,6 +512,7 @@ function ChatView({
 }: {
   session: ChatSession;
   examName?: string;
+  appContext?: string;
   onUpdate: (session: ChatSession) => void;
   onToggleSidebar: () => void;
   initialMessage?: string;
@@ -674,6 +679,7 @@ function ChatView({
             examName,
             source: "chat",
             signal: controller.signal,
+            appContext,
           });
 
           onUpdate({
@@ -700,6 +706,7 @@ function ChatView({
             examName,
             signal: controller.signal,
             source: "chat",
+            appContext,
             onChunk: (chunk) => {
               fullResponse += chunk;
               setStreamingContent(fullResponse);
@@ -766,6 +773,7 @@ function ChatView({
           examName,
           source: "chat",
           signal: controller.signal,
+          appContext,
         });
 
         const assistantMessage: ChatMessage = {
@@ -823,6 +831,7 @@ function ChatView({
         examName,
         source: "chat",
         signal: controller.signal,
+        appContext,
         onChunk: (chunk) => {
           fullResponse += chunk;
           setStreamingContent(fullResponse);

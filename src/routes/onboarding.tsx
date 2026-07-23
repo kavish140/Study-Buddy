@@ -20,6 +20,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -46,6 +47,8 @@ const SUBJECT_COLORS = [
   "#14b8a6",
 ];
 
+const AVATAR_EMOJIS = ["🎓", "🧠", "📚", "🚀", "⭐", "🔥", "💡", "🏆", "⚡", "🎯", "🦁", "🐉"];
+
 function OnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -55,6 +58,8 @@ function OnboardingPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [targetDate, setTargetDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [avatarEmoji, setAvatarEmoji] = useState("🎓");
 
   const saveProfileMutation = useMutation({
     mutationFn: api.saveUserProfile,
@@ -106,6 +111,8 @@ function OnboardingPage() {
         target_date: targetDate || null,
         selected_subjects: selectedSubjects,
         onboarding_completed: true,
+        display_name: displayName.trim() || undefined,
+        avatar_emoji: avatarEmoji,
       });
 
       // 2. Create subjects from exam syllabus — saved in parallel for speed.
@@ -195,7 +202,7 @@ function OnboardingPage() {
 
         {/* Step indicator */}
         <div className="flex items-center gap-2 mb-8">
-          {["Pick Exam", "Subjects", "Target Date"].map((label, i) => (
+          {["Pick Exam", "Subjects", "Target Date", "Your Profile"].map((label, i) => (
             <div key={label} className="flex items-center gap-2">
               <div
                 className={`h-8 w-8 rounded-full grid place-items-center text-xs font-bold transition-all duration-300 ${
@@ -213,7 +220,7 @@ function OnboardingPage() {
               >
                 {label}
               </span>
-              {i < 2 && <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />}
+              {i < 3 && <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />}
             </div>
           ))}
         </div>
@@ -436,6 +443,80 @@ function OnboardingPage() {
 
             <div className="flex justify-between mt-6">
               <Button variant="ghost" onClick={() => setStep(1)}>
+                <ChevronLeft className="h-4 w-4 mr-1" /> Back
+              </Button>
+              <Button onClick={() => setStep(3)} className="bg-gradient-primary px-6">
+                Continue <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Your Profile */}
+        {step === 3 && selectedExam && (
+          <div>
+            <h1 className="text-2xl font-bold font-heading mb-2">Set up your profile</h1>
+            <p className="text-muted-foreground mb-6">
+              Choose your display name and avatar so other students can recognise you.
+            </p>
+
+            <div className="card-light p-6 rounded-2xl space-y-5">
+              {/* Display Name */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                  Display Name
+                </label>
+                <Input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="What should we call you?"
+                  maxLength={30}
+                  className="text-base"
+                />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Visible on the leaderboard and community posts.
+                </p>
+              </div>
+
+              {/* Avatar Emoji */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                  Choose an Avatar
+                </label>
+                <div className="grid grid-cols-6 gap-2">
+                  {AVATAR_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => setAvatarEmoji(emoji)}
+                      className={cn(
+                        "h-12 w-12 rounded-xl grid place-items-center text-xl transition-all duration-200",
+                        avatarEmoji === emoji
+                          ? "bg-primary/20 border-2 border-primary scale-110 shadow-glow-sm"
+                          : "bg-muted hover:bg-muted/80 border border-transparent",
+                      )}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/10">
+                <div className="h-12 w-12 rounded-full bg-gradient-primary grid place-items-center text-xl shadow-glow-sm">
+                  {avatarEmoji}
+                </div>
+                <div>
+                  <div className="font-semibold">{displayName || "Student"}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Preparing for {selectedExam.shortName}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-6">
+              <Button variant="ghost" onClick={() => setStep(2)}>
                 <ChevronLeft className="h-4 w-4 mr-1" /> Back
               </Button>
               <Button

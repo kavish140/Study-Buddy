@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Trash2, RotateCw, BookOpen, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import {
+  Loader2,
+  Sparkles,
+  Trash2,
+  RotateCw,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+} from "lucide-react";
 import { uid, type Note } from "@/lib/storage";
 import { generateNotes } from "@/lib/ai.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { cn } from "@/lib/utils";
+import { useAppContext } from "@/hooks/use-app-context";
 
 export const Route = createFileRoute("/notes")({
   head: () => ({
@@ -32,6 +42,7 @@ function NotesPage() {
     queryFn: api.getNotes,
   });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
+  const { contextSummary } = useAppContext();
   const { triggerPageTour } = useTutorial();
 
   useEffect(() => {
@@ -60,7 +71,12 @@ function NotesPage() {
     setLoading(true);
     try {
       const res = await generateNotes({
-        data: { topic: t, examName: profile?.exam_name, source: "notes" },
+        data: {
+          topic: t,
+          examName: profile?.exam_name,
+          source: "notes",
+          appContext: contextSummary,
+        },
       });
 
       // Defensive: handle all possible AI response shapes
@@ -70,9 +86,7 @@ function NotesPage() {
           : "Summary not available. Please try regenerating.";
 
       const flashcards = Array.isArray(res.flashcards)
-        ? res.flashcards.filter(
-            (fc) => fc && typeof fc.q === "string" && typeof fc.a === "string",
-          )
+        ? res.flashcards.filter((fc) => fc && typeof fc.q === "string" && typeof fc.a === "string")
         : [];
 
       const note: Note = {

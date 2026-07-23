@@ -301,7 +301,10 @@ function FeaturePanel({
   dueCards: unknown[];
   user: { email?: string | null } | null;
   userStats: { xp: number; level: number; current_streak: number } | null | undefined;
-  profile: { exam_name?: string | null; display_name?: string | null; avatar_emoji?: string | null } | null | undefined;
+  profile:
+    | { exam_name?: string | null; display_name?: string | null; avatar_emoji?: string | null }
+    | null
+    | undefined;
   onSignOut: () => void;
 }) {
   // Close on Escape
@@ -618,27 +621,29 @@ export function AppLayout() {
           )}
 
           {/* Floating focus timer mini-widget — visible when timer is running on another page */}
-          {timerRunning && path !== "/focus" && (() => {
-            const m = Math.floor(timerSeconds / 60);
-            const s = timerSeconds % 60;
-            return (
-              <Link
-                to="/focus"
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
-                style={{
-                  background: "var(--feat-focus-bg)",
-                  color: "var(--feat-focus)",
-                  border: "1px solid var(--feat-focus)",
-                }}
-                title={`${FOCUS_MODES[timerMode].label} — click to open timer`}
-              >
-                <Flame size={11} className="animate-pulse" />
-                <span className="tabular-nums">
-                  {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
-                </span>
-              </Link>
-            );
-          })()}
+          {timerRunning &&
+            path !== "/focus" &&
+            (() => {
+              const m = Math.floor(timerSeconds / 60);
+              const s = timerSeconds % 60;
+              return (
+                <Link
+                  to="/focus"
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
+                  style={{
+                    background: "var(--feat-focus-bg)",
+                    color: "var(--feat-focus)",
+                    border: "1px solid var(--feat-focus)",
+                  }}
+                  title={`${FOCUS_MODES[timerMode].label} — click to open timer`}
+                >
+                  <Flame size={11} className="animate-pulse" />
+                  <span className="tabular-nums">
+                    {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
+                  </span>
+                </Link>
+              );
+            })()}
 
           {/* Due cards badge */}
           {dueCards.length > 0 && (
@@ -667,9 +672,14 @@ export function AppLayout() {
           </button>
 
           {/* Avatar — shows emoji if set, else email initial */}
-          <div className="top-bar__avatar" title={profile?.display_name || user?.email || undefined}>
+          <Link
+            to="/settings"
+            className="top-bar__avatar"
+            title={profile?.display_name || user?.email || "Edit Profile"}
+            style={{ cursor: "pointer", position: "relative" }}
+          >
             {profile?.avatar_emoji ?? user?.email?.charAt(0).toUpperCase() ?? "?"}
-          </div>
+          </Link>
         </div>
       </header>
 

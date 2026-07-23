@@ -235,11 +235,7 @@ function DiagnosticTestModal({
   };
 
   const loadNextQuestion = useCallback(
-    async (
-      allQuestions: DiagnosticQuestion[],
-      idx: number,
-      nextDifficulty: Difficulty,
-    ) => {
+    async (allQuestions: DiagnosticQuestion[], idx: number, nextDifficulty: Difficulty) => {
       setPhase("loading");
       setSelectedOption(null);
       setRevealed(false);
@@ -270,9 +266,7 @@ function DiagnosticTestModal({
           question: raw.question,
           options: raw.options,
           answerIndex:
-            typeof raw.answerIndex === "string"
-              ? parseInt(raw.answerIndex, 10)
-              : raw.answerIndex,
+            typeof raw.answerIndex === "string" ? parseInt(raw.answerIndex, 10) : raw.answerIndex,
           explanation: raw.explanation,
           userAnswer: null,
         };
@@ -463,7 +457,10 @@ function DiagnosticTestModal({
             <div className="text-center py-4">
               <div
                 className="h-16 w-16 rounded-2xl grid place-items-center mx-auto mb-4 shadow-glow-sm"
-                style={{ background: "var(--feat-analytics-bg)", border: "1px solid var(--feat-analytics)" }}
+                style={{
+                  background: "var(--feat-analytics-bg)",
+                  border: "1px solid var(--feat-analytics)",
+                }}
               >
                 <FlaskConical className="h-8 w-8" style={{ color: "var(--feat-analytics)" }} />
               </div>
@@ -535,122 +532,129 @@ function DiagnosticTestModal({
           )}
 
           {/* ── Question ── */}
-          {phase === "question" && questions[currentIdx] && (() => {
-            const q = questions[currentIdx];
-            return (
-              <div>
-                {/* Meta */}
-                <div className="flex items-center gap-2 mb-4">
-                  <span
-                    className="px-2 py-0.5 rounded text-xs font-medium capitalize"
-                    style={{
-                      background:
-                        q.difficulty === "easy"
-                          ? "rgba(34,197,94,0.1)"
-                          : q.difficulty === "hard"
-                            ? "rgba(239,68,68,0.1)"
-                            : "rgba(245,158,11,0.1)",
-                      color:
-                        q.difficulty === "easy"
-                          ? "#22c55e"
-                          : q.difficulty === "hard"
-                            ? "#ef4444"
-                            : "#f59e0b",
-                    }}
-                  >
-                    {q.difficulty}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{q.subject} · {q.topic}</span>
-                </div>
-
-                {/* Question text */}
-                <p className="text-base font-medium leading-relaxed mb-5">{q.question}</p>
-
-                {/* Options */}
-                <div className="space-y-2 mb-5">
-                  {q.options.map((opt, i) => {
-                    const isSelected = selectedOption === i;
-                    const isCorrect = i === q.answerIndex;
-                    const isWrong = revealed && isSelected && !isCorrect;
-                    const isRevealedCorrect = revealed && isCorrect;
-
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => handleAnswer(i)}
-                        disabled={revealed}
-                        className="w-full text-left px-4 py-3 rounded-xl text-sm transition-all border"
-                        style={{
-                          background: isRevealedCorrect
+          {phase === "question" &&
+            questions[currentIdx] &&
+            (() => {
+              const q = questions[currentIdx];
+              return (
+                <div>
+                  {/* Meta */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <span
+                      className="px-2 py-0.5 rounded text-xs font-medium capitalize"
+                      style={{
+                        background:
+                          q.difficulty === "easy"
                             ? "rgba(34,197,94,0.1)"
-                            : isWrong
+                            : q.difficulty === "hard"
                               ? "rgba(239,68,68,0.1)"
-                              : isSelected
-                                ? "var(--feat-analytics-bg)"
-                                : "var(--muted)",
-                          borderColor: isRevealedCorrect
+                              : "rgba(245,158,11,0.1)",
+                        color:
+                          q.difficulty === "easy"
                             ? "#22c55e"
-                            : isWrong
+                            : q.difficulty === "hard"
                               ? "#ef4444"
-                              : isSelected
-                                ? "var(--feat-analytics)"
-                                : "var(--border)",
-                          color: isRevealedCorrect
-                            ? "#22c55e"
-                            : isWrong
-                              ? "#ef4444"
-                              : "var(--foreground)",
-                          cursor: revealed ? "default" : "pointer",
-                        }}
-                      >
-                        <span className="font-semibold mr-2">
-                          {String.fromCharCode(65 + i)}.
-                        </span>
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Explanation */}
-                {revealed && (
-                  <div
-                    className="p-3 rounded-xl text-sm mb-4"
-                    style={{ background: "var(--muted)", borderLeft: "3px solid var(--feat-analytics)" }}
-                  >
-                    <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wide block mb-1">
-                      Explanation
+                              : "#f59e0b",
+                      }}
+                    >
+                      {q.difficulty}
                     </span>
-                    {q.explanation}
+                    <span className="text-xs text-muted-foreground">
+                      {q.subject} · {q.topic}
+                    </span>
                   </div>
-                )}
 
-                {/* Action buttons */}
-                <div className="flex justify-end gap-2">
-                  {!revealed ? (
-                    <Button
-                      onClick={handleReveal}
-                      disabled={selectedOption === null}
-                      className="bg-gradient-primary shadow-glow h-9 px-5 text-sm"
+                  {/* Question text */}
+                  <p className="text-base font-medium leading-relaxed mb-5">{q.question}</p>
+
+                  {/* Options */}
+                  <div className="space-y-2 mb-5">
+                    {q.options.map((opt, i) => {
+                      const isSelected = selectedOption === i;
+                      const isCorrect = i === q.answerIndex;
+                      const isWrong = revealed && isSelected && !isCorrect;
+                      const isRevealedCorrect = revealed && isCorrect;
+
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => handleAnswer(i)}
+                          disabled={revealed}
+                          className="w-full text-left px-4 py-3 rounded-xl text-sm transition-all border"
+                          style={{
+                            background: isRevealedCorrect
+                              ? "rgba(34,197,94,0.1)"
+                              : isWrong
+                                ? "rgba(239,68,68,0.1)"
+                                : isSelected
+                                  ? "var(--feat-analytics-bg)"
+                                  : "var(--muted)",
+                            borderColor: isRevealedCorrect
+                              ? "#22c55e"
+                              : isWrong
+                                ? "#ef4444"
+                                : isSelected
+                                  ? "var(--feat-analytics)"
+                                  : "var(--border)",
+                            color: isRevealedCorrect
+                              ? "#22c55e"
+                              : isWrong
+                                ? "#ef4444"
+                                : "var(--foreground)",
+                            cursor: revealed ? "default" : "pointer",
+                          }}
+                        >
+                          <span className="font-semibold mr-2">{String.fromCharCode(65 + i)}.</span>
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Explanation */}
+                  {revealed && (
+                    <div
+                      className="p-3 rounded-xl text-sm mb-4"
+                      style={{
+                        background: "var(--muted)",
+                        borderLeft: "3px solid var(--feat-analytics)",
+                      }}
                     >
-                      Check Answer
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={handleNext}
-                      className="bg-gradient-primary shadow-glow h-9 px-5 text-sm"
-                    >
-                      {currentIdx + 1 < DIAGNOSTIC_QUESTIONS ? (
-                        <>Next <ChevronRight size={15} /></>
-                      ) : (
-                        "See Results"
-                      )}
-                    </Button>
+                      <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wide block mb-1">
+                        Explanation
+                      </span>
+                      {q.explanation}
+                    </div>
                   )}
+
+                  {/* Action buttons */}
+                  <div className="flex justify-end gap-2">
+                    {!revealed ? (
+                      <Button
+                        onClick={handleReveal}
+                        disabled={selectedOption === null}
+                        className="bg-gradient-primary shadow-glow h-9 px-5 text-sm"
+                      >
+                        Check Answer
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleNext}
+                        className="bg-gradient-primary shadow-glow h-9 px-5 text-sm"
+                      >
+                        {currentIdx + 1 < DIAGNOSTIC_QUESTIONS ? (
+                          <>
+                            Next <ChevronRight size={15} />
+                          </>
+                        ) : (
+                          "See Results"
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
           {/* ── Results ── */}
           {phase === "result" && (
@@ -687,7 +691,9 @@ function DiagnosticTestModal({
                       <div
                         className={cn(
                           "h-5 w-5 rounded-full grid place-items-center shrink-0 mt-0.5",
-                          correct ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive",
+                          correct
+                            ? "bg-success/20 text-success"
+                            : "bg-destructive/20 text-destructive",
                         )}
                       >
                         {correct ? <CheckCircle2 size={12} /> : <X size={12} />}
@@ -700,7 +706,8 @@ function DiagnosticTestModal({
                         </p>
                         {!correct && q.userAnswer !== null && (
                           <p className="text-xs text-destructive mt-0.5">
-                            Your answer: {q.options[q.userAnswer]} · Correct: {q.options[q.answerIndex]}
+                            Your answer: {q.options[q.userAnswer]} · Correct:{" "}
+                            {q.options[q.answerIndex]}
                           </p>
                         )}
                       </div>
@@ -845,9 +852,7 @@ function AnalyticsPage() {
                 >
                   <BarChart3 className="h-8 w-8" style={{ color: "var(--feat-analytics)" }} />
                 </div>
-                <h2 className="text-2xl font-bold font-heading mb-3">
-                  Not enough data yet
-                </h2>
+                <h2 className="text-2xl font-bold font-heading mb-3">Not enough data yet</h2>
                 <p className="text-muted-foreground max-w-md mx-auto mb-2">
                   You need at least{" "}
                   <span className="font-semibold text-foreground">
@@ -866,7 +871,10 @@ function AnalyticsPage() {
                     <span>{totalAttempts} attempts</span>
                     <span>{MIN_ATTEMPTS_FOR_FULL_ANALYTICS} needed</span>
                   </div>
-                  <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "var(--muted)" }}>
+                  <div
+                    className="h-2.5 rounded-full overflow-hidden"
+                    style={{ background: "var(--muted)" }}
+                  >
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{
@@ -915,7 +923,8 @@ function AnalyticsPage() {
               <div className="flex-1 text-center md:text-left">
                 <h3 className="font-bold text-base mb-1">Take the Adaptive Diagnostic Test</h3>
                 <p className="text-sm text-muted-foreground">
-                  6 questions · difficulty adapts after each answer · results unlock detailed topic analysis
+                  6 questions · difficulty adapts after each answer · results unlock detailed topic
+                  analysis
                 </p>
               </div>
               <Button
@@ -932,9 +941,15 @@ function AnalyticsPage() {
             {/* ── Diagnostic test CTA (small, above main charts) ── */}
             <div
               className="mt-6 flex items-center gap-3 p-4 rounded-2xl"
-              style={{ background: "var(--feat-analytics-bg)", border: "1px solid var(--feat-analytics)" }}
+              style={{
+                background: "var(--feat-analytics-bg)",
+                border: "1px solid var(--feat-analytics)",
+              }}
             >
-              <FlaskConical className="h-5 w-5 shrink-0" style={{ color: "var(--feat-analytics)" }} />
+              <FlaskConical
+                className="h-5 w-5 shrink-0"
+                style={{ color: "var(--feat-analytics)" }}
+              />
               <div className="flex-1 text-sm">
                 <span className="font-semibold">Adaptive Diagnostic Test</span>
                 <span className="text-muted-foreground ml-2">

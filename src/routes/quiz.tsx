@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { useAppContext } from "@/hooks/use-app-context";
 
 export const Route = createFileRoute("/quiz")({
   head: () => ({
@@ -40,6 +41,7 @@ function QuizPage() {
     queryFn: api.getQuizzes,
   });
   const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
+  const { contextSummary } = useAppContext();
   const { triggerPageTour } = useTutorial();
 
   useEffect(() => {
@@ -68,6 +70,7 @@ function QuizPage() {
           difficulty,
           examName: profile?.exam_name,
           source: "quiz",
+          appContext: contextSummary,
         },
       });
 
@@ -78,20 +81,24 @@ function QuizPage() {
 
       // Defensive: coerce answerIndex to number in case AI returns a string,
       // and derive from answer text if the AI omitted answerIndex entirely.
-      const questions: QuizQuestion[] = res.questions.map((q: QuizQuestion & { answer?: string }) => {
-        let idx: number | undefined =
-          typeof q.answerIndex === "string" ? parseInt(q.answerIndex, 10) : q.answerIndex;
+      const questions: QuizQuestion[] = res.questions.map(
+        (q: QuizQuestion & { answer?: string }) => {
+          let idx: number | undefined =
+            typeof q.answerIndex === "string" ? parseInt(q.answerIndex, 10) : q.answerIndex;
 
-        // Fallback: if answerIndex is missing or NaN, try to match the answer string against options
-        if (idx === undefined || Number.isNaN(idx)) {
-          const fallbackIdx = q.answer
-            ? q.options.findIndex((o) => o.trim().toLowerCase() === q.answer!.trim().toLowerCase())
-            : -1;
-          idx = fallbackIdx >= 0 ? fallbackIdx : 0;
-        }
+          // Fallback: if answerIndex is missing or NaN, try to match the answer string against options
+          if (idx === undefined || Number.isNaN(idx)) {
+            const fallbackIdx = q.answer
+              ? q.options.findIndex(
+                  (o) => o.trim().toLowerCase() === q.answer!.trim().toLowerCase(),
+                )
+              : -1;
+            idx = fallbackIdx >= 0 ? fallbackIdx : 0;
+          }
 
-        return { ...q, answerIndex: idx };
-      });
+          return { ...q, answerIndex: idx };
+        },
+      );
 
       const quiz: SavedQuiz = {
         id: uid(),
@@ -389,7 +396,10 @@ function QuizRunner({
         ))}
       </div>
 
-      <div className="sticky bottom-0 mt-6 p-4 border-t border-border flex items-center justify-between" style={{ background: "var(--background)" }}>
+      <div
+        className="sticky bottom-0 mt-6 p-4 border-t border-border flex items-center justify-between"
+        style={{ background: "var(--background)" }}
+      >
         {submitted ? (
           <>
             <div className="font-medium">

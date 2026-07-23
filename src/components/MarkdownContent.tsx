@@ -34,10 +34,7 @@ function renderKatex(latex: string, display: boolean): string {
 /** Renders inline math: $...$ */
 function InlineMath({ latex }: { latex: string }) {
   return (
-    <span
-      className="inline-math"
-      dangerouslySetInnerHTML={{ __html: renderKatex(latex, false) }}
-    />
+    <span className="inline-math" dangerouslySetInnerHTML={{ __html: renderKatex(latex, false) }} />
   );
 }
 
@@ -230,9 +227,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
     if (trimmed === "$$") {
       if (inDisplayMath) {
         // Close the display math block
-        blocks.push(
-          <DisplayMath key={`dm-${blocks.length}`} latex={mathBuffer.join("\n")} />,
-        );
+        blocks.push(<DisplayMath key={`dm-${blocks.length}`} latex={mathBuffer.join("\n")} />);
         mathBuffer = [];
         inDisplayMath = false;
       } else {
@@ -251,9 +246,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
     const singleDisplayMath = trimmed.match(/^\$\$(.+?)\$\$$/);
     if (singleDisplayMath) {
       flushParagraph();
-      blocks.push(
-        <DisplayMath key={`dm-${blocks.length}`} latex={singleDisplayMath[1]} />,
-      );
+      blocks.push(<DisplayMath key={`dm-${blocks.length}`} latex={singleDisplayMath[1]} />);
       continue;
     }
 
@@ -376,9 +369,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
     );
   } else if (inDisplayMath && mathBuffer.length > 0) {
     // Unclosed $$ block (can happen during streaming)
-    blocks.push(
-      <DisplayMath key={`dm-${blocks.length}`} latex={mathBuffer.join("\n")} />,
-    );
+    blocks.push(<DisplayMath key={`dm-${blocks.length}`} latex={mathBuffer.join("\n")} />);
   } else {
     flushParagraph();
   }

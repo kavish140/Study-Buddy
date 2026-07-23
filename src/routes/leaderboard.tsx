@@ -158,10 +158,7 @@ function LeaderboardPage() {
       </div>
 
       {/* XP Guide — collapsible */}
-      <div
-        className="card-light rounded-2xl mb-6 overflow-hidden"
-        data-tour="tour-leaderboard-xp"
-      >
+      <div className="card-light rounded-2xl mb-6 overflow-hidden" data-tour="tour-leaderboard-xp">
         <button
           onClick={() => setShowXpGuide((s) => !s)}
           className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-medium transition-colors hover:opacity-80"
@@ -214,7 +211,9 @@ function LeaderboardPage() {
             <div>
               <div className="text-sm font-medium">{myDisplayName}</div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{myStats.xp} XP · Level {myStats.level}</span>
+                <span>
+                  {myStats.xp} XP · Level {myStats.level}
+                </span>
                 {myTierInfo && (
                   <span
                     className="px-1.5 py-0.5 rounded-full text-[10px] font-bold"

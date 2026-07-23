@@ -237,8 +237,8 @@ function PYQPage() {
               {EXAM_LABELS[examId]}
               {subject ? ` · ${subject}` : " · All subjects"}
               {year ? ` · ${year}` : " · Latest year"}
-            </span>
-            {" "}— select filters below to customize.
+            </span>{" "}
+            — select filters below to customize.
           </p>
           <Button
             onClick={() => handleGenerate()}
@@ -453,9 +453,7 @@ function QuestionCard({ question: q, index }: { question: PYQQuestion; index: nu
                   }
                 >
                   <span className="flex items-start gap-1.5">
-                    {opt === q.answer && (
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    )}
+                    {opt === q.answer && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
                     <MarkdownContent content={opt} />
                   </span>
                 </div>
@@ -616,9 +614,7 @@ function PracticeMode({
                 tabIndex={state.revealed ? -1 : 0}
                 onClick={() => handleSelect(idx)}
                 onKeyDown={(e) =>
-                  !state.revealed &&
-                  (e.key === "Enter" || e.key === " ") &&
-                  handleSelect(idx)
+                  !state.revealed && (e.key === "Enter" || e.key === " ") && handleSelect(idx)
                 }
                 style={optStyle}
                 className={cn(

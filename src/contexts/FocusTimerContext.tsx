@@ -145,19 +145,32 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
   });
 
   // ── Persist state to localStorage ─────────────────────────────────────────
-  useEffect(() => { lsSet(LS.mode, mode); }, [mode]);
-  useEffect(() => { lsSet(LS.seconds, secondsLeft); }, [secondsLeft]);
-  useEffect(() => { lsSet(LS.running, isRunning); }, [isRunning]);
-  useEffect(() => { lsSet(LS.sessions, sessionsCompleted); }, [sessionsCompleted]);
-  useEffect(() => { lsSet(LS.subject, subject); }, [subject]);
-  useEffect(() => { lsSet(LS.topic, topic); }, [topic]);
-  useEffect(() => { lsSet(LS.custom, customMinutes); }, [customMinutes]);
+  useEffect(() => {
+    lsSet(LS.mode, mode);
+  }, [mode]);
+  useEffect(() => {
+    lsSet(LS.seconds, secondsLeft);
+  }, [secondsLeft]);
+  useEffect(() => {
+    lsSet(LS.running, isRunning);
+  }, [isRunning]);
+  useEffect(() => {
+    lsSet(LS.sessions, sessionsCompleted);
+  }, [sessionsCompleted]);
+  useEffect(() => {
+    lsSet(LS.subject, subject);
+  }, [subject]);
+  useEffect(() => {
+    lsSet(LS.topic, topic);
+  }, [topic]);
+  useEffect(() => {
+    lsSet(LS.custom, customMinutes);
+  }, [customMinutes]);
 
   // ── Supabase mutation ─────────────────────────────────────────────────────
   const saveMutation = useMutation({
     mutationFn: api.saveFocusSession,
-    onError: (error: Error) =>
-      toast.error(error.message || "Failed to save focus session"),
+    onError: (error: Error) => toast.error(error.message || "Failed to save focus session"),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["focusSessions"] }),
   });
 
@@ -330,7 +343,5 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
     handleReset,
   };
 
-  return (
-    <FocusTimerContext.Provider value={value}>{children}</FocusTimerContext.Provider>
-  );
+  return <FocusTimerContext.Provider value={value}>{children}</FocusTimerContext.Provider>;
 }

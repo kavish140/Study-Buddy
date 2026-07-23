@@ -437,7 +437,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         // Clear any existing timer to prevent stale triggers
         if (tourTimerRef.current) clearTimeout(tourTimerRef.current);
         // Small delay to let the page render first
-        tourTimerRef.current = setTimeout(() => startTour(tourId), 700);
+        tourTimerRef.current = setTimeout(() => startTour(tourId), 1800);
       }
     },
     [activeTourId, startTour],

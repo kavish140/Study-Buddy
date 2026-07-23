@@ -138,7 +138,10 @@ Deno.serve(async (req) => {
           : data.source === "notes"
             ? `You are an expert question setter ${examContext} creating questions directly based on the student's own notes. ${difficultyGuide} Questions should test exactly what a student studying these notes needs to know — application, not memorisation.`
             : `You are an expert question setter ${examContext}. Generate rigorous multiple-choice questions suitable for competitive exam preparation. ${difficultyGuide} Every question must be self-contained with 4 distinct options (only one correct), precise scientific language, and a detailed explanation.`;
-      const system = `${sourceContext} In your explanation field, use markdown formatting: **bold** key terms and formulas, use numbered steps for multi-step solutions. IMPORTANT: For math/physics equations, you MUST use $ for inline math and $$ for block math. Since you are outputting JSON, you MUST double-escape all LaTeX backslashes (e.g. $\\\\sin x$, $$\\frac{1}{2}$$). Respond ONLY with valid JSON.`;
+      const studentCtx = data.appContext
+        ? `\n\nUse the following student context to make questions more relevant (e.g. focus on their weaker topics, reference their study plan):${data.appContext}`
+        : "";
+      const system = `${sourceContext}${studentCtx} In your explanation field, use markdown formatting: **bold** key terms and formulas, use numbered steps for multi-step solutions. IMPORTANT: For math/physics equations, you MUST use $ for inline math and $$ for block math. Since you are outputting JSON, you MUST double-escape all LaTeX backslashes (e.g. $\\\\sin x$, $$\\frac{1}{2}$$). Respond ONLY with valid JSON.`;
       const user = `Generate ${count} ${data.difficulty}-difficulty MCQ questions on the topic: "${topic}" ${examContext}.
 
 Rules:
@@ -160,7 +163,7 @@ For valid syllabus topics:
 - Write a concise exam-focused summary: highlight key formulas in **bold**, mention common exam traps, and list the most important facts.
 - Use markdown in the summary: **bold** formulas and key terms, numbered lists for steps. IMPORTANT: For math/physics equations, you MUST use $ for inline math and $$ for block math. Since you are outputting JSON, you MUST double-escape all LaTeX backslashes (e.g. $\\\\sin x$, $$\\frac{1}{2}$$).
 - Generate 6 high-quality flashcards mixing: formula recall, conceptual understanding, and numerical application at ${examName} level.
-Respond ONLY with valid JSON.`;
+${data.appContext ? `\nUse the following student context to tailor notes (e.g. emphasize topics they're weaker in, reference their study plan):${data.appContext}\n` : ""}Respond ONLY with valid JSON.`;
       const user = `Generate study notes for topic: "${noteTopic}" for ${examName}.
 
 If this is a valid ${examName} syllabus topic, return:
@@ -186,8 +189,8 @@ If NOT a valid exam syllabus topic, return: {"error": "Topic not in ${examName} 
       const examCtx = examName ? `for ${examName} preparation` : "for competitive exam preparation";
       const system =
         data.source === "onboarding"
-          ? `You are an expert academic counselor creating an initial foundational study schedule for a new student ${examCtx}. Keep it encouraging, realistic, and highly structured. Prioritise weaker/foundational topics early, gradually increase difficulty. Balance revision and new material. Respond ONLY with valid JSON.`
-          : `You are an expert academic planner creating a targeted study schedule ${examCtx}. Structure the plan so that prerequisites are covered before advanced topics. Allocate more days to complex/high-weightage topics. Include dedicated revision sessions. Be realistic — 2-4 focused tasks per day. Respond ONLY with valid JSON.`;
+          ? `You are an expert academic counselor creating an initial foundational study schedule for a new student ${examCtx}. Keep it encouraging, realistic, and highly structured. Prioritise weaker/foundational topics early, gradually increase difficulty. Balance revision and new material.${data.appContext ? `\nStudent context:${data.appContext}` : ""} Respond ONLY with valid JSON.`
+          : `You are an expert academic planner creating a targeted study schedule ${examCtx}. Structure the plan so that prerequisites are covered before advanced topics. Allocate more days to complex/high-weightage topics. Include dedicated revision sessions. Be realistic — 2-4 focused tasks per day.${data.appContext ? `\nStudent context:${data.appContext}` : ""} Respond ONLY with valid JSON.`;
       const user = `Create a ${data.days}-day study plan for these topics: ${planTopics.join(", ")}.
 Return JSON:
 {"plan":[{"day":1,"tasks":["Task 1","Task 2"]}]}
@@ -201,8 +204,8 @@ Balance review and new material. 2-4 tasks per day. Tasks must be specific and a
         : isNEET
           ? "Questions must be at NEET level: application-based, clinical reasoning for biology, formula-based for physics/chemistry. Questions should reflect actual NEET exam difficulty and style."
           : "Questions should be challenging and application-based, suitable for competitive exam preparation. Avoid trivial recall questions.";
-      const system = `You are an elite question setter for ${data.examName || "competitive exams"}. ${difficultyNote} Every question must have exactly 4 options (A,B,C,D), one correct answer, and a detailed step-by-step explanation citing the formula/principle used. In the explanation field, use markdown: **bold** key formulas and the final answer, use numbered steps for multi-step solutions. IMPORTANT: For math/physics equations, you MUST use $ for inline math and $$ for block math. Since you are outputting JSON, you MUST double-escape all LaTeX backslashes (e.g. $\\\\sin x$, $$\\frac{1}{2}$$). Generate questions that would genuinely appear in the actual exam. Respond ONLY with valid JSON.`;
-      
+      const system = `You are an elite question setter for ${data.examName || "competitive exams"}. ${difficultyNote} Every question must have exactly 4 options (A,B,C,D), one correct answer, and a detailed step-by-step explanation citing the formula/principle used. In the explanation field, use markdown: **bold** key formulas and the final answer, use numbered steps for multi-step solutions. IMPORTANT: For math/physics equations, you MUST use $ for inline math and $$ for block math. Since you are outputting JSON, you MUST double-escape all LaTeX backslashes (e.g. $\\\\sin x$, $$\\frac{1}{2}$$). Generate questions that would genuinely appear in the actual exam.${data.appContext ? `\nStudent context for relevance:${data.appContext}` : ""} Respond ONLY with valid JSON.`;
+
       // Generate sections in parallel to avoid token limits and timeouts
       const sectionPromises = (data.sections || []).map(async (s: Section) => {
         const sectionInstruction = `Section "${sanitizeInput(s.name, 200)}": ${s.questions} questions from topics: ${(s.topics || []).map((t: string) => sanitizeInput(t, 200)).join(", ")}. Mix numerical, conceptual, and application questions.`;
@@ -211,7 +214,7 @@ Balance review and new material. 2-4 tasks per day. Tasks must be specific and a
       });
 
       const sectionResults = await Promise.all(sectionPromises);
-      const mergedSections = sectionResults.flatMap(res => res.sections || []);
+      const mergedSections = sectionResults.flatMap((res) => res.sections || []);
       result = { sections: mergedSections };
     } else if (action === "chat") {
       if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is missing!");
@@ -232,6 +235,10 @@ Balance review and new material. 2-4 tasks per day. Tasks must be specific and a
           ? `CRITICAL: All quiz questions MUST be at NEET difficulty — application-based biology/chemistry/physics, clinical reasoning, and formula application at 12th standard level.`
           : `CRITICAL: All questions must be at competitive exam difficulty — application-based, not rote recall.`;
 
+      const studentContext = data.appContext
+        ? `\n\nIMPORTANT — Use this student context to give personalised, relevant answers. Reference their study plan, weak subjects, or exam timeline when helpful:${data.appContext}`
+        : "";
+
       const systemPrompt =
         data.source === "community"
           ? `You are AcePrep AI — an expert educator answering a student's question on a community forum for ${examName}.
@@ -244,7 +251,7 @@ Rules you MUST follow at all times:
 - Use markdown formatting: **bold** for key terms, code blocks for equations, numbered lists for steps.
 - For math/physics: show every step, name every formula used.
 - For chemistry: show mechanisms, electron configurations, or reaction equations where relevant.
-- Be concise but complete — avoid unnecessary filler text.`
+- Be concise but complete — avoid unnecessary filler text.${studentContext}`
           : `You are AcePrep AI Tutor — an expert teacher specializing in ${examName} preparation. You only discuss topics relevant to ${examName} syllabus.
 
 ${difficultyMandate}
@@ -257,7 +264,7 @@ Rules you MUST follow at all times:
 - For all math/physics: show every step, name every formula used (e.g. "Using Newton's 2nd law: F=ma")
 - For chemistry: show mechanisms, electron configurations, or reaction equations where relevant
 - Never generate questions easier than ${examName} standard
-- Be concise but complete — avoid unnecessary filler text`;
+- Be concise but complete — avoid unnecessary filler text${studentContext}`;
 
       const messages = [
         { role: "system", content: systemPrompt },
