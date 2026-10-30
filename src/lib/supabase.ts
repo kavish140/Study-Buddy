@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { backendFetch, BACKEND_UNAVAILABLE } from "./backend-request";
 
 // Ensure environment variables are populated, usually via VITE_ prefixes in a Vite app.
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -11,4 +12,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: backendFetch },
+});
+
+export async function checkAuthService() {
+  try {
+    const response = await backendFetch(`${supabaseUrl}/auth/v1/settings`, {
+      headers: { apikey: supabaseAnonKey },
+    });
+    if (!response.ok) throw new Error(BACKEND_UNAVAILABLE);
+  } catch {
+    throw new Error(BACKEND_UNAVAILABLE);
+  }
+}

@@ -28,7 +28,7 @@ export const Route = createFileRoute("/notes")({
       { title: "Notes & Flashcards — AcePrep" },
       {
         name: "description",
-        content: "Turn any topic into a clear summary and flashcard deck with AI.",
+        content: "AI summaries paired with sourced question-bank cards.",
       },
     ],
   }),
@@ -103,7 +103,7 @@ function NotesPage() {
         onSuccess: () => {
           setTopic("");
           setRetryCount(0);
-          toast.success(`✅ Notes & ${flashcards.length} flashcards generated!`);
+          toast.success(`Summary saved with ${flashcards.length} sourced question-bank cards.`);
         },
       });
     } catch (e) {
@@ -132,7 +132,7 @@ function NotesPage() {
     <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Notes & flashcards</h1>
       <p className="text-muted-foreground mt-1">
-        Drop a syllabus topic, get a crisp summary and flashcard deck.
+        Get an AI summary and matching flashcards from the question bank.
         {profile?.exam_name && (
           <span className="text-primary font-medium"> Tailored for {profile.exam_name}.</span>
         )}
@@ -165,7 +165,7 @@ function NotesPage() {
         {loading && (
           <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Generating notes and flashcards — this may take a few seconds…
+            Summarizing the topic and finding matching bank cards…
           </p>
         )}
       </div>

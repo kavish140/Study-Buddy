@@ -1,0 +1,94 @@
+{
+  "updated": "2026-10-30T13:22:38.199Z",
+  "count": 939,
+  "rejected": 1581,
+  "heldForReview": 771,
+  "deduplicated": 6,
+  "sourceCounts": {
+    "JEEBench · IIT Delhi DAIR": 473,
+    "JEE Main practice collection · eQOURSE / soughed": 0,
+    "Physics Wallah AI · JEE Main 2025 Mathematics": 466
+  },
+  "exams": {
+    "jee-main": {
+      "count": 466,
+      "mcq": 371
+    },
+    "jee-advanced": {
+      "count": 473,
+      "mcq": 94
+    }
+  },
+  "sources": [
+    {
+      "name": "JEEBench · IIT Delhi DAIR",
+      "url": "https://huggingface.co/datasets/daman1209arora/jeebench",
+      "license": "MIT",
+      "revision": "d070d1113ce365df05903763a2017ec2d0d56118",
+      "kind": "pyq",
+      "evidence": "Author-curated JEE Advanced exam questions and answer keys"
+    },
+    {
+      "name": "JEE Main practice collection · eQOURSE / soughed",
+      "url": "https://huggingface.co/datasets/soughed/jee-main-questions",
+      "license": "CC-BY-4.0",
+      "revision": "e921b1f63dc02e655457146f37737900ff1c0700",
+      "kind": "practice",
+      "evidence": "Community collection; exam years and official-paper provenance unverified"
+    },
+    {
+      "name": "Physics Wallah AI · JEE Main 2025 Mathematics",
+      "url": "https://huggingface.co/datasets/PhysicsWallahAI/JEE-Main-2025-Math",
+      "license": "Apache-2.0",
+      "revision": "da0f8cb21ff63d4e56d8f06136e9cafdd817d2f8",
+      "kind": "pyq",
+      "evidence": "Publisher states answers were cross-checked against NTA final keys"
+    }
+  ],
+  "downloads": [
+    {
+      "url": "https://huggingface.co/datasets/daman1209arora/jeebench/resolve/d070d1113ce365df05903763a2017ec2d0d56118/test.json",
+      "sha256": "c9e46ee7585ff83711e89f18e067ee447c88c08602f837b328c5a169c3011de0"
+    },
+    {
+      "url": "https://huggingface.co/datasets/soughed/jee-main-questions/resolve/e921b1f63dc02e655457146f37737900ff1c0700/physics/train.jsonl",
+      "sha256": "7a5b27afab5085d8baec47021c1525934da50e75dfd8b0cfeeaea3f8e1a4472d"
+    },
+    {
+      "url": "https://huggingface.co/datasets/soughed/jee-main-questions/resolve/e921b1f63dc02e655457146f37737900ff1c0700/physics/test.jsonl",
+      "sha256": "06c4392ff0f6e1ffab99a6303a1573ef5c57d96a40c362d11afb54ccd410b870"
+    },
+    {
+      "url": "https://huggingface.co/datasets/soughed/jee-main-questions/resolve/e921b1f63dc02e655457146f37737900ff1c0700/chemistry/train.jsonl",
+      "sha256": "37872246c1366f1819f857eb7a264bcb97c42e695ecb982a38435c8ab1cb1339"
+    },
+    {
+      "url": "https://huggingface.co/datasets/soughed/jee-main-questions/resolve/e921b1f63dc02e655457146f37737900ff1c0700/chemistry/test.jsonl",
+      "sha256": "26ff1bb3c75ff520ee7eecc809b7b86c91d23e3bb6722ab1564a3ee5eb16419c"
+    },
+    {
+      "url": "https://huggingface.co/datasets/soughed/jee-main-questions/resolve/e921b1f63dc02e655457146f37737900ff1c0700/mathematics/train.jsonl",
+      "sha256": "beac522e984086afb7cc535e21995eaf915c2ccbe247feb2a032503410adcc49"
+    },
+    {
+      "url": "https://huggingface.co/datasets/soughed/jee-main-questions/resolve/e921b1f63dc02e655457146f37737900ff1c0700/mathematics/test.jsonl",
+      "sha256": "10b5b8924f3c5c52b873a1c8777080a6dbb0e3c1297e3b96ede3eb26b87887b5"
+    },
+    {
+      "url": "https://huggingface.co/datasets/PhysicsWallahAI/JEE-Main-2025-Math/resolve/da0f8cb21ff63d4e56d8f06136e9cafdd817d2f8/main2025-jan.jsonl",
+      "sha256": "dd1d373bdadc010aba539bad9a21527a1f82a96c4436b8212462e292fd5fb553"
+    },
+    {
+      "url": "https://huggingface.co/datasets/PhysicsWallahAI/JEE-Main-2025-Math/resolve/da0f8cb21ff63d4e56d8f06136e9cafdd817d2f8/main2025-apr.jsonl",
+      "sha256": "f413e22af6ec6e51faa838bdfa24a67b495e3c291e2f409b61d2c16a2146313b"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/dair-iitd/jeebench/main/LICENSE",
+      "sha256": "3cbe8fd4faee5e39cbc9e0aefed20af681cd45cc8d17ad5bf43335f847be2994"
+    },
+    {
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    }
+  ]
+}

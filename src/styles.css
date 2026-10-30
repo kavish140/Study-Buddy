@@ -1183,6 +1183,11 @@
 }
 
 .top-bar__page-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 8px;
   flex: 1;
   text-align: center;
   font-weight: 600;
@@ -1199,7 +1204,7 @@
 }
 
 .top-bar__xp-pill {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
@@ -1384,4 +1389,43 @@
   color: #ef4444 !important;
   font-family: monospace;
   font-size: 0.85em;
+}
+
+/* Centered page wrappers must shrink inside the flex column on narrow screens. */
+.app-content > * {
+  width: 100%;
+  min-width: 0;
+}
+
+.app-content .grid > * {
+  min-width: 0;
+}
+
+.app-content--chat {
+  height: calc(100dvh - 124px - env(safe-area-inset-bottom, 0px));
+  flex: none;
+  overflow: hidden;
+}
+
+.markdown-content {
+  overflow-wrap: anywhere;
+}
+
+.markdown-content .inline-math {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  vertical-align: middle;
+}
+
+@media (min-width: 640px) {
+  .top-bar__xp-pill {
+    display: flex;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-content--chat {
+    height: calc(100dvh - 60px);
+  }
 }

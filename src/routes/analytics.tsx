@@ -5,7 +5,13 @@ import { api } from "@/lib/api";
 import { getExamById } from "@/lib/exam-catalog";
 import { todayIST, formatDateIST, formatTimestampIST } from "@/lib/date-utils";
 import { useTutorial } from "@/components/TutorialProvider";
-import { generateQuiz } from "@/lib/ai.functions";
+import {
+  examIdFromName,
+  filterBank,
+  loadQuestionBank,
+  sampleBank,
+  type BankQuestion,
+} from "@/lib/question-bank";
 import { XP_REWARDS } from "@/lib/storage";
 import { toast } from "sonner";
 import {
@@ -38,6 +44,7 @@ import {
 } from "recharts";
 import type { SavedQuiz, MockTest, PerformanceLog } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({
@@ -167,9 +174,10 @@ function computeTopicMastery(
 /* ─── Diagnostic question type ───────────────────────────────────────────── */
 
 interface DiagnosticQuestion {
+  source: BankQuestion["source"];
   topic: string;
   subject: string;
-  difficulty: Difficulty;
+  difficulty: Difficulty | "unrated";
   question: string;
   options: string[];
   answerIndex: number;
@@ -204,6 +212,7 @@ function DiagnosticTestModal({
 
   // Select up to DIAGNOSTIC_QUESTIONS topics from weakTopics (cycle if fewer)
   const selectedTopics = useRef<{ subject: string; topic: string }[]>([]);
+  const diagnosticPool = useRef<BankQuestion[]>([]);
 
   const savePerfMutation = useMutation({
     mutationFn: api.upsertPerformanceLog,
@@ -234,77 +243,56 @@ function DiagnosticTestModal({
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  const loadNextQuestion = useCallback(
-    async (allQuestions: DiagnosticQuestion[], idx: number, nextDifficulty: Difficulty) => {
-      setPhase("loading");
-      setSelectedOption(null);
-      setRevealed(false);
-
-      // Pick topic for this question (cycle through selected topics)
-      const topicEntry = selectedTopics.current[idx % selectedTopics.current.length];
-
-      try {
-        const res = await generateQuiz({
-          data: {
-            topic: topicEntry.topic,
-            count: 1,
-            difficulty: nextDifficulty,
-            examName,
-            source: "diagnostic",
-          },
-        });
-
-        if (!res.questions || res.questions.length === 0) {
-          throw new Error("No question returned");
-        }
-
-        const raw = res.questions[0];
-        const newQ: DiagnosticQuestion = {
-          topic: topicEntry.topic,
-          subject: topicEntry.subject,
-          difficulty: nextDifficulty,
-          question: raw.question,
-          options: raw.options,
-          answerIndex:
-            typeof raw.answerIndex === "string" ? parseInt(raw.answerIndex, 10) : raw.answerIndex,
-          explanation: raw.explanation,
-          userAnswer: null,
-        };
-
-        const updated = [...allQuestions, newQ];
-        setQuestions(updated);
-        setCurrentIdx(idx);
-        setPhase("question");
-      } catch {
-        toast.error("Failed to load question. Skipping…");
-        // Skip this question and move on
-        if (idx + 1 < DIAGNOSTIC_QUESTIONS) {
-          await loadNextQuestion(allQuestions, idx + 1, nextDifficulty);
-        } else {
-          setPhase("result");
-        }
-      }
-    },
-    [examName],
-  );
+  const loadNextQuestion = useCallback(async (previous: DiagnosticQuestion[], idx: number) => {
+    const q = diagnosticPool.current[idx];
+    if (!q) return;
+    setSelectedOption(null);
+    setRevealed(false);
+    setQuestions([
+      ...previous,
+      {
+        topic: q.topic || q.subject,
+        subject: q.subject,
+        difficulty: q.difficulty || "unrated",
+        question: q.question,
+        options: q.options,
+        answerIndex: q.correct_options[0],
+        explanation: q.explanation || `Source answer key: ${q.answer}. ${q.source.name}`,
+        userAnswer: null,
+        source: q.source,
+      },
+    ]);
+    setCurrentIdx(idx);
+    setPhase("question");
+  }, []);
 
   const handleStart = useCallback(async () => {
-    // Build topic list
-    const topics =
-      weakTopics.length > 0
-        ? weakTopics.slice(0, DIAGNOSTIC_QUESTIONS)
-        : [{ subject: "General", topic: "Mixed Topics" }];
-
-    // If fewer topics than questions, cycle
-    while (topics.length < DIAGNOSTIC_QUESTIONS) {
-      topics.push(...weakTopics.slice(0, DIAGNOSTIC_QUESTIONS - topics.length));
+    setPhase("loading");
+    try {
+      const requestedExam = examIdFromName(examName || "JEE Main");
+      const bank = filterBank(
+        await loadQuestionBank(requestedExam.startsWith("jee") ? "jee" : requestedExam),
+        {
+          mcqOnly: true,
+        },
+      );
+      const focused = bank.filter((q) =>
+        weakTopics.some((t) => filterBank([q], { subject: t.subject, search: t.topic }).length),
+      );
+      const pool = focused.length >= DIAGNOSTIC_QUESTIONS ? focused : bank;
+      if (focused.length < DIAGNOSTIC_QUESTIONS && weakTopics.length)
+        toast.info(
+          "Not enough bank questions match those topics; this diagnostic uses a mixed-subject selection.",
+        );
+      diagnosticPool.current = sampleBank(pool, DIAGNOSTIC_QUESTIONS);
+      setSecondsLeft(DIAGNOSTIC_DURATION_SECONDS);
+      setIsTimerActive(true);
+      await loadNextQuestion([], 0);
+    } catch (error) {
+      setPhase("intro");
+      toast.error(error instanceof Error ? error.message : "Unable to load bank questions.");
     }
-    selectedTopics.current = topics;
-
-    setIsTimerActive(true);
-    await loadNextQuestion([], 0, "medium");
-  }, [weakTopics, loadNextQuestion]);
-
+  }, [weakTopics, examName, loadNextQuestion]);
   const handleAnswer = (optionIdx: number) => {
     if (revealed) return;
     setSelectedOption(optionIdx);
@@ -336,16 +324,7 @@ function DiagnosticTestModal({
       return;
     }
 
-    // Adaptive difficulty
-    const diffIdx = DIFFICULTIES.indexOf(currentQ.difficulty);
-    let nextDiff: Difficulty = currentQ.difficulty;
-    if (wasCorrect && diffIdx < DIFFICULTIES.length - 1) {
-      nextDiff = DIFFICULTIES[diffIdx + 1];
-    } else if (!wasCorrect && diffIdx > 0) {
-      nextDiff = DIFFICULTIES[diffIdx - 1];
-    }
-
-    await loadNextQuestion(questions, nextIdx, nextDiff);
+    await loadNextQuestion(questions, nextIdx);
   };
 
   const handleFinish = async () => {
@@ -397,17 +376,17 @@ function DiagnosticTestModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="relative w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl animate-fade-up"
+        className="relative w-full max-w-2xl max-h-[90dvh] flex flex-col rounded-3xl overflow-hidden shadow-2xl animate-fade-up"
         style={{ background: "var(--card)", border: "1px solid var(--border)" }}
       >
         {/* Header bar */}
         <div
-          className="flex items-center justify-between px-6 py-4 border-b"
+          className="flex shrink-0 flex-wrap gap-2 items-center justify-between px-4 sm:px-6 py-4 border-b"
           style={{ borderColor: "var(--border)" }}
         >
           <div className="flex items-center gap-2">
             <FlaskConical className="h-5 w-5" style={{ color: "var(--feat-analytics)" }} />
-            <span className="font-bold text-sm">Adaptive Diagnostic Test</span>
+            <span className="font-bold text-sm">Question Bank Diagnostic</span>
             {phase === "question" && (
               <span className="text-xs text-muted-foreground">
                 Q{currentIdx + 1}/{DIAGNOSTIC_QUESTIONS}
@@ -451,7 +430,7 @@ function DiagnosticTestModal({
         )}
 
         {/* Body */}
-        <div className="p-6">
+        <div className="min-h-0 overflow-y-auto p-4 sm:p-6">
           {/* ── Intro ── */}
           {phase === "intro" && (
             <div className="text-center py-4">
@@ -464,7 +443,7 @@ function DiagnosticTestModal({
               >
                 <FlaskConical className="h-8 w-8" style={{ color: "var(--feat-analytics)" }} />
               </div>
-              <h2 className="text-xl font-bold font-heading mb-2">Adaptive Diagnostic Test</h2>
+              <h2 className="text-xl font-bold font-heading mb-2">Question Bank Diagnostic</h2>
               <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
                 {weakTopics.length > 0
                   ? `${DIAGNOSTIC_QUESTIONS} questions drawn from your ${weakTopics.length} weakest topic${weakTopics.length > 1 ? "s" : ""}. Difficulty adapts after each answer.`
@@ -526,7 +505,7 @@ function DiagnosticTestModal({
                 <Brain className="h-6 w-6" style={{ color: "var(--feat-analytics)" }} />
               </div>
               <p className="text-sm text-muted-foreground">
-                Generating question {currentIdx + 1} of {DIAGNOSTIC_QUESTIONS}…
+                Loading bank question {currentIdx + 1} of {DIAGNOSTIC_QUESTIONS}…
               </p>
             </div>
           )}
@@ -565,7 +544,17 @@ function DiagnosticTestModal({
                   </div>
 
                   {/* Question text */}
-                  <p className="text-base font-medium leading-relaxed mb-5">{q.question}</p>
+                  <div className="text-base font-medium leading-relaxed mb-3">
+                    <MarkdownContent content={q.question} />
+                  </div>
+                  <a
+                    className="text-xs text-primary underline block mb-4"
+                    href={q.source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {q.source.name} · {q.source.license}
+                  </a>
 
                   {/* Options */}
                   <div className="space-y-2 mb-5">
@@ -605,7 +594,7 @@ function DiagnosticTestModal({
                           }}
                         >
                           <span className="font-semibold mr-2">{String.fromCharCode(65 + i)}.</span>
-                          {opt}
+                          <MarkdownContent content={opt} />
                         </button>
                       );
                     })}
@@ -862,7 +851,7 @@ function AnalyticsPage() {
                   <span className="font-semibold text-foreground">{totalAttempts}</span> so far.
                 </p>
                 <p className="text-sm text-muted-foreground mb-8">
-                  Or, take the Adaptive Diagnostic Test below — it counts too!
+                  Or, take the Question Bank Diagnostic below — it counts too!
                 </p>
 
                 {/* Progress bar */}
@@ -921,7 +910,7 @@ function AnalyticsPage() {
                 <FlaskConical className="h-7 w-7" style={{ color: "var(--feat-analytics)" }} />
               </div>
               <div className="flex-1 text-center md:text-left">
-                <h3 className="font-bold text-base mb-1">Take the Adaptive Diagnostic Test</h3>
+                <h3 className="font-bold text-base mb-1">Take the Question Bank Diagnostic</h3>
                 <p className="text-sm text-muted-foreground">
                   6 questions · difficulty adapts after each answer · results unlock detailed topic
                   analysis
@@ -951,7 +940,7 @@ function AnalyticsPage() {
                 style={{ color: "var(--feat-analytics)" }}
               />
               <div className="flex-1 text-sm">
-                <span className="font-semibold">Adaptive Diagnostic Test</span>
+                <span className="font-semibold">Question Bank Diagnostic</span>
                 <span className="text-muted-foreground ml-2">
                   — identify blind spots with {DIAGNOSTIC_QUESTIONS} targeted questions
                 </span>

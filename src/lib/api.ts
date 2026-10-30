@@ -22,10 +22,17 @@ import {
   uid,
 } from "./storage";
 
+// A failed auth request must not look like a successful empty database result.
+async function getCurrentUser() {
+  const result = await supabase.auth.getUser();
+  if (result.error) throw result.error;
+  return result;
+}
+
 export const api = {
   // Subjects
   getSubjects: async () => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
     const { data, error } = await supabase.from("subjects").select("*").eq("user_id", user_id);
@@ -33,7 +40,7 @@ export const api = {
     return (data as Subject[]) || [];
   },
   saveSubject: async (subject: Subject) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -46,7 +53,7 @@ export const api = {
     return data;
   },
   deleteSubject: async (id: string) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     const { error } = await supabase.from("subjects").delete().eq("id", id).eq("user_id", user_id);
@@ -55,7 +62,7 @@ export const api = {
 
   // Quizzes
   getQuizzes: async () => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
     const { data, error } = await supabase.from("quizzes").select("*").eq("user_id", user_id);
@@ -72,7 +79,7 @@ export const api = {
     });
   },
   saveQuiz: async (quiz: SavedQuiz) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -85,7 +92,7 @@ export const api = {
     return data;
   },
   deleteQuiz: async (id: string) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     const { error } = await supabase.from("quizzes").delete().eq("id", id).eq("user_id", user_id);
@@ -94,7 +101,7 @@ export const api = {
 
   // Plan Items
   getPlan: async () => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
     const { data, error } = await supabase.from("plan_items").select("*").eq("user_id", user_id);
@@ -102,7 +109,7 @@ export const api = {
     return (data as PlanItem[]) || [];
   },
   savePlanItems: async (items: PlanItem[]) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -112,7 +119,7 @@ export const api = {
     return data;
   },
   updatePlanItem: async (id: string, done: boolean) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     const { data, error } = await supabase
@@ -126,7 +133,7 @@ export const api = {
     return data;
   },
   deletePlanItem: async (id: string) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     const { error } = await supabase
@@ -136,10 +143,21 @@ export const api = {
       .eq("user_id", user_id);
     if (error) throw error;
   },
-  // Clears all plan items for the current user — called before re-generating a plan
-  // so that existing tasks are not accumulated on top of the new AI-generated ones.
+  deletePlanItems: async (ids: string[]) => {
+    if (!ids.length) return;
+    const { data: userData } = await getCurrentUser();
+    const user_id = userData.user?.id;
+    if (!user_id) throw new Error("Not authenticated");
+    const { error } = await supabase
+      .from("plan_items")
+      .delete()
+      .eq("user_id", user_id)
+      .in("id", ids);
+    if (error) throw error;
+  },
+  // Explicitly clear all plan items for the current user.
   clearPlan: async () => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     const { error } = await supabase.from("plan_items").delete().eq("user_id", user_id);
@@ -148,7 +166,7 @@ export const api = {
 
   // Notes
   getNotes: async () => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
     const { data, error } = await supabase.from("notes").select("*").eq("user_id", user_id);
@@ -165,7 +183,7 @@ export const api = {
     });
   },
   saveNote: async (note: Note) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -178,7 +196,7 @@ export const api = {
     return data;
   },
   deleteNote: async (id: string) => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     const { error } = await supabase.from("notes").delete().eq("id", id).eq("user_id", user_id);
@@ -187,7 +205,8 @@ export const api = {
 
   // User Profile
   getUserProfile: async (): Promise<UserProfile | null> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await getCurrentUser();
+    if (authError) throw authError;
     const user_id = userData.user?.id;
     if (!user_id) return null;
 
@@ -200,7 +219,7 @@ export const api = {
     return data as UserProfile | null;
   },
   saveUserProfile: async (profile: Partial<UserProfile>): Promise<UserProfile> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -215,7 +234,7 @@ export const api = {
 
   // Mock Tests
   getMockTests: async (): Promise<MockTest[]> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
 
@@ -231,7 +250,7 @@ export const api = {
     });
   },
   saveMockTest: async (test: MockTest): Promise<MockTest> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -244,7 +263,7 @@ export const api = {
     return data as MockTest;
   },
   deleteMockTest: async (id: string): Promise<void> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     const { error } = await supabase
@@ -257,7 +276,7 @@ export const api = {
 
   // Performance Logs
   getPerformanceLogs: async (): Promise<PerformanceLog[]> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
     const { data, error } = await supabase
@@ -269,7 +288,7 @@ export const api = {
     return (data as PerformanceLog[]) || [];
   },
   upsertPerformanceLog: async (log: Partial<PerformanceLog>): Promise<PerformanceLog> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -287,7 +306,7 @@ export const api = {
 
   // Chat Sessions
   getChatSessions: async (): Promise<ChatSession[]> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
     const { data, error } = await supabase
@@ -299,7 +318,7 @@ export const api = {
     return (data as ChatSession[]) || [];
   },
   saveChatSession: async (session: ChatSession): Promise<ChatSession> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -312,7 +331,7 @@ export const api = {
     return data as ChatSession;
   },
   deleteChatSession: async (id: string): Promise<void> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     const { error } = await supabase
@@ -325,7 +344,7 @@ export const api = {
 
   // ── Review Cards (Spaced Repetition) ──────────────────────────────
   getReviewCards: async (): Promise<ReviewCard[]> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
     const { data, error } = await supabase
@@ -337,7 +356,7 @@ export const api = {
     return (data as ReviewCard[]) || [];
   },
   getDueReviewCards: async (): Promise<ReviewCard[]> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
     const today = todayIST();
@@ -351,7 +370,7 @@ export const api = {
     return (data as ReviewCard[]) || [];
   },
   saveReviewCard: async (card: Omit<ReviewCard, "id" | "user_id">): Promise<ReviewCard> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -364,7 +383,7 @@ export const api = {
     return data as ReviewCard;
   },
   saveReviewCards: async (cards: Omit<ReviewCard, "id" | "user_id">[]): Promise<void> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -373,7 +392,7 @@ export const api = {
     if (error) throw error;
   },
   updateReviewCard: async (id: string, rating: 0 | 1 | 3 | 5): Promise<ReviewCard> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     // First fetch the current card to apply SM-2 (also verifies ownership)
@@ -396,7 +415,7 @@ export const api = {
     return data as ReviewCard;
   },
   deleteReviewCard: async (id: string): Promise<void> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
     const { error } = await supabase
@@ -409,7 +428,7 @@ export const api = {
 
   // ── Focus Sessions (Pomodoro) ──────────────────────────────────────
   getFocusSessions: async (): Promise<FocusSession[]> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return [];
     const { data, error } = await supabase
@@ -424,7 +443,7 @@ export const api = {
   saveFocusSession: async (
     session: Omit<FocusSession, "id" | "user_id">,
   ): Promise<FocusSession> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -439,7 +458,7 @@ export const api = {
 
   // ── Gamification (XP, Streaks, Badges, Leaderboard) ───────────────
   getUserStats: async (): Promise<UserStats | null> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) return null;
     const { data } = await supabase
@@ -471,7 +490,7 @@ export const api = {
       quizId?: string;
     },
   ): Promise<{ stats: UserStats; newBadges: string[] }> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -618,7 +637,7 @@ export const api = {
     return (data as PYQQuestion[]) || [];
   },
   savePYQQuestion: async (q: Omit<PYQQuestion, "id">): Promise<PYQQuestion> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -631,7 +650,7 @@ export const api = {
     return data as PYQQuestion;
   },
   savePYQQuestions: async (questions: Omit<PYQQuestion, "id">[]): Promise<void> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -661,7 +680,7 @@ export const api = {
   createForumPost: async (
     post: Pick<ForumPost, "title" | "content" | "exam_id" | "subject" | "topic">,
   ): Promise<ForumPost> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -674,7 +693,7 @@ export const api = {
     return data as ForumPost;
   },
   upvotePost: async (id: string): Promise<void> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -701,7 +720,7 @@ export const api = {
     return (data as ForumReply[]) || [];
   },
   createForumReply: async (post_id: string, content: string): Promise<ForumReply> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -721,7 +740,7 @@ export const api = {
    * Does NOT increment reply_count — bot answers shouldn't inflate the counter.
    */
   createAIForumReply: async (post_id: string, content: string): Promise<ForumReply> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 
@@ -764,7 +783,7 @@ export const api = {
   },
 
   acceptReply: async (reply_id: string): Promise<void> => {
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: userData } = await getCurrentUser();
     const user_id = userData.user?.id;
     if (!user_id) throw new Error("Not authenticated");
 

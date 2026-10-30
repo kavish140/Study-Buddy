@@ -92,7 +92,7 @@ function CommunityPage() {
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-4xl mx-auto animate-fade-up">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap gap-3 items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-gradient-primary grid place-items-center shadow-glow-sm">
             <Users className="h-5 w-5 text-white" />

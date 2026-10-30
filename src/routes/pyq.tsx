@@ -1,664 +1,404 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { type PYQQuestion } from "@/lib/storage";
-import { cn } from "@/lib/utils";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookOpen, CheckCircle2, ChevronRight, ExternalLink, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import {
-  BookOpen,
-  Search,
-  Filter,
-  Zap,
-  ChevronRight,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  Sparkles,
-  RotateCcw,
-  Trophy,
-  Brain,
-} from "lucide-react";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import {
+  filterBank,
+  isCorrectBankAnswer,
+  loadQuestionBank,
+  sampleBank,
+  type BankQuestion,
+} from "@/lib/question-bank";
 
 export const Route = createFileRoute("/pyq")({
   head: () => ({
     meta: [
-      { title: "PYQ Bank · AcePrep" },
+      { title: "Question Bank — AcePrep" },
       {
         name: "description",
         content:
-          "Previous Year Questions for JEE, NEET and more — practice or generate AI-powered PYQ-style questions",
+          "Practice sourced JEE questions and previous-year papers without AI question generation.",
       },
     ],
   }),
-  component: PYQPage,
+  component: QuestionBankPage,
 });
 
-const EXAMS = ["jee-main", "jee-advanced", "neet", "upsc", "cat"];
-const EXAM_LABELS: Record<string, string> = {
-  "jee-main": "JEE Main",
-  "jee-advanced": "JEE Advanced",
-  neet: "NEET",
-  upsc: "UPSC",
-  cat: "CAT",
-};
-const SUBJECTS: Record<string, string[]> = {
-  "jee-main": ["Physics", "Chemistry", "Mathematics"],
-  "jee-advanced": ["Physics", "Chemistry", "Mathematics"],
-  neet: ["Physics", "Chemistry", "Biology"],
-  upsc: ["GS Paper 1", "GS Paper 2", "GS Paper 3", "GS Paper 4"],
-  cat: ["Verbal", "Quantitative", "DILR"],
-};
-const YEARS = [2024, 2023, 2022, 2021, 2020, 2019, 2018];
-const DIFFICULTIES = ["easy", "medium", "hard"];
+const EXAMS = { jee: "Mixed JEE", "jee-main": "JEE Main", "jee-advanced": "JEE Advanced" };
 
-type PracticeState = {
-  questions: PYQQuestion[];
-  current: number;
-  selected: number | null;
-  revealed: boolean;
-  score: number;
-  done: boolean;
-};
-
-function PYQPage() {
-  const qc = useQueryClient();
-  const [examId, setExamId] = useState("jee-main");
-  const [subject, setSubject] = useState("");
-  const [year, setYear] = useState<number | "">("");
-  const [difficulty, setDifficulty] = useState("");
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(timer);
-  }, [search]);
-  const [practicing, setPracticing] = useState<PracticeState | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const { triggerPageTour } = useTutorial();
-
-  useEffect(() => {
-    triggerPageTour("pyq");
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const { data: questions = [], isLoading } = useQuery({
-    queryKey: ["pyq", examId, subject, year, difficulty, debouncedSearch],
-    queryFn: () =>
-      api.getPYQQuestions({
-        exam_id: examId,
-        subject: subject || undefined,
-        year: year ? Number(year) : undefined,
-        difficulty: difficulty || undefined,
-        search: debouncedSearch || undefined,
-      }),
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: api.savePYQQuestions,
-    onError: (error) => toast.error(error.message || "Operation failed"),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pyq"] }),
-  });
-
-  // Generate AI PYQ-style questions — uses selected exam/subject/year filters, no manual topic needed
-  const handleGenerate = async (retryCount = 0) => {
-    setGenerating(true);
-    try {
-      const examLabel = EXAM_LABELS[examId] || examId;
-      const yearLabel = year || new Date().getFullYear();
-      const subjectLabel = subject || (SUBJECTS[examId]?.[0] ?? "General");
-
-      // Build context from selected filters — no manual topic required
-      const prompt = `${examLabel} ${yearLabel} ${subjectLabel}`;
-
-      const {
-        data: { session },
-      } = await (await import("@/lib/supabase")).supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("Please sign in to generate questions");
-      }
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-ai`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          action: "generateQuiz",
-          data: {
-            topic: prompt,
-            count: 5,
-            difficulty: difficulty || "hard",
-            examName: examLabel,
-            source: "pyq",
-          },
-        }),
-      });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error || `Request failed (${res.status})`);
-      }
-      const result = await res.json();
-      if (result.error) throw new Error(result.error);
-
-      type AIQuestion = {
-        question: string;
-        options: string[];
-        answerIndex?: number;
-        answer?: string;
-        explanation?: string;
-      };
-      const qs: Omit<PYQQuestion, "id">[] = (result.questions || []).map((q: AIQuestion) => ({
-        exam_id: examId,
-        year: Number(yearLabel),
-        subject: subjectLabel,
-        topic: subjectLabel,
-        question: q.question,
-        question_type: "mcq",
-        options: q.options,
-        answer:
-          q.answerIndex !== undefined && q.answerIndex >= 0
-            ? (q.options?.[q.answerIndex] ?? q.answer ?? "")
-            : (q.answer ?? ""),
-        explanation: q.explanation,
-        difficulty: (difficulty || "hard") as "easy" | "medium" | "hard",
-        tags: [subjectLabel, String(yearLabel)],
-      }));
-
-      await saveMutation.mutateAsync(qs);
-      toast.success(`Generated ${qs.length} ${examLabel} ${subjectLabel} questions`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Generation failed";
-      toast.error(msg, {
-        action:
-          retryCount < 2
-            ? { label: "Retry", onClick: () => handleGenerate(retryCount + 1) }
-            : undefined,
-      });
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  // Start practice mode
-  const handlePractice = () => {
-    if (questions.length === 0) return toast.error("No questions to practice");
-    setPracticing({
-      questions: [...questions].sort(() => Math.random() - 0.5).slice(0, 10),
-      current: 0,
-      selected: null,
-      revealed: false,
-      score: 0,
-      done: false,
-    });
-  };
-
-  if (practicing) {
-    return <PracticeMode state={practicing} setState={setPracticing} />;
-  }
-
+function Source({ question: q }: { question: BankQuestion }) {
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-5xl mx-auto animate-fade-up">
-      {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-primary grid place-items-center shadow-glow-sm">
-            <Trophy className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold font-heading">PYQ Bank</h1>
-            <p className="text-sm text-muted-foreground">
-              Previous Year Questions · AI-powered generation
-            </p>
-          </div>
-        </div>
-        {questions.length > 0 && (
-          <Button onClick={handlePractice} className="bg-gradient-primary gap-2 shrink-0">
-            <Brain className="h-4 w-4" /> Practice ({Math.min(10, questions.length)})
-          </Button>
-        )}
-      </div>
-
-      {/* AI Generate strip — no manual topic: uses selected filters below */}
-      <div
-        className="card-light rounded-2xl p-4 mb-6 border border-primary/20"
-        data-tour="tour-pyq-generate"
+    <div className="text-xs text-muted-foreground space-y-1">
+      <p>
+        {q.subject} · {q.year ?? "Year unavailable"} ·{" "}
+        {q.source.kind === "pyq"
+          ? "Previous-year question"
+          : "Practice collection · paper provenance unverified"}
+      </p>
+      <a
+        className="inline-flex items-center gap-1 text-primary underline"
+        href={q.source.url}
+        target="_blank"
+        rel="noreferrer"
       >
-        <p className="text-sm font-medium mb-3 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" /> Generate AI-powered PYQ-style questions
+        {q.source.name} <ExternalLink size={11} />
+      </a>
+      <span className="ml-2">{q.source.license}</span>
+    </div>
+  );
+}
+
+function QuestionBankPage() {
+  const [exam, setExam] = useState("jee");
+  const [subject, setSubject] = useState("");
+  const [year, setYear] = useState("");
+  const [search, setSearch] = useState("");
+  const [pyqOnly, setPyqOnly] = useState(false);
+  const [visible, setVisible] = useState(25);
+  const [practice, setPractice] = useState<BankQuestion[] | null>(null);
+  const bank = useQuery({
+    queryKey: ["questionBank", exam],
+    queryFn: () => loadQuestionBank(exam),
+    staleTime: Infinity,
+    retry: false,
+  });
+  const questions = filterBank(bank.data ?? [], {
+    subject,
+    search,
+    year: year ? Number(year) : undefined,
+    pyqOnly,
+  });
+  const years = [...new Set((bank.data ?? []).flatMap((q) => (q.year ? [q.year] : [])))].sort(
+    (a, b) => b - a,
+  );
+  useEffect(() => setVisible(25), [exam, subject, year, search, pyqOnly]);
+  if (practice) return <Practice questions={practice} onClose={() => setPractice(null)} />;
+  return (
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="flex flex-wrap justify-between items-start gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">Question Bank</h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            Sourced questions and answer keys. No AI-generated questions.
+          </p>
+        </div>
+        <Button
+          disabled={!questions.length}
+          onClick={() => setPractice(sampleBank(questions, Math.min(10, questions.length)))}
+        >
+          Practice {Math.min(10, questions.length)}
+        </Button>
+      </div>
+      <div className="card-light rounded-2xl p-4 text-sm space-y-2">
+        <p>
+          <strong>{bank.data?.length ?? "…"} questions</strong> available for{" "}
+          {EXAMS[exam as keyof typeof EXAMS]}.
         </p>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-xs text-muted-foreground flex-1">
-            Generating for:{" "}
-            <span className="text-foreground font-medium">
-              {EXAM_LABELS[examId]}
-              {subject ? ` · ${subject}` : " · All subjects"}
-              {year ? ` · ${year}` : " · Latest year"}
-            </span>{" "}
-            — select filters below to customize.
-          </p>
-          <Button
-            onClick={() => handleGenerate()}
-            disabled={generating}
-            className="bg-gradient-primary gap-2 shrink-0"
+        <p className="text-muted-foreground">
+          Published-paper questions retain source and year. Current coverage includes JEE Main
+          mathematics and JEE Advanced Physics, Chemistry and Mathematics. Missing answers,
+          unavailable diagrams, and the unverified community collection are excluded. This is not a
+          complete exam archive.
+        </p>
+        <a
+          className="text-primary underline"
+          href="/question-bank/manifest.json"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Sources and attribution
+        </a>
+        <p>
+          <a
+            className="text-primary underline"
+            href="https://sathee.iitk.ac.in/pyqs/jee/"
+            target="_blank"
+            rel="noreferrer"
           >
-            {generating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Zap className="h-4 w-4" />
-            )}
-            {generating ? "Generating…" : "Generate 5 Qs"}
-          </Button>
-        </div>
+            Browse the larger free SATHEE PYQ archive
+          </a>{" "}
+          · opens an external resource; its questions are not imported here.
+        </p>
       </div>
-
-      {/* Filters */}
-      <div className="card-light rounded-2xl p-4 mb-6 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Filter className="h-4 w-4 text-muted-foreground" /> Filters
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {/* Exam */}
-          {EXAMS.map((e) => (
-            <button
-              key={e}
-              onClick={() => {
-                setExamId(e);
-                setSubject("");
-              }}
-              style={
-                examId === e
-                  ? {
-                      background: "var(--feat-pyq-bg)",
-                      color: "var(--feat-pyq)",
-                      borderColor: "var(--feat-pyq)",
-                    }
-                  : { background: "var(--muted)" }
-              }
-              className={cn(
-                "px-3 py-1 rounded-full text-xs border transition-all",
-                examId === e ? "" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {EXAM_LABELS[e]}
-            </button>
+      <div className="card-light rounded-2xl p-4 flex flex-wrap gap-3">
+        <select
+          aria-label="Exam"
+          className="rounded-lg border p-2 bg-background"
+          value={exam}
+          onChange={(e) => {
+            setExam(e.target.value);
+            setSubject("");
+            setYear("");
+          }}
+        >
+          {Object.entries(EXAMS).map(([id, label]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
           ))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {/* Subject */}
-          <button
-            onClick={() => setSubject("")}
-            style={
-              !subject
-                ? {
-                    background: "var(--feat-pyq-bg)",
-                    color: "var(--feat-pyq)",
-                    borderColor: "var(--feat-pyq)",
-                  }
-                : { background: "var(--muted)" }
-            }
-            className={cn(
-              "px-3 py-1 rounded-full text-xs border transition-all",
-              !subject ? "" : "text-muted-foreground",
-            )}
-          >
-            All subjects
-          </button>
-          {(SUBJECTS[examId] || []).map((s) => (
-            <button
-              key={s}
-              onClick={() => setSubject(s === subject ? "" : s)}
-              style={
-                subject === s
-                  ? {
-                      background: "var(--feat-pyq-bg)",
-                      color: "var(--feat-pyq)",
-                      borderColor: "var(--feat-pyq)",
-                    }
-                  : { background: "var(--muted)" }
-              }
-              className={cn(
-                "px-3 py-1 rounded-full text-xs border transition-all",
-                subject === s ? "" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {s}
-            </button>
+        </select>
+        <select
+          aria-label="Subject"
+          className="rounded-lg border p-2 bg-background"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+        >
+          <option value="">All subjects</option>
+          {["Physics", "Chemistry", "Mathematics"].map((s) => (
+            <option key={s}>{s}</option>
           ))}
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <select
-            value={year}
-            onChange={(e) => setYear(e.target.value ? Number(e.target.value) : "")}
-            className="rounded-lg px-3 py-1.5 text-xs bg-transparent outline-none border border-border"
-            style={{ background: "var(--muted)" }}
-          >
-            <option value="">All years</option>
-            {YEARS.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-          {DIFFICULTIES.map((d) => (
-            <button
-              key={d}
-              onClick={() => setDifficulty(d === difficulty ? "" : d)}
-              style={difficulty === d ? undefined : { background: "var(--muted)" }}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs border transition-all capitalize",
-                difficulty === d
-                  ? d === "hard"
-                    ? "bg-red-500/15 text-red-400 border-red-500/30"
-                    : d === "medium"
-                      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                      : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {d}
-            </button>
+        </select>
+        <select
+          aria-label="Year"
+          className="rounded-lg border p-2 bg-background"
+          value={year}
+          onChange={(e) => setYear(e.target.value)}
+        >
+          <option value="">All years</option>
+          {years.map((y) => (
+            <option key={y}>{y}</option>
           ))}
-          <div
-            className="flex items-center gap-2 flex-1 min-w-[160px] rounded-xl px-3 py-1.5 border border-border"
-            style={{ background: "var(--muted)" }}
-          >
-            <Search className="h-3 w-3 text-muted-foreground shrink-0" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search questions…"
-              className="bg-transparent text-xs outline-none flex-1"
-            />
-          </div>
-        </div>
+        </select>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={pyqOnly} onChange={(e) => setPyqOnly(e.target.checked)} />
+          Previous-year questions only
+        </label>
+        <input
+          aria-label="Search questions"
+          placeholder="Search topic or question…"
+          className="w-full min-w-0 rounded-lg border p-2 bg-background"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
-
-      {/* Question list */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-20 card-light rounded-xl animate-pulse" />
-          ))}
+      {bank.isPending ? (
+        <p role="status">Loading question bank…</p>
+      ) : bank.isError ? (
+        <div role="alert">
+          <p>Unable to load the question bank.</p>
+          <Button onClick={() => void bank.refetch()}>Try again</Button>
         </div>
-      ) : questions.length === 0 ? (
-        <div className="card-light rounded-2xl p-12 text-center">
-          <BookOpen className="h-12 w-12 text-primary/20 mx-auto mb-4" />
-          <p className="text-lg font-medium mb-2">No questions found</p>
-          <p className="text-sm text-muted-foreground mb-6">
-            Generate some using the AI tool above, or adjust your filters.
-          </p>
-        </div>
+      ) : !questions.length ? (
+        <p className="card-light rounded-2xl p-8">
+          No matching questions. Broaden your filters. AI question generation is disabled.
+        </p>
       ) : (
-        <div className="space-y-3" data-tour="tour-pyq-results">
+        <>
           <p className="text-sm text-muted-foreground">
-            {questions.length} question{questions.length !== 1 ? "s" : ""} found
+            {questions.length} matching questions · showing {Math.min(visible, questions.length)}
           </p>
-          {questions.map((q, i) => (
-            <QuestionCard key={q.id} question={q} index={i} />
+          {questions.slice(0, visible).map((q) => (
+            <QuestionCard key={q.id} question={q} />
           ))}
-        </div>
+          {visible < questions.length && (
+            <Button variant="outline" onClick={() => setVisible((v) => v + 25)}>
+              Show 25 more
+            </Button>
+          )}
+        </>
       )}
     </div>
   );
 }
 
-function QuestionCard({ question: q, index }: { question: PYQQuestion; index: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const diffColor =
-    q.difficulty === "hard"
-      ? "text-red-400 bg-red-500/10 border-red-500/20"
-      : q.difficulty === "medium"
-        ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
-        : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
-
+function QuestionCard({ question: q }: { question: BankQuestion }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="card-light rounded-xl p-4">
-      <div className="flex items-start gap-3">
-        <span className="text-xs text-muted-foreground shrink-0 mt-0.5">Q{index + 1}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            <span className="text-xs text-muted-foreground">
-              {q.exam_id?.toUpperCase()} · {q.year} · {q.subject}
-            </span>
-            <span
-              className={cn("text-[10px] px-2 py-0.5 rounded-full border capitalize", diffColor)}
-            >
-              {q.difficulty}
-            </span>
-          </div>
-          <div className="text-sm leading-relaxed">
-            <MarkdownContent content={q.question} />
-          </div>
-          {expanded && q.options && (
-            <div className="mt-3 space-y-1.5">
-              {q.options.map((opt, oi) => (
-                <div
-                  key={oi}
-                  className={cn(
-                    "text-sm px-3 py-2 rounded-lg border transition-colors",
-                    opt === q.answer ? "" : "",
-                  )}
-                  style={
-                    opt === q.answer
-                      ? {
-                          background: "var(--feat-syllabus-bg)",
-                          borderColor: "var(--feat-syllabus)",
-                          color: "var(--feat-syllabus)",
-                        }
-                      : { background: "var(--muted)" }
-                  }
-                >
-                  <span className="flex items-start gap-1.5">
-                    {opt === q.answer && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />}
-                    <MarkdownContent content={opt} />
-                  </span>
-                </div>
-              ))}
-              {q.explanation && (
-                <div className="mt-2 p-3 rounded-lg text-xs" style={{ background: "var(--muted)" }}>
-                  <span className="font-semibold text-foreground uppercase tracking-wide text-[10px] block mb-1">
-                    Explanation
-                  </span>
-                  <MarkdownContent content={q.explanation} className="text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          )}
-          <button
-            onClick={() => setExpanded((e) => !e)}
-            className="mt-2 text-xs text-primary hover:underline"
-          >
-            {expanded ? "Hide answer" : "Show answer & explanation"}
-          </button>
+    <article className="card-light rounded-2xl p-4 space-y-3">
+      <Source question={q} />
+      <MarkdownContent content={q.question} />
+      <p className="text-xs text-muted-foreground">
+        {q.question_type === "multiple"
+          ? "Select all correct answers"
+          : q.question_type === "integer"
+            ? "Numerical answer"
+            : "Single correct answer"}
+      </p>
+      {q.options?.map((o, i) => (
+        <div key={i} className="flex gap-2 text-sm">
+          <span>{String.fromCharCode(65 + i)}.</span>
+          <MarkdownContent content={o} />
         </div>
-      </div>
-    </div>
+      ))}
+      {open && (
+        <div className="rounded-xl bg-muted p-3 space-y-2">
+          <strong>Answer key</strong>
+          <MarkdownContent content={q.answer} />
+          {q.explanation ? (
+            <MarkdownContent content={q.explanation} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              This source provides an answer key without a worked solution.
+            </p>
+          )}
+          <Link
+            className="text-sm text-primary underline"
+            to="/chat"
+            search={{
+              q: `Explain this existing question without creating any new questions:\n${q.question}\nOptions: ${q.options.join("; ")}\nSource answer key: ${q.answer}`,
+            }}
+          >
+            Ask AI to explain this question
+          </Link>
+        </div>
+      )}
+      <button className="text-sm text-primary underline" onClick={() => setOpen(!open)}>
+        {open ? "Hide answer" : "Show answer and solution"}
+      </button>
+    </article>
   );
 }
 
-function PracticeMode({
-  state,
-  setState,
-}: {
-  state: PracticeState;
-  setState: (s: PracticeState | null) => void;
-}) {
-  const q = state.questions[state.current];
-  const total = state.questions.length;
-
-  if (state.done) {
-    const pct = Math.round((state.score / total) * 100);
+function Practice({ questions, onClose }: { questions: BankQuestion[]; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [index, setIndex] = useState(0);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [numeric, setNumeric] = useState("");
+  const [revealed, setRevealed] = useState(false);
+  const [results, setResults] = useState<boolean[]>([]);
+  const [done, setDone] = useState(false);
+  const reported = useRef(false);
+  const q = questions[index];
+  useEffect(() => {
+    if (!done || reported.current) return;
+    reported.current = true;
+    const groups = new Map<
+      string,
+      { subject: string; topic: string; question_count: number; correct_count: number }
+    >();
+    questions.forEach((question, i) => {
+      const topic = question.topic || question.subject;
+      const key = `${question.subject}::${topic}`;
+      const group = groups.get(key) ?? {
+        subject: question.subject,
+        topic,
+        question_count: 0,
+        correct_count: 0,
+      };
+      group.question_count += 1;
+      group.correct_count += results[i] ? 1 : 0;
+      groups.set(key, group);
+    });
+    void Promise.all([...groups.values()].map((group) => api.upsertPerformanceLog(group)))
+      .then(() => qc.invalidateQueries({ queryKey: ["perfLogs"] }))
+      .catch(() =>
+        toast.error(
+          "Practice finished, but progress could not be synced. Your results are still shown here.",
+        ),
+      );
+  }, [done, questions, results, qc]);
+  if (done)
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="card-light rounded-2xl p-10 text-center max-w-md w-full">
-          <div className="text-5xl mb-4">{pct >= 70 ? "🎉" : pct >= 40 ? "💪" : "📚"}</div>
-          <h2 className="text-2xl font-bold mb-1">Practice Complete!</h2>
-          <p className="text-muted-foreground mb-6">
-            {state.score}/{total} correct · {pct}% accuracy
-          </p>
-          <div
-            className="h-3 rounded-full overflow-hidden mb-6"
-            style={{ background: "var(--muted)" }}
-          >
-            <div className="h-full bg-gradient-primary rounded-full" style={{ width: `${pct}%` }} />
-          </div>
-          <div className="flex gap-3 justify-center">
-            <Button
-              variant="outline"
-              onClick={() =>
-                setState({
-                  ...state,
-                  current: 0,
-                  selected: null,
-                  revealed: false,
-                  score: 0,
-                  done: false,
-                })
-              }
-              className="gap-2"
-            >
-              <RotateCcw className="h-4 w-4" /> Try again
-            </Button>
-            <Button onClick={() => setState(null)} className="bg-gradient-primary">
-              Back to bank
-            </Button>
-          </div>
-        </div>
+      <div className="max-w-xl mx-auto p-6 text-center space-y-5">
+        <h1 className="text-3xl font-bold">Practice complete</h1>
+        <p>
+          {results.filter(Boolean).length} / {questions.length} correct
+        </p>
+        <Button onClick={onClose}>
+          <RotateCcw size={16} /> Back to bank
+        </Button>
       </div>
     );
-  }
-
-  const handleSelect = (idx: number) => {
-    if (state.revealed) return;
-    const correct = q.options?.[idx] === q.answer;
-    setState({ ...state, selected: idx, revealed: true, score: state.score + (correct ? 1 : 0) });
+  const submit = () => {
+    if (revealed) return;
+    setResults((v) => [...v, isCorrectBankAnswer(q, selected, numeric)]);
+    setRevealed(true);
   };
-
-  const handleNext = () => {
-    const next = state.current + 1;
-    if (next >= total) setState({ ...state, done: true });
-    else setState({ ...state, current: next, selected: null, revealed: false });
-  };
-
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-2xl mx-auto">
-      {/* Progress */}
-      <div className="mb-6">
-        <div className="flex justify-between text-sm text-muted-foreground mb-2">
-          <span>
-            Question {state.current + 1} of {total}
-          </span>
-          <span>{state.score} correct</span>
-        </div>
-        <div className="h-1.5 bg-muted/30 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-primary rounded-full transition-all"
-            style={{ width: `${((state.current + 1) / total) * 100}%` }}
-          />
-        </div>
+    <div className="max-w-3xl mx-auto p-4 sm:p-6 space-y-5">
+      <div className="flex justify-between gap-2">
+        <h1 className="text-xl font-bold">
+          Question {index + 1} of {questions.length}
+        </h1>
+        <Button variant="ghost" onClick={onClose}>
+          Close
+        </Button>
       </div>
-
-      <div className="card-light rounded-2xl p-6 space-y-5">
-        <div className="flex gap-2 text-xs text-muted-foreground">
-          <span>{q.exam_id?.toUpperCase()}</span>
-          <span>·</span>
-          <span>{q.year}</span>
-          <span>·</span>
-          <span>{q.subject}</span>
-        </div>
-        <div className="text-base leading-relaxed font-medium">
-          <MarkdownContent content={q.question} />
-        </div>
-        <div className="space-y-2">
-          {(q.options || []).map((opt, idx) => {
-            const isSelected = state.selected === idx;
-            const isCorrect = opt === q.answer;
-            let optStyle: React.CSSProperties = { background: "var(--muted)" };
-            let optCls = "border text-sm";
-            if (state.revealed) {
-              if (isCorrect) {
-                optStyle = {
-                  background: "var(--feat-syllabus-bg)",
-                  borderColor: "var(--feat-syllabus)",
-                  color: "var(--feat-syllabus)",
-                };
-                optCls = "border text-sm";
-              } else if (isSelected) {
-                optStyle = {
-                  background: "rgba(239,68,68,0.1)",
-                  borderColor: "#ef4444",
-                  color: "#ef4444",
-                };
-                optCls = "border text-sm";
-              } else {
-                optStyle = { background: "var(--muted)", opacity: 0.5 };
-                optCls = "border text-sm";
+      <Source question={q} />
+      <MarkdownContent content={q.question} />
+      <p className="text-sm text-muted-foreground">
+        {q.question_type === "multiple"
+          ? "Select every correct option, then check your answer."
+          : q.question_type === "integer"
+            ? "Enter the numerical answer."
+            : "Select one answer."}
+      </p>
+      {q.question_type === "integer" ? (
+        <input
+          aria-label="Numerical answer"
+          inputMode="decimal"
+          className="w-full rounded-xl border bg-background p-3"
+          value={numeric}
+          disabled={revealed}
+          onChange={(e) => setNumeric(e.target.value)}
+        />
+      ) : (
+        q.options.map((o, i) => (
+          <div
+            key={i}
+            role="button"
+            tabIndex={revealed ? -1 : 0}
+            aria-pressed={selected.includes(i)}
+            className={`border rounded-xl p-3 cursor-pointer ${selected.includes(i) ? "border-primary bg-accent" : ""}`}
+            onClick={() => {
+              if (!revealed)
+                setSelected((old) =>
+                  q.question_type === "multiple"
+                    ? old.includes(i)
+                      ? old.filter((x) => x !== i)
+                      : [...old, i]
+                    : [i],
+                );
+            }}
+            onKeyDown={(e) => {
+              if (!revealed && (e.key === "Enter" || e.key === " ")) {
+                e.preventDefault();
+                setSelected((old) =>
+                  q.question_type === "multiple"
+                    ? old.includes(i)
+                      ? old.filter((x) => x !== i)
+                      : [...old, i]
+                    : [i],
+                );
               }
-            } else if (isSelected) {
-              optStyle = {
-                background: "var(--feat-pyq-bg)",
-                borderColor: "var(--feat-pyq)",
-                color: "var(--feat-pyq)",
-              };
-              optCls = "border text-sm";
-            }
-            return (
-              // div[role=button] instead of <button> so MarkdownContent block math is valid HTML
-              <div
-                key={idx}
-                role="button"
-                tabIndex={state.revealed ? -1 : 0}
-                onClick={() => handleSelect(idx)}
-                onKeyDown={(e) =>
-                  !state.revealed && (e.key === "Enter" || e.key === " ") && handleSelect(idx)
-                }
-                style={optStyle}
-                className={cn(
-                  "w-full text-left px-4 py-3 rounded-xl transition-all flex items-start gap-3 select-none",
-                  state.revealed ? "cursor-default" : "cursor-pointer",
-                  optCls,
-                )}
-              >
-                <span className="shrink-0 mt-0.5">
-                  {state.revealed && isCorrect && <CheckCircle2 className="h-4 w-4" />}
-                  {state.revealed && isSelected && !isCorrect && <XCircle className="h-4 w-4" />}
-                  {(!state.revealed || (!isCorrect && !isSelected)) && (
-                    <span className="text-xs font-bold opacity-40">
-                      {String.fromCharCode(65 + idx)}.
-                    </span>
-                  )}
-                </span>
-                <span className="flex-1">
-                  <MarkdownContent content={opt} />
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        {state.revealed && q.explanation && (
-          <div
-            className="p-4 rounded-xl border border-border"
-            style={{ background: "var(--muted)" }}
+            }}
           >
-            <span className="text-xs font-semibold text-foreground uppercase tracking-wide block mb-1.5">
-              Explanation
-            </span>
-            <div className="text-sm text-muted-foreground">
-              <MarkdownContent content={q.explanation} />
-            </div>
+            <MarkdownContent content={`${String.fromCharCode(65 + i)}. ${o}`} />
           </div>
-        )}
-        {state.revealed && (
-          <Button onClick={handleNext} className="w-full bg-gradient-primary">
-            {state.current + 1 >= total ? "See Results" : "Next Question"}{" "}
-            <ChevronRight className="h-4 w-4 ml-1" />
+        ))
+      )}
+      {!revealed ? (
+        <Button
+          disabled={q.question_type === "integer" ? !numeric.trim() : !selected.length}
+          onClick={submit}
+        >
+          Check answer
+        </Button>
+      ) : (
+        <div className="space-y-4 rounded-xl bg-muted p-4">
+          <p className="font-semibold">{results.at(-1) ? "Correct" : "Incorrect"}</p>
+          <MarkdownContent content={q.answer} />
+          {q.explanation && <MarkdownContent content={q.explanation} />}
+          <Button
+            onClick={() => {
+              if (index + 1 === questions.length) setDone(true);
+              else {
+                setIndex((i) => i + 1);
+                setSelected([]);
+                setNumeric("");
+                setRevealed(false);
+              }
+            }}
+          >
+            {index + 1 === questions.length ? "See results" : "Next question"}
+            <ChevronRight size={16} />
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

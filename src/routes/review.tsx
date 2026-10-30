@@ -297,7 +297,7 @@ function ReviewPage() {
               onClick={() => setIsFlipped((f) => !f)}
               onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setIsFlipped((f) => !f)}
               className={cn(
-                "relative w-full transition-all duration-500 transform-gpu",
+                "relative grid w-full min-w-0 transition-all duration-500 transform-gpu",
                 "cursor-pointer focus:outline-none",
               )}
               style={{
@@ -308,7 +308,8 @@ function ReviewPage() {
             >
               {/* Front */}
               <div
-                className="absolute inset-0 card-light rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden"
+                className="[grid-area:1/1] min-w-0 card-light rounded-2xl p-5 sm:p-8 flex flex-col items-center justify-center backface-hidden"
+                aria-hidden={isFlipped}
                 style={{ backfaceVisibility: "hidden" }}
               >
                 <div className="text-xs text-muted-foreground mb-4 uppercase tracking-wider">
@@ -323,7 +324,8 @@ function ReviewPage() {
               </div>
               {/* Back */}
               <div
-                className="absolute inset-0 rounded-2xl p-8 flex flex-col items-center justify-center border"
+                className="[grid-area:1/1] min-w-0 rounded-2xl p-5 sm:p-8 flex flex-col items-center justify-center border"
+                aria-hidden={!isFlipped}
                 style={{
                   backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",

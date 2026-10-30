@@ -116,15 +116,15 @@ function PlannerPage() {
       const next: PlanItem[] = res.plan.flatMap((d) =>
         d.tasks.map((t) => ({ id: uid(), date: dayKey(d.day - 1), task: t, done: false })),
       );
-      // Clear existing plan and save new one. If save fails after clear,
-      // show error but the new plan items are still available to retry.
-      await api.clearPlan();
-      queryClient.setQueryData(["plan"], next); // Optimistically update UI
-      await saveMutation.mutateAsync(next);
+      // Keep the existing schedule until the replacement has been persisted.
+      await api.savePlanItems(next);
+      await api.deletePlanItems(plan.map((item) => item.id));
+      await queryClient.invalidateQueries({ queryKey: ["plan"] });
       toast.success(`Plan ready: ${next.length} tasks across ${res.plan.length} days`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to generate plan");
     } finally {
+      void queryClient.invalidateQueries({ queryKey: ["plan"] });
       setLoading(false);
     }
   };
@@ -169,9 +169,9 @@ function PlannerPage() {
               ? `Using ${pendingTopics.length} unfinished topics from your syllabus.`
               : "No syllabus yet — add topics on the Syllabus page."}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Select value={days} onValueChange={setDays}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full sm:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -193,12 +193,12 @@ function PlannerPage() {
         </div>
         <div className="card-light p-5 rounded-2xl">
           <div className="text-sm font-medium mb-3">Add task manually</div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Input
               type="date"
               value={manualDate}
               onChange={(e) => setManualDate(e.target.value)}
-              className="w-44"
+              className="w-full sm:w-44"
             />
             <Input
               value={manualTask}

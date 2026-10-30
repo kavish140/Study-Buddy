@@ -30,7 +30,7 @@ export const Route = createFileRoute("/teach")({
       {
         name: "description",
         content:
-          "Explain concepts to the AI and get Socratic follow-up questions to deepen your understanding",
+          "Explain concepts to the AI and receive feedback without generated practice questions",
       },
     ],
   }),
@@ -76,12 +76,12 @@ const SUGGESTED_TOPICS = [
 const SOCRATIC_SYSTEM_PROMPT = `You are a Socratic AI tutor helping a student prepare for a competitive exam (JEE/NEET/UPSC/CAT level).
 
 Your role:
-1. The student will explain a concept to you. Ask one focused follow-up question at a time to probe their understanding deeper.
+1. The student will explain a concept to you. Evaluate their explanation and identify specific gaps. Do not generate questions, quiz items, or new example problems.
 2. Never give the answer directly. Instead, guide them with hints if they're stuck.
 
 Rules:
 - Be encouraging but intellectually rigorous.
-- Keep each question short and focused (1-2 sentences).
+- Keep feedback concise and actionable. Suggest concepts to elaborate on using statements rather than invented questions.
 - Do not reveal the exchange count to the student.
 - Use markdown for formatting in non-score messages.`;
 
@@ -268,7 +268,7 @@ function TeachPage() {
         },
         {
           role: "assistant",
-          content: `Understood. I will act as a Socratic tutor for the topic "${topic}" and ask one focused question at a time to probe your understanding.`,
+          content: `Understood. I will act as a Socratic tutor for the topic "${topic}" and provide focused feedback on your explanations without generating questions.`,
         },
         ...history,
         { role: "user", content: newUserContent },
@@ -388,7 +388,7 @@ function TeachPage() {
           <div>
             <h1 className="text-2xl font-bold font-heading">Teaching Mode</h1>
             <p className="text-xs text-muted-foreground">
-              Explain a concept — the AI will probe your understanding
+              Explain a concept — get feedback on your explanation
             </p>
           </div>
         </div>
@@ -411,8 +411,8 @@ function TeachPage() {
               <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div className="text-sm leading-relaxed">
                 <span className="font-semibold">How it works:</span> You pick a topic and explain it
-                to the AI in your own words. The AI asks Socratic follow-up questions to probe your
-                understanding. After {MAX_EXCHANGES} exchanges, you receive a detailed{" "}
+                to the AI in your own words. The AI reviews your explanation and identifies gaps in
+                your understanding. After {MAX_EXCHANGES} exchanges, you receive a detailed{" "}
                 <span className="text-primary font-medium">score out of 10</span> with strengths and
                 gaps.
               </div>
@@ -431,7 +431,7 @@ function TeachPage() {
                 onChange={(e) => setInputTopic(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleStart(inputTopic)}
                 placeholder="e.g. Faraday's Law of Induction"
-                className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none border border-border"
+                className="flex-1 min-w-0 rounded-xl px-4 py-2.5 text-sm outline-none border border-border"
                 style={{ background: "var(--muted)" }}
               />
               <Button

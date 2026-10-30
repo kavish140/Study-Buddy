@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, RotateCcw, Check, X } from "lucide-react";
 import { uid, XP_REWARDS, type SavedQuiz, type QuizQuestion } from "@/lib/storage";
-import { generateQuiz } from "@/lib/ai.functions";
+import { getQuizQuestions } from "@/lib/question-bank";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/quiz")({
       { title: "Quizzes — AcePrep" },
       {
         name: "description",
-        content: "Generate AI quizzes on any topic and review your past attempts.",
+        content: "Practice quizzes from sourced question banks and review your attempts.",
       },
     ],
   }),
@@ -55,20 +55,20 @@ function QuizPage() {
   });
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState("5");
-  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("hard");
+  const [bankExam, setBankExam] = useState("Mixed JEE");
+  const [difficulty, setDifficulty] = useState<"any" | "easy" | "medium" | "hard">("any");
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState<SavedQuiz | null>(null);
 
   const handleGenerate = async (retryCount = 0) => {
-    if (!topic.trim()) return;
     setLoading(true);
     try {
-      const res = await generateQuiz({
+      const res = await getQuizQuestions({
         data: {
           topic,
           count: Number(count),
           difficulty,
-          examName: profile?.exam_name,
+          examName: bankExam,
           source: "quiz",
           appContext: contextSummary,
         },
@@ -102,7 +102,7 @@ function QuizPage() {
 
       const quiz: SavedQuiz = {
         id: uid(),
-        topic: topic.trim(),
+        topic: topic.trim() || "Mixed bank questions",
         createdAt: Date.now(),
         questions,
       };
@@ -116,7 +116,7 @@ function QuizPage() {
     } catch (e) {
       // Only catches quiz GENERATION errors (edge function failures), not save errors.
       // Save errors are surfaced via saveMutation’s top-level onError toast.
-      const msg = e instanceof Error ? e.message : "Failed to generate quiz";
+      const msg = e instanceof Error ? e.message : "Unable to select bank questions";
       toast.error(msg, {
         action:
           retryCount < 2
@@ -160,21 +160,26 @@ function QuizPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-up">
-      <h1 className="text-3xl font-bold tracking-tight font-heading">AI Quizzer</h1>
+      <h1 className="text-3xl font-bold tracking-tight font-heading">Practice Quiz</h1>
       <p className="text-muted-foreground mt-1">
-        Generate a{" "}
-        {profile?.exam_name ? (
-          <span className="text-primary font-medium">{profile.exam_name}</span>
-        ) : (
-          "competitive exam"
-        )}
-        -level quiz on any syllabus topic.
+        Practice existing JEE questions from published papers. Mixed practice includes Main and
+        Advanced questions. No AI question generation.
       </p>
 
       <div className="p-5 rounded-2xl card-light mt-6" data-tour="tour-quiz-topic">
         <div className="flex items-center gap-2 text-sm font-medium mb-4">
           <Sparkles className="h-4 w-4 text-primary" /> New quiz
         </div>
+        <select
+          aria-label="Question source exam"
+          value={bankExam}
+          onChange={(e) => setBankExam(e.target.value)}
+          className="mb-3 w-full rounded-lg border p-2 text-sm bg-background"
+        >
+          <option>Mixed JEE</option>
+          <option>JEE Main</option>
+          <option>JEE Advanced</option>
+        </select>
         <div
           className="grid md:grid-cols-[1fr_120px_140px_auto] gap-2"
           data-tour="tour-quiz-settings"
@@ -182,11 +187,7 @@ function QuizPage() {
           <Input
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder={
-              profile?.exam_name
-                ? `${profile.exam_name} topic, e.g. Projectile Motion, p-Block Elements...`
-                : "Topic, e.g. Newton's laws of motion"
-            }
+            placeholder={"Optional topic or subject — leave blank for mixed practice"}
             onKeyDown={(e) => e.key === "Enter" && !loading && handleGenerate()}
           />
           <Select value={count} onValueChange={setCount}>
@@ -206,18 +207,19 @@ function QuizPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="easy">Easy (NCERT)</SelectItem>
-              <SelectItem value="medium">Medium (JEE Main)</SelectItem>
-              <SelectItem value="hard">Hard (JEE Advanced)</SelectItem>
+              <SelectItem value="any">Any difficulty</SelectItem>
+              <SelectItem value="easy">Source: easy</SelectItem>
+              <SelectItem value="medium">Source: medium</SelectItem>
+              <SelectItem value="hard">Source: hard</SelectItem>
             </SelectContent>
           </Select>
           <Button
             onClick={() => handleGenerate()}
-            disabled={loading || !topic.trim()}
+            disabled={loading}
             className="bg-gradient-primary"
             data-tour="tour-quiz-generate"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate"}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start quiz"}
           </Button>
         </div>
       </div>
@@ -246,8 +248,13 @@ function QuizPage() {
                   {q.score != null && ` · scored ${q.score}/${q.questions.length}`}
                 </div>
               </div>
-              <Button size="sm" variant="secondary" onClick={() => setActive(q)}>
-                Retake
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={!q.questions.every((question) => question.source)}
+                onClick={() => setActive(q)}
+              >
+                {q.questions.every((question) => question.source) ? "Retake" : "Legacy attempt"}
               </Button>
             </div>
           ))}
@@ -310,6 +317,16 @@ function QuizRunner({
         {quiz.questions.map((q: QuizQuestion, i) => (
           <div key={`q-${i}-${q.question.slice(0, 20)}`} className="p-5 rounded-2xl card-light">
             <div className="text-xs text-muted-foreground mb-1">Question {i + 1}</div>
+            {q.source && (
+              <a
+                className="text-xs text-primary underline"
+                href={q.source.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {q.source.name} · {q.source.license}
+              </a>
+            )}
             {/* Question text — MarkdownContent renders inline LaTeX like $\sin x$ */}
             <div className="font-medium text-sm leading-relaxed">
               <MarkdownContent content={q.question} />

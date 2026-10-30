@@ -20,6 +20,7 @@ import { TutorialProvider } from "../components/TutorialProvider";
 import { TutorialOverlay } from "../components/TutorialOverlay";
 import { HelpButton } from "../components/HelpButton";
 import { useTheme } from "../hooks/use-theme";
+import { AuthProvider } from "../contexts/AuthContext";
 
 function NotFoundComponent() {
   return (
@@ -150,20 +151,22 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* FocusTimerProvider is inside QueryClientProvider (needs useMutation) and above
+      <AuthProvider>
+        {/* FocusTimerProvider is inside QueryClientProvider (needs useMutation) and above
           the router outlet so the countdown survives navigation between routes. */}
-      <FocusTimerProvider>
-        <TutorialProvider>
-          {isAuthPage ? <Outlet /> : <AppLayout />}
-          {!isAuthPage && (
-            <>
-              <TutorialOverlay />
-              <HelpButton />
-            </>
-          )}
-          <Toaster richColors position="top-right" theme={effectiveTheme} />
-        </TutorialProvider>
-      </FocusTimerProvider>
+        <FocusTimerProvider>
+          <TutorialProvider>
+            {isAuthPage ? <Outlet /> : <AppLayout />}
+            {!isAuthPage && (
+              <>
+                <TutorialOverlay />
+                <HelpButton />
+              </>
+            )}
+            <Toaster richColors position="top-right" theme={effectiveTheme} />
+          </TutorialProvider>
+        </FocusTimerProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

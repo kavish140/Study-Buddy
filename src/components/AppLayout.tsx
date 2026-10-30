@@ -114,7 +114,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       },
       {
         to: "/pyq",
-        label: "PYQ Bank",
+        label: "Question Bank",
         icon: Library,
         tourId: "tour-nav-pyq",
         colorVar: "--feat-pyq",
@@ -220,7 +220,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/quiz": "Quizzes",
   "/mock-test": "Mock Test",
   "/review": "Smart Review",
-  "/pyq": "PYQ Bank",
+  "/pyq": "Question Bank",
   "/chat": "AI Tutor",
   "/teach": "Teaching Mode",
   "/focus": "Focus Timer",
@@ -448,7 +448,7 @@ function FeaturePanel({
 
 export function AppLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, error: authError, retry: retryAuth, signOut } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { triggerPageTour } = useTutorial();
@@ -465,16 +465,23 @@ export function AppLayout() {
     setMoreOpen(false);
   }, [path]);
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const {
+    data: profile,
+    isPending: profileLoading,
+    isError: profileError,
+    refetch: retryProfile,
+  } = useQuery({
     queryKey: ["userProfile"],
     queryFn: api.getUserProfile,
-    enabled: !!user,
+    enabled: !!user && !authError,
+    retry: false,
+    networkMode: "always",
   });
 
   const { data: userStats } = useQuery({
     queryKey: ["userStats"],
     queryFn: api.getUserStats,
-    enabled: !!user,
+    enabled: !!user && !authError && !!profile?.onboarding_completed,
   });
 
   const awardMutation = useMutation({
@@ -494,7 +501,7 @@ export function AppLayout() {
 
   // Award daily login XP once per day
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile?.onboarding_completed || authError) return;
     const today = todayIST();
     const todayKey = `aceprep_login_${user.id}_${today}`;
     if (!localStorage.getItem(todayKey)) {
@@ -502,26 +509,28 @@ export function AppLayout() {
       awardMutation.mutate();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, profile?.onboarding_completed, authError]);
 
   const { data: dueCards = [] } = useQuery({
     queryKey: ["reviewCards"],
     queryFn: api.getDueReviewCards,
-    enabled: !!user,
+    enabled: !!user && !authError && !!profile?.onboarding_completed,
     refetchInterval: 60_000,
   });
 
   // Auth guard — send unauthenticated visitors to the landing page
   useEffect(() => {
-    if (!loading && !user && path !== "/login" && path !== "/landing") {
+    if (!loading && !authError && !user && path !== "/login" && path !== "/landing") {
       navigate({ to: "/landing" });
     }
-  }, [user, loading, path, navigate]);
+  }, [user, loading, authError, path, navigate]);
 
   // Onboarding guard
   useEffect(() => {
     if (
       user &&
+      !authError &&
+      !profileError &&
       !profileLoading &&
       !profile?.onboarding_completed &&
       path !== "/onboarding" &&
@@ -529,7 +538,7 @@ export function AppLayout() {
     ) {
       navigate({ to: "/onboarding" });
     }
-  }, [user, profileLoading, profile, path, navigate]);
+  }, [user, authError, profileError, profileLoading, profile, path, navigate]);
 
   // Auto-trigger global tour for new users (after onboarding)
   useEffect(() => {
@@ -538,6 +547,26 @@ export function AppLayout() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profile?.onboarding_completed]);
+
+  if (!loading && (authError || profileError)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <h1 className="text-xl font-semibold">Unable to connect</h1>
+        <p className="max-w-md text-muted-foreground">
+          {authError || "We couldn't load your profile. Please try again in a moment."}
+        </p>
+        <button
+          className="text-primary underline"
+          onClick={() => (authError ? retryAuth() : void retryProfile())}
+        >
+          Try again
+        </button>
+        <Link to="/landing" className="text-sm text-muted-foreground underline">
+          Back to home
+        </Link>
+      </div>
+    );
+  }
 
   if (loading || (user && profileLoading)) {
     return (
@@ -569,8 +598,9 @@ export function AppLayout() {
     setMoreOpen(false);
     try {
       await signOut();
-    } finally {
       navigate({ to: "/login" });
+    } catch {
+      toast.error("Unable to sign out. Please try again.");
     }
   };
 
@@ -696,7 +726,12 @@ export function AppLayout() {
       />
 
       {/* ── Main content ─────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-y-auto pb-20 md:pb-0 animate-fade-up">
+      <main
+        className={cn(
+          "app-content flex-1 flex flex-col min-w-0",
+          path === "/chat" ? "app-content--chat" : "pb-20 md:pb-0 animate-fade-up",
+        )}
+      >
         <Outlet />
       </main>
 

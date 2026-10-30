@@ -186,7 +186,7 @@ function ChatPage() {
 
   return (
     <div
-      className="relative h-full flex flex-1 overflow-hidden animate-fade-up"
+      className="relative h-full min-h-0 min-w-0 flex flex-1 overflow-hidden"
       style={{ background: "var(--background)" }}
     >
       {/* \u2500\u2500 Sidebar */}
@@ -279,7 +279,7 @@ function ChatPage() {
       )}
 
       {/* Main chat area */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-h-0 min-w-0">
         {activeSession ? (
           <ChatView
             session={activeSession}
@@ -341,13 +341,13 @@ function EmptyState({
 
   const suggestedPrompts = [
     { icon: HelpCircle, text: "Explain electronegativity", sub: "Chemistry concept" },
-    { icon: Lightbulb, text: "Solve projectile motion", sub: "Physics problem" },
+    { icon: Lightbulb, text: "Explain projectile motion", sub: "Physics concept" },
     { icon: BookOpen, text: "Summarize French Revolution", sub: "History topic" },
     { icon: Sparkles, text: "Best strategies for JEE Math", sub: "Exam tips" },
   ];
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
+    <div className="flex-1 flex flex-col min-h-0 min-w-0">
       {/* Header */}
       <header
         className="border-b border-border px-4 py-3 flex items-center gap-3 shrink-0"
@@ -372,7 +372,7 @@ function EmptyState({
       </header>
 
       {/* Hero area */}
-      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto relative">
+      <div className="flex-1 min-h-0 flex items-center justify-center p-4 sm:p-8 overflow-y-auto relative">
         {/* Background radial glow */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -608,9 +608,12 @@ function ChatView({
       toast.error("Only images (JPG, PNG, WEBP) and PDFs are supported.");
       return;
     }
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    const maxSizeMB = type === "pdf" ? 7.5 : 10;
+    const MAX_FILE_SIZE = maxSizeMB * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(`File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is 10MB.`);
+      toast.error(
+        `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${maxSizeMB}MB.`,
+      );
       return;
     }
     // Clear the other pending type
@@ -875,15 +878,15 @@ function ChatView({
       icon: Lightbulb,
     },
     {
-      label: "Give an example",
+      label: "Explain the method",
       prompt:
-        "Give me a fully solved JEE exam-style numerical problem on this topic. Show every step.",
+        "Explain the method for solving the existing question we discussed. Do not create a new problem.",
       icon: BookOpen,
     },
     {
-      label: "Quiz me on this",
+      label: "Summarize key ideas",
       prompt:
-        "Generate 1 JEE Advanced level MCQ on exactly the topic we just discussed. Give 4 numerical options. Then reveal the answer and full solution after I respond.",
+        "Summarize the key ideas and mistakes to avoid for the question we discussed. Do not generate questions.",
       icon: HelpCircle,
     },
   ];
@@ -1192,7 +1195,12 @@ function MessageBubble({
         )}
       </div>
 
-      <div className={cn("flex flex-col gap-1 max-w-[80%]", isUser && "items-end")}>
+      <div
+        className={cn(
+          "flex min-w-0 flex-col gap-1 max-w-[calc(100%-44px)] sm:max-w-[80%]",
+          isUser && "items-end",
+        )}
+      >
         <div
           className={cn(
             "rounded-2xl text-sm leading-relaxed",
@@ -1220,7 +1228,9 @@ function MessageBubble({
           )}
           <div className="px-4 py-3">
             {isUser ? (
-              <p className="whitespace-pre-wrap">{message.content}</p>
+              <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                {message.content}
+              </p>
             ) : (
               <MarkdownContent content={message.content} isStreaming={isStreaming} />
             )}

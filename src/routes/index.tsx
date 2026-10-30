@@ -372,7 +372,7 @@ function Dashboard() {
               to="/quiz"
               icon={<Brain className="h-5 w-5" />}
               label="Start Quiz"
-              hint="AI exam questions"
+              hint="Sourced exam questions"
               colorVar="--feat-quiz"
               bgVar="--feat-quiz-bg"
             />
@@ -486,7 +486,7 @@ function Dashboard() {
               to="/notes"
               icon={<FileText className="h-5 w-5" />}
               title="Notes & Flashcards"
-              desc="Summarise any topic into clear notes and auto-generate a flashcard deck."
+              desc="Summarise topics with AI and review matching question-bank cards."
               badge={notes.length > 0 ? `${notes.length} notes` : undefined}
               colorVar="--feat-notes"
               bgVar="--feat-notes-bg"
@@ -552,8 +552,8 @@ function Dashboard() {
               className="text-sm mb-6 max-w-sm mx-auto"
               style={{ color: "var(--muted-foreground)" }}
             >
-              Begin by adding your syllabus so AI can structure your subjects and topics. Then
-              generate your first quiz!
+              Begin by adding your syllabus so AI can structure your subjects and topics. Then start
+              your first bank-based quiz!
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link

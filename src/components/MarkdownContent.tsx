@@ -197,6 +197,17 @@ function renderInline(text: string): React.ReactNode {
 
 /* ─── Block markdown renderer ─── */
 function renderMarkdown(text: string): React.ReactNode[] {
+  // Providers may return either common LaTeX delimiter style. Preserve code fences.
+  text = text
+    .split(/(```[\s\S]*?```)/g)
+    .map((part) =>
+      part.startsWith("```")
+        ? part
+        : part
+            .replace(/\\\[([\s\S]*?)\\\]/g, (_match, math) => `\n$$\n${math}\n$$\n`)
+            .replace(/\\\((.*?)\\\)/g, (_match, math) => `$${math}$`),
+    )
+    .join("");
   const blocks: React.ReactNode[] = [];
   const lines = text.split("\n");
   let currentBlock: string[] = [];
@@ -273,6 +284,52 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
     if (inCodeBlock) {
       currentBlock.push(line);
+      continue;
+    }
+
+    // Preserve tables in sourced exam questions, including inline math in cells.
+    if (trimmed.includes("|") && /^\|?\s*:?-{3,}/.test(lines[i + 1]?.trim() ?? "")) {
+      flushParagraph();
+      const cells = (row: string) =>
+        row
+          .trim()
+          .replace(/^\||\|$/g, "")
+          .split(/(?<!\\)\|/)
+          .map((cell) => cell.trim().replace(/\\\|/g, "|"));
+      const headers = cells(line);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length && lines[i].trim().includes("|")) {
+        rows.push(cells(lines[i]));
+        i++;
+      }
+      i--;
+      blocks.push(
+        <div key={`table-${blocks.length}`} className="my-3 max-w-full overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr>
+                {headers.map((cell, j) => (
+                  <th key={j} className="border border-border p-2 text-left">
+                    {renderInline(cell)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, j) => (
+                <tr key={j}>
+                  {headers.map((_cell, k) => (
+                    <td key={k} className="border border-border p-2">
+                      {renderInline(row[k] ?? "")}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      );
       continue;
     }
 
@@ -388,7 +445,13 @@ export function MarkdownContent({
   className?: string;
 }) {
   return (
-    <div className={cn(isStreaming && "streaming-cursor", className)}>
+    <div
+      className={cn(
+        "markdown-content min-w-0 max-w-full",
+        isStreaming && "streaming-cursor",
+        className,
+      )}
+    >
       {renderMarkdown(content)}
     </div>
   );

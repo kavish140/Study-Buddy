@@ -1,16 +1,9 @@
-import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
-  beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session) {
-      throw redirect({ to: "/" });
-    }
-  },
   head: () => ({
     meta: [
       { title: "Sign in — AcePrep" },
@@ -24,7 +17,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
-  const { signInWithGoogle, user, loading } = useAuth();
+  const { signInWithGoogle, user, loading, error, retry } = useAuth();
   const navigate = useNavigate();
   const [signingIn, setSigningIn] = useState(false);
 
@@ -157,6 +150,15 @@ function Login() {
             )}
             {signingIn ? "Signing in..." : "Continue with Google"}
           </button>
+
+          {error && (
+            <div role="alert" className="mt-4 text-sm text-muted-foreground">
+              <p>{error}</p>
+              <button onClick={retry} className="mt-2 text-primary underline">
+                Retry connection
+              </button>
+            </div>
+          )}
 
           <div className="mt-6 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />

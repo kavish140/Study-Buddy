@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { generateMockTest } from "@/lib/ai.functions";
+import { getMockTestQuestions } from "@/lib/question-bank";
 import { getExamById } from "@/lib/exam-catalog";
 import { uid, type MockTest, type MockTestSection, type MockTestQuestion } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -325,6 +325,7 @@ function SetupScreen({
 }) {
   const [generating, setGenerating] = useState(false);
   const [questionsPerSection, setQuestionsPerSection] = useState(5);
+  const [mixedJEE, setMixedJEE] = useState(true);
   const { contextSummary } = useAppContext();
 
   const handleGenerate = async () => {
@@ -344,9 +345,9 @@ function SetupScreen({
           topics: s.topics.slice(0, 8),
         }));
 
-      const res = await generateMockTest({
+      const res = await getMockTestQuestions({
         data: {
-          examName: examInfo.name,
+          examName: mixedJEE && examInfo.id.startsWith("jee") ? "Mixed JEE" : examInfo.name,
           sections,
           source: "mock-test",
           appContext: contextSummary,
@@ -375,6 +376,7 @@ function SetupScreen({
             explanation: q.explanation,
             section: s.name,
             topic: q.topic || s.name,
+            source: q.source,
           })),
         })),
         answers: {},
@@ -385,7 +387,7 @@ function SetupScreen({
 
       onStart(test);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to generate mock test");
+      toast.error(e instanceof Error ? e.message : "Unable to assemble a bank-based mock");
     } finally {
       setGenerating(false);
     }
@@ -399,8 +401,21 @@ function SetupScreen({
         <span className="text-gradient">Mock Tests</span>
       </h1>
       <p className="text-muted-foreground mt-2">
-        Simulate real exam conditions with timed, AI-generated mock tests.
+        Timed practice from existing bank questions. No AI-generated questions.
       </p>
+      {examInfo?.id.startsWith("jee") && (
+        <label className="mt-4 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={mixedJEE}
+            onChange={(e) => setMixedJEE(e.target.checked)}
+          />
+          <span>
+            Use published questions from both JEE Main and Advanced. This is mixed practice, not a
+            reproduction of one exam paper.
+          </span>
+        </label>
+      )}
 
       {/* Generate card */}
       <div className="card-light p-6 rounded-2xl mt-8" data-tour="tour-mock-new">
@@ -471,7 +486,7 @@ function SetupScreen({
         >
           {generating ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating questions...
+              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Selecting bank questions...
             </>
           ) : (
             <>
@@ -800,6 +815,16 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
               </div>
 
               <div className="text-lg font-medium leading-relaxed mb-6">
+                {currentQ.source && (
+                  <a
+                    className="block mb-3 text-xs text-primary underline"
+                    href={currentQ.source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {currentQ.source.name} · {currentQ.source.license}
+                  </a>
+                )}
                 <MarkdownContent content={currentQ.question} />
               </div>
 

@@ -40,8 +40,8 @@ export const ALL_TOURS: Tour[] = [
       {
         id: "nav-quiz",
         target: "tour-nav-quiz",
-        title: "🧠 AI-Powered Quizzes",
-        body: "Generate exam-pattern MCQs on any topic in seconds — complete with step-by-step solutions.",
+        title: "🧠 Bank-Based Quizzes",
+        body: "Choose questions from the sourced bank and review answer keys after each attempt.",
         placement: "right",
       },
       {
@@ -132,7 +132,7 @@ export const ALL_TOURS: Tour[] = [
         id: "quiz-generate",
         target: "tour-quiz-generate",
         title: "3️⃣ Generate & Attempt",
-        body: 'Hit "Generate" — AI creates an exam-pattern quiz instantly. Review detailed solutions after each attempt.',
+        body: 'Hit "Start quiz" to select existing questions from the bank. No model writes the questions.',
         placement: "bottom",
       },
     ],
@@ -221,10 +221,10 @@ export const ALL_TOURS: Tour[] = [
       },
     ],
   },
-  // ── PYQ Bank page ────────────────────────────────────────────────────
+  // ── Question Bank page ────────────────────────────────────────────────────
   {
     id: "pyq",
-    name: "PYQ Bank Guide",
+    name: "Question Bank Guide",
     steps: [
       {
         id: "pyq-generate",
@@ -279,7 +279,7 @@ export const ALL_TOURS: Tour[] = [
         id: "notes-flashcard",
         target: "tour-notes-flashcard",
         title: "🃏 Built-in Flashcards",
-        body: "Every note comes with auto-generated flashcards. Tap a card to reveal the answer and test yourself.",
+        body: "Matching cards come from the sourced question bank. If the topic has no matches, no questions are invented.",
         placement: "top",
       },
     ],

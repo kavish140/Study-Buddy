@@ -8,10 +8,17 @@ const corsHeaders = {
 };
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || "";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-3.8-flash";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json", Allow: "POST, OPTIONS" },
+    });
   }
 
   // Verify JWT authentication
@@ -40,8 +47,12 @@ Deno.serve(async (req) => {
 
   try {
     if (!GEMINI_API_KEY) {
-      throw new Error(
-        "GEMINI_API_KEY is missing! Add it to your Supabase Secrets at Settings → Edge Functions → Secrets.",
+      return new Response(
+        JSON.stringify({ error: "Image/PDF analysis is not configured. Please contact support." }),
+        {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -109,10 +120,17 @@ Be thorough, accurate, and encouraging.`;
         : "Please read the question in this image and solve it step by step.";
 
     // Call Gemini API with vision
-    const model = "gemini-2.0-flash";
+    const model = GEMINI_MODEL;
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     const body = {
+      systemInstruction: {
+        parts: [
+          {
+            text: "Process, explain, or solve the existing questions in the supplied document. Never invent or generate new questions, quizzes, mock tests, or flashcard questions. If asked to create questions, direct the student to the app's sourced question bank.",
+          },
+        ],
+      },
       contents: [
         {
           role: "user",
@@ -129,7 +147,7 @@ Be thorough, accurate, and encouraging.`;
       ],
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 8192,
       },
     };
 
@@ -140,20 +158,33 @@ Be thorough, accurate, and encouraging.`;
         "x-goog-api-key": GEMINI_API_KEY,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(90_000),
     });
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
       console.error("Gemini Error:", errText);
-      throw new Error(`Gemini API Error (${geminiRes.status}): ${errText}`);
+      const message =
+        geminiRes.status === 429
+          ? "Image/PDF AI usage limit reached. Please wait a moment and try again."
+          : "Image/PDF analysis is unavailable. Please try again or contact support.";
+      return new Response(JSON.stringify({ error: message }), {
+        status: geminiRes.status === 429 ? 429 : 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const geminiData = await geminiRes.json();
 
     // Extract the text response
-    const responseText =
-      geminiData.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Sorry, I couldn't analyze this image.";
+    const candidate = geminiData.candidates?.[0];
+    const responseText = candidate?.content?.parts
+      ?.filter((part: { text?: string; thought?: boolean }) => !part.thought && part.text)
+      .map((part: { text: string }) => part.text)
+      .join("\n");
+    if (!responseText || (candidate.finishReason && candidate.finishReason !== "STOP")) {
+      throw new Error("The document could not be fully analyzed. Try a smaller or clearer file.");
+    }
 
     return new Response(JSON.stringify({ response: responseText }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -201,7 +201,7 @@ function LeaderboardPage() {
       {/* My rank banner */}
       {myStats && myRank > 0 && (
         <div
-          className="card-light rounded-2xl p-4 mb-6 flex items-center justify-between border border-primary/20"
+          className="card-light rounded-2xl p-4 mb-6 flex flex-wrap gap-3 items-center justify-between border border-primary/20"
           data-tour="tour-leaderboard-rank"
         >
           <div className="flex items-center gap-3">
