@@ -89,67 +89,97 @@ export function sampleBank(questions: BankQuestion[], count: number) {
   return pool.slice(0, count);
 }
 
-type HistoryStorage = Pick<Storage, "getItem" | "setItem">;
-
-// One shared, account-scoped history across all question-selection tools.
-// Selection reserves questions immediately, including abandoned attempts.
-export function createQuestionRotation(storage: HistoryStorage, userId: string) {
-  const key = `aceprep:question-history:v1:${userId}`;
-  function read(): Set<string> {
-    const raw = storage.getItem(key);
-    if (!raw) return new Set();
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.some((id) => typeof id !== "string"))
-      throw new Error("Question history could not be read. Reset it in Question Bank to continue.");
-    return new Set(parsed);
-  }
-  return {
-    unseen(questions: BankQuestion[]) {
-      const seen = read();
-      return questions.filter((q) => !seen.has(q.id));
-    },
-    draw(groups: { questions: BankQuestion[]; count: number }[]) {
-      const seen = read();
-      // Reserve all groups atomically: a failed mock must not consume an earlier section.
-      const selected = groups.map(({ questions, count }) => {
-        const unique = [...new Map(questions.map((q) => [q.id, q])).values()];
-        const available = unique.filter((q) => !seen.has(q.id));
-        if (available.length < count && unique.length >= count)
-          throw new Error(
-            `Only ${available.length} unseen questions match; ${count} requested. Choose fewer questions or broaden your filters. To intentionally reuse questions, reset selection history in Question Bank.`,
-          );
-        const picked = sampleBank(available, count);
-        picked.forEach((q) => seen.add(q.id));
-        return picked;
-      });
-      // Do not serve a new selection if its reservation cannot be persisted.
-      storage.setItem(key, JSON.stringify([...seen]));
-      return selected;
-    },
-    reset() {
-      storage.setItem(key, "[]");
-    },
-  };
-}
+export type QuestionHistoryClient = {
+  reserve: (
+    groups: { ids: string[]; count: number; allow_partial: boolean }[],
+    legacyIds: string[],
+  ) => Promise<string[][]>;
+  reset: () => Promise<void>;
+};
 
 let questionHistoryUser: string | null = null;
-export function setQuestionHistoryUser(userId: string | null) {
+let historyClient: QuestionHistoryClient | null = null;
+let accountVersion = 0;
+export function setQuestionHistoryUser(
+  userId: string | null,
+  client: QuestionHistoryClient | null = null,
+) {
+  if (questionHistoryUser !== userId) accountVersion++;
   questionHistoryUser = userId;
+  historyClient = client;
 }
-function questionRotation() {
-  if (!questionHistoryUser) throw new Error("Sign in before selecting practice questions.");
-  return createQuestionRotation(globalThis.localStorage, questionHistoryUser);
+function accountHistory() {
+  if (!questionHistoryUser || !historyClient)
+    throw new Error("Sign in before selecting practice questions.");
+  return { userId: questionHistoryUser, client: historyClient, version: accountVersion };
 }
-export function drawBankQuestions(questions: BankQuestion[], count: number) {
-  return questionRotation().draw([{ questions, count }])[0];
+function legacyQuestionIds(userId: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(
+      globalThis.localStorage.getItem(`aceprep:question-history:v1:${userId}`) || "[]",
+    );
+    return Array.isArray(parsed)
+      ? parsed
+          .filter((id): id is string => typeof id === "string" && id.length <= 200)
+          .slice(0, 20000)
+      : [];
+  } catch {
+    return [];
+  }
 }
-export function unseenBankQuestions(questions: BankQuestion[]) {
-  return questionRotation().unseen(questions);
+function removeLegacyHistory(userId: string) {
+  try {
+    globalThis.localStorage.removeItem(`aceprep:question-history:v1:${userId}`);
+  } catch {
+    /* Cloud history remains authoritative. */
+  }
 }
-export function resetQuestionHistory() {
-  questionRotation().reset();
+async function drawBankGroups(
+  groups: { questions: BankQuestion[]; count: number; allowPartial?: boolean }[],
+) {
+  const account = accountHistory();
+  const requests = groups.map(({ questions, count, allowPartial }) => {
+    if (!Number.isInteger(count) || count < 1 || count > 100)
+      throw new Error("Choose between 1 and 100 whole questions.");
+    return { ids: [...new Set(questions.map((q) => q.id))], count, allow_partial: !!allowPartial };
+  });
+  // One server transaction reserves every section; no local/offline fallback.
+  const selected = await account.client.reserve(requests, legacyQuestionIds(account.userId));
+  if (account.version !== accountVersion)
+    throw new Error("Your account changed. Please start the attempt again.");
+  const seen = new Set<string>();
+  if (!Array.isArray(selected) || selected.length !== groups.length)
+    throw new Error("Invalid question reservation response.");
+  const result = selected.map((ids, index) => {
+    const candidates = new Map(groups[index].questions.map((q) => [q.id, q]));
+    if (
+      !Array.isArray(ids) ||
+      ids.length > groups[index].count ||
+      (!groups[index].allowPartial && ids.length !== groups[index].count)
+    )
+      throw new Error("Incomplete question reservation response.");
+    return ids.map((id) => {
+      const q = candidates.get(id);
+      if (!q || seen.has(id)) throw new Error("Invalid question reservation response.");
+      seen.add(id);
+      return q;
+    });
+  });
+  removeLegacyHistory(account.userId);
+  return result;
 }
-
+export async function drawBankQuestions(
+  questions: BankQuestion[],
+  count: number,
+  allowPartial = false,
+) {
+  return (await drawBankGroups([{ questions, count, allowPartial }]))[0];
+}
+export async function resetQuestionHistory() {
+  const account = accountHistory();
+  await account.client.reset();
+  removeLegacyHistory(account.userId);
+}
 export function examIdFromName(name = "") {
   return /mixed/i.test(name) && /jee/i.test(name)
     ? "jee"
@@ -181,9 +211,11 @@ export async function bankQuiz(data: {
 }) {
   const all = await loadQuestionBank(examIdFromName(data.examName || "JEE Main"));
   return {
-    questions: drawBankQuestions(
-      filterBank(all, { search: data.topic, difficulty: data.difficulty, mcqOnly: true }),
-      data.count,
+    questions: (
+      await drawBankQuestions(
+        filterBank(all, { search: data.topic, difficulty: data.difficulty, mcqOnly: true }),
+        data.count,
+      )
     ).map(toQuizQuestion),
   };
 }
@@ -194,7 +226,7 @@ export async function bankMock(data: {
 }) {
   const bank = await loadQuestionBank(examIdFromName(data.examName));
   if (!data.sections.length) throw new Error("Select at least one subject for this mock test.");
-  const selected = questionRotation().draw(
+  const selected = await drawBankGroups(
     data.sections.map((section) => ({
       questions: filterBank(bank, { subject: section.name, mcqOnly: true }),
       count: section.questions,

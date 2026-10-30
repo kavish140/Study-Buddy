@@ -2,13 +2,7 @@ import { supabase } from "./supabase";
 import { backendFetch } from "./backend-request";
 import { consumeChatStream, readAIJson } from "./ai-response";
 import { validateAIResult } from "./ai-validation";
-import {
-  drawBankQuestions,
-  examIdFromName,
-  filterBank,
-  loadQuestionBank,
-  unseenBankQuestions,
-} from "./question-bank";
+import { drawBankQuestions, examIdFromName, filterBank, loadQuestionBank } from "./question-bank";
 
 async function invokeEdgeFunction<T = Record<string, unknown>>(
   action: string,
@@ -51,8 +45,7 @@ export const generateNotes = async ({
   const notes = await invokeEdgeFunction<{ summary: string }>("generateNotes", data);
   const requestedExam = examIdFromName(data.examName || "JEE Main");
   const bank = await loadQuestionBank(requestedExam.startsWith("jee") ? "jee" : requestedExam);
-  const unseen = unseenBankQuestions(filterBank(bank, { search: data.topic }));
-  const cards = unseen.length ? drawBankQuestions(unseen, Math.min(6, unseen.length)) : [];
+  const cards = await drawBankQuestions(filterBank(bank, { search: data.topic }), 6, true);
   return {
     ...notes,
     flashcards: cards.map((q) => ({

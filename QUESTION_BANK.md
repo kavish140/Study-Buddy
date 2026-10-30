@@ -7,22 +7,28 @@ questions and evaluating students' explanations. The old Edge Function question
 creation actions return HTTP 410. Existing study history is retained; older
 unattributed quizzes cannot be retaken as new bank quizzes.
 
-Question selection now reserves stable question IDs in shared, account-scoped
-browser storage across all five tools. New attempts skip previously selected IDs,
-including selections from abandoned attempts, and stop with an explicit exhaustion
-message rather than silently recycling them. Mock sections are reserved together;
-a failed section does not consume earlier sections. History survives reloads and
-sign-outs on the same browser, but is not synced across devices and is lost if site
-data is cleared. The Question Bank provides an explicit "Allow repeats" reset.
-Browsing the library, intentional retakes and spaced-repetition review are allowed
-to revisit existing questions. History begins with selections made by this version;
-earlier attempts are not retroactively added.
+Question selection reserves stable question IDs in Supabase, keyed by the signed-in
+account. A PostgreSQL transaction and per-account advisory lock serialize selections
+across devices and tabs, including every mock section. Exhausted requests fail
+explicitly; no offline or local sampling fallback is allowed. Practice and note
+cards can request a smaller remaining batch. Reservations include abandoned attempts.
+Existing browser history is imported with the next reservation. A cloud reset applies
+to all devices and closes legacy imports so stale browsers cannot resurrect the
+pre-reset history. Saved-attempt review and spaced repetition may intentionally
+revisit questions. Already-open attempts are unaffected by a later reset.
 
+Apply `supabase/migrations/006_question_history.sql` before deploying this frontend.
+Authenticated RPCs derive account identity from `auth.uid()`; callers cannot supply
+another user's ID. Direct history writes are revoked, and RLS limits reads to the
+current account. The integration checks in `scripts/question-history.integration.sql`
+run in a rolled-back transaction. They test exhaustion, atomic mock reservation,
+legacy import, global reset and account isolation without changing user history.
 Run `npm run questions:sync` to reproduce the snapshots. Sources are pinned to
 revisions in `scripts/question-importers.mjs`; downloaded-file SHA-256 checksums,
 source URLs, licenses, exclusions and counts are recorded in
 `public/question-bank/manifest.json`. Attribution and license files ship alongside
-the bank. No service-role key, provider key or database migration is needed.
+the bank. Question text needs no AI key; synchronized selection history requires
+the account-history migration above and a working Supabase connection.
 
 The initial accepted bank contains 939 records after validation and deduplication:
 466 JEE Main mathematics questions from Physics Wallah's 2025 evaluation set, and

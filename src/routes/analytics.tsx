@@ -284,7 +284,7 @@ function DiagnosticTestModal({
         toast.info(
           "Not enough bank questions match those topics; this diagnostic uses a mixed-subject selection.",
         );
-      diagnosticPool.current = drawBankQuestions(pool, DIAGNOSTIC_QUESTIONS);
+      diagnosticPool.current = await drawBankQuestions(pool, DIAGNOSTIC_QUESTIONS);
       setSecondsLeft(DIAGNOSTIC_DURATION_SECONDS);
       setIsTimerActive(true);
       await loadNextQuestion([], 0);

@@ -8,7 +8,8 @@ import {
   isCorrectBankAnswer,
   loadQuestionBank,
   sampleBank,
-  createQuestionRotation,
+  drawBankQuestions,
+  resetQuestionHistory,
   setQuestionHistoryUser,
 } from "../src/lib/question-bank.ts";
 import { importJEEBench, importMainPractice } from "./question-importers.mjs";
@@ -40,21 +41,20 @@ test("every shipped question has a traceable source and usable answer key", () =
 });
 
 test("quizzes and mocks only fetch static question-bank files, with no AI fallback", async (t) => {
-  const previousStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
-  const values = new Map();
-  Object.defineProperty(globalThis, "localStorage", {
-    configurable: true,
-    value: {
-      getItem: (key) => values.get(key) ?? null,
-      setItem: (key, value) => values.set(key, value),
+  const selected = new Set();
+  const reservationCalls = [];
+  setQuestionHistoryUser("test-user", {
+    reserve: async (groups) => {
+      reservationCalls.push(groups);
+      return groups.map(({ ids, count }) => {
+        const picked = ids.filter((id) => !selected.has(id)).slice(0, count);
+        picked.forEach((id) => selected.add(id));
+        return picked;
+      });
     },
+    reset: async () => selected.clear(),
   });
-  setQuestionHistoryUser("test-user");
-  t.after(() => {
-    setQuestionHistoryUser(null);
-    if (previousStorage) Object.defineProperty(globalThis, "localStorage", previousStorage);
-    else delete globalThis.localStorage;
-  });
+  t.after(() => setQuestionHistoryUser(null));
   const requests = [];
   t.mock.method(globalThis, "fetch", async (url) => {
     requests.push(url);
@@ -73,6 +73,8 @@ test("quizzes and mocks only fetch static question-bank files, with no AI fallba
     examName: "Mixed JEE",
     sections: ["Physics", "Chemistry", "Mathematics"].map((name) => ({ name, questions: 5 })),
   });
+  assert.equal(reservationCalls.length, 2);
+  assert.equal(reservationCalls[1].length, 3); // One transaction for all mock sections.
   assert.equal(mock.sections.length, 3);
   assert.ok(mock.sections.every((s) => s.questions.length === 5));
   const quizSources = new Set(quiz.questions.map((q) => q.source.original_id));
@@ -85,62 +87,79 @@ test("quizzes and mocks only fetch static question-bank files, with no AI fallba
   assert.deepEqual(await loadQuestionBank("neet"), []);
 });
 
-test("selection history survives reload, is account-scoped, and never silently recycles", () => {
-  const values = new Map();
-  const storage = {
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, value),
-  };
-  const pool = advanced.slice(0, 12);
-  const first = createQuestionRotation(storage, "alice").draw([{ questions: pool, count: 5 }])[0];
-  const reloaded = createQuestionRotation(storage, "alice");
-  const second = reloaded.draw([{ questions: pool, count: 5 }])[0];
-  assert.equal(new Set([...first, ...second].map((q) => q.id)).size, 10);
-  assert.equal(reloaded.unseen(pool).length, 2);
-  const beforeFailure = new Map(values);
-  assert.throws(() => reloaded.draw([{ questions: pool, count: 3 }]), /Only 2 unseen/);
-  assert.deepEqual(values, beforeFailure);
-  assert.equal(createQuestionRotation(storage, "bob").unseen(pool).length, 12);
-  reloaded.reset();
-  assert.equal(reloaded.unseen(pool).length, 12);
-});
-
-test("mock reservations are atomic and overlapping sections cannot duplicate questions", () => {
-  const values = new Map();
-  const storage = {
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => values.set(key, value),
-  };
-  const rotation = createQuestionRotation(storage, "alice");
-  const pool = advanced.slice(0, 10);
-  assert.throws(
-    () =>
-      rotation.draw([
-        { questions: pool, count: 5 },
-        { questions: pool, count: 6 },
-      ]),
-    /unseen/,
-  );
-  assert.equal(rotation.unseen(pool).length, 10);
-  const groups = rotation.draw([
-    { questions: pool, count: 5 },
-    { questions: pool, count: 5 },
-  ]);
-  assert.equal(new Set(groups.flat().map((q) => q.id)).size, 10);
-  const broken = createQuestionRotation({ getItem: () => "{invalid", setItem: () => {} }, "alice");
-  assert.throws(() => broken.draw([{ questions: pool, count: 1 }]));
-  const full = createQuestionRotation(
-    {
-      getItem: () => null,
-      setItem: () => {
-        throw new Error("Storage full");
-      },
+test("cloud failures and invalid reservations never fall back to local sampling", async (t) => {
+  t.after(() => setQuestionHistoryUser(null));
+  setQuestionHistoryUser("alice", {
+    reserve: async () => {
+      throw new Error("Unable to sync history");
     },
-    "alice",
-  );
-  assert.throws(() => full.draw([{ questions: pool, count: 1 }]), /Storage full/);
+    reset: async () => {
+      throw new Error("Unable to reset history");
+    },
+  });
+  await assert.rejects(drawBankQuestions(advanced, 2), /Unable to sync/);
+  await assert.rejects(resetQuestionHistory(), /Unable to reset/);
+  setQuestionHistoryUser("alice", {
+    reserve: async () => [[advanced[0].id, advanced[0].id]],
+    reset: async () => {},
+  });
+  await assert.rejects(drawBankQuestions(advanced, 2), /Invalid question reservation/);
+  setQuestionHistoryUser("alice", { reserve: async () => [[]], reset: async () => {} });
+  await assert.rejects(drawBankQuestions(advanced, 2), /Incomplete/);
+  assert.deepEqual(await drawBankQuestions(advanced, 2, true), []);
 });
 
+test("old browser history migrates only after a successful server reservation", async (t) => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  const key = "aceprep:question-history:v1:alice";
+  const values = new Map([[key, JSON.stringify([advanced[0].id])]]);
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: (key) => values.get(key),
+      removeItem: (key) => values.delete(key),
+    },
+  });
+  t.after(() => {
+    setQuestionHistoryUser(null);
+    if (descriptor) Object.defineProperty(globalThis, "localStorage", descriptor);
+    else delete globalThis.localStorage;
+  });
+  setQuestionHistoryUser("alice", {
+    reserve: async () => {
+      throw new Error("Offline");
+    },
+    reset: async () => {},
+  });
+  await assert.rejects(drawBankQuestions(advanced, 1), /Offline/);
+  assert.ok(values.has(key));
+  setQuestionHistoryUser("alice", {
+    reserve: async (groups, legacy) => {
+      assert.deepEqual(legacy, [advanced[0].id]);
+      assert.equal(groups[0].count, 1);
+      return [[advanced[1].id]];
+    },
+    reset: async () => {},
+  });
+  assert.equal((await drawBankQuestions(advanced, 1))[0].id, advanced[1].id);
+  assert.ok(!values.has(key));
+});
+
+test("an account change while a reservation is pending cannot open the old account's questions", async (t) => {
+  t.after(() => setQuestionHistoryUser(null));
+  let resolve;
+  setQuestionHistoryUser("alice", {
+    reserve: () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+    reset: async () => {},
+  });
+  const pending = drawBankQuestions(advanced, 1);
+  setQuestionHistoryUser("bob", { reserve: async () => [[advanced[0].id]], reset: async () => {} });
+  resolve([[advanced[0].id]]);
+  await assert.rejects(pending, /account changed/);
+});
 test("numerical and multi-answer practice grades against source answers", () => {
   const numeric = advanced.find((q) => q.question_type === "integer");
   assert.equal(isCorrectBankAnswer(numeric, [], numeric.answer), true);

@@ -116,3 +116,7 @@ and note flashcards select existing questions from the shipped bank. See
 instructions and the review of larger datasets. Run `npm run questions:sync` to
 rebuild the pinned snapshots. Frontend and Edge Function updates must be deployed
 together: older frontend clients still request the now-disabled generation actions.
+
+Apply `supabase/migrations/006_question_history.sql` before deploying the frontend.
+Question reservations and explicit history resets then follow the signed-in account
+across devices. Reservation errors stop selection; there is no local-only fallback.

@@ -12,7 +12,6 @@ import {
   loadQuestionBank,
   drawBankQuestions,
   resetQuestionHistory,
-  unseenBankQuestions,
   type BankQuestion,
 } from "@/lib/question-bank";
 
@@ -62,6 +61,7 @@ function QuestionBankPage() {
   const [pyqOnly, setPyqOnly] = useState(false);
   const [visible, setVisible] = useState(25);
   const [practice, setPractice] = useState<BankQuestion[] | null>(null);
+  const [selecting, setSelecting] = useState(false);
   const bank = useQuery({
     queryKey: ["questionBank", exam],
     queryFn: () => loadQuestionBank(exam),
@@ -89,35 +89,46 @@ function QuestionBankPage() {
           </p>
         </div>
         <Button
-          disabled={!questions.length}
-          onClick={() => {
+          disabled={!questions.length || selecting}
+          onClick={async () => {
+            setSelecting(true);
             try {
-              const remaining = unseenBankQuestions(questions).length;
-              setPractice(drawBankQuestions(questions, Math.min(10, Math.max(1, remaining))));
+              const selected = await drawBankQuestions(questions, 10, true);
+              if (!selected.length)
+                throw new Error(
+                  "No unseen questions match. Broaden your filters or intentionally reset history to allow repeats.",
+                );
+              setPractice(selected);
             } catch (error) {
               toast.error(error instanceof Error ? error.message : "Unable to select questions");
+            } finally {
+              setSelecting(false);
             }
           }}
         >
-          Practice unseen questions
+          {selecting ? "Syncing history…" : "Practice unseen questions"}
         </Button>
       </div>
       <div className="card-light rounded-2xl p-4 text-sm space-y-2">
         <p>
-          New selections skip questions already chosen by this account in this browser. History
-          does not sync across devices. Saved attempts and review can repeat intentionally.
+          New selections skip questions already chosen by your account across devices. History syncs
+          when you start an attempt. Saved attempts and review can repeat intentionally.
         </p>
         <Button
           variant="outline"
           className="max-w-full whitespace-normal h-auto py-2"
-          onClick={() => {
+          disabled={selecting}
+          onClick={async () => {
+            setSelecting(true);
             try {
-              resetQuestionHistory();
+              await resetQuestionHistory();
               toast.success(
-                "Selection history reset. Previously selected questions can appear again.",
+                "History reset across devices. Previously selected questions can appear again.",
               );
             } catch {
-              toast.error("Unable to reset question history. Check browser storage access.");
+              toast.error("Unable to sync the history reset. Please try again.");
+            } finally {
+              setSelecting(false);
             }
           }}
         >

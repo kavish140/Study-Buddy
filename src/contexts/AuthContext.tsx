@@ -28,7 +28,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return observeSession(supabase.auth, {
       onSession: (session) => {
         const userId = session?.user.id ?? null;
-        setQuestionHistoryUser(userId);
+        setQuestionHistoryUser(
+          userId,
+          userId
+            ? {
+                reserve: async (groups, legacyIds) => {
+                  const { data, error } = await supabase.rpc("reserve_question_groups", {
+                    p_groups: groups,
+                    p_legacy_ids: legacyIds,
+                  });
+                  if (error)
+                    throw new Error(
+                      error.message || "Question history could not sync. Please try again.",
+                    );
+                  return data;
+                },
+                reset: async () => {
+                  const { error } = await supabase.rpc("reset_question_history");
+                  if (error) throw new Error("Question history could not reset. Please try again.");
+                },
+              }
+            : null,
+        );
         if (previousUserId.current !== userId) {
           queryClient.clear();
           previousUserId.current = userId;
