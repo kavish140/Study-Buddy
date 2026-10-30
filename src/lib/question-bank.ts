@@ -89,6 +89,67 @@ export function sampleBank(questions: BankQuestion[], count: number) {
   return pool.slice(0, count);
 }
 
+type HistoryStorage = Pick<Storage, "getItem" | "setItem">;
+
+// One shared, account-scoped history across all question-selection tools.
+// Selection reserves questions immediately, including abandoned attempts.
+export function createQuestionRotation(storage: HistoryStorage, userId: string) {
+  const key = `aceprep:question-history:v1:${userId}`;
+  function read(): Set<string> {
+    const raw = storage.getItem(key);
+    if (!raw) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.some((id) => typeof id !== "string"))
+      throw new Error("Question history could not be read. Reset it in Question Bank to continue.");
+    return new Set(parsed);
+  }
+  return {
+    unseen(questions: BankQuestion[]) {
+      const seen = read();
+      return questions.filter((q) => !seen.has(q.id));
+    },
+    draw(groups: { questions: BankQuestion[]; count: number }[]) {
+      const seen = read();
+      // Reserve all groups atomically: a failed mock must not consume an earlier section.
+      const selected = groups.map(({ questions, count }) => {
+        const unique = [...new Map(questions.map((q) => [q.id, q])).values()];
+        const available = unique.filter((q) => !seen.has(q.id));
+        if (available.length < count && unique.length >= count)
+          throw new Error(
+            `Only ${available.length} unseen questions match; ${count} requested. Choose fewer questions or broaden your filters. To intentionally reuse questions, reset selection history in Question Bank.`,
+          );
+        const picked = sampleBank(available, count);
+        picked.forEach((q) => seen.add(q.id));
+        return picked;
+      });
+      // Do not serve a new selection if its reservation cannot be persisted.
+      storage.setItem(key, JSON.stringify([...seen]));
+      return selected;
+    },
+    reset() {
+      storage.setItem(key, "[]");
+    },
+  };
+}
+
+let questionHistoryUser: string | null = null;
+export function setQuestionHistoryUser(userId: string | null) {
+  questionHistoryUser = userId;
+}
+function questionRotation() {
+  if (!questionHistoryUser) throw new Error("Sign in before selecting practice questions.");
+  return createQuestionRotation(globalThis.localStorage, questionHistoryUser);
+}
+export function drawBankQuestions(questions: BankQuestion[], count: number) {
+  return questionRotation().draw([{ questions, count }])[0];
+}
+export function unseenBankQuestions(questions: BankQuestion[]) {
+  return questionRotation().unseen(questions);
+}
+export function resetQuestionHistory() {
+  questionRotation().reset();
+}
+
 export function examIdFromName(name = "") {
   return /mixed/i.test(name) && /jee/i.test(name)
     ? "jee"
@@ -120,7 +181,7 @@ export async function bankQuiz(data: {
 }) {
   const all = await loadQuestionBank(examIdFromName(data.examName || "JEE Main"));
   return {
-    questions: sampleBank(
+    questions: drawBankQuestions(
       filterBank(all, { search: data.topic, difficulty: data.difficulty, mcqOnly: true }),
       data.count,
     ).map(toQuizQuestion),
@@ -133,13 +194,16 @@ export async function bankMock(data: {
 }) {
   const bank = await loadQuestionBank(examIdFromName(data.examName));
   if (!data.sections.length) throw new Error("Select at least one subject for this mock test.");
+  const selected = questionRotation().draw(
+    data.sections.map((section) => ({
+      questions: filterBank(bank, { subject: section.name, mcqOnly: true }),
+      count: section.questions,
+    })),
+  );
   return {
-    sections: data.sections.map((section) => ({
+    sections: data.sections.map((section, index) => ({
       name: section.name,
-      questions: sampleBank(
-        filterBank(bank, { subject: section.name, mcqOnly: true }),
-        section.questions,
-      ).map(toQuizQuestion),
+      questions: selected[index].map(toQuizQuestion),
     })),
   };
 }

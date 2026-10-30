@@ -2,7 +2,13 @@ import { supabase } from "./supabase";
 import { backendFetch } from "./backend-request";
 import { consumeChatStream, readAIJson } from "./ai-response";
 import { validateAIResult } from "./ai-validation";
-import { examIdFromName, filterBank, loadQuestionBank } from "./question-bank";
+import {
+  drawBankQuestions,
+  examIdFromName,
+  filterBank,
+  loadQuestionBank,
+  unseenBankQuestions,
+} from "./question-bank";
 
 async function invokeEdgeFunction<T = Record<string, unknown>>(
   action: string,
@@ -45,14 +51,14 @@ export const generateNotes = async ({
   const notes = await invokeEdgeFunction<{ summary: string }>("generateNotes", data);
   const requestedExam = examIdFromName(data.examName || "JEE Main");
   const bank = await loadQuestionBank(requestedExam.startsWith("jee") ? "jee" : requestedExam);
+  const unseen = unseenBankQuestions(filterBank(bank, { search: data.topic }));
+  const cards = unseen.length ? drawBankQuestions(unseen, Math.min(6, unseen.length)) : [];
   return {
     ...notes,
-    flashcards: filterBank(bank, { search: data.topic })
-      .slice(0, 6)
-      .map((q) => ({
-        q: `${q.question}${q.options.length ? `\n\n${q.options.map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`).join("\n\n")}` : ""}`,
-        a: `${q.answer}${q.explanation ? `\n\n${q.explanation}` : ""}\n\nSource: [${q.source.name}](${q.source.url})`,
-      })),
+    flashcards: cards.map((q) => ({
+      q: `${q.question}${q.options.length ? `\n\n${q.options.map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`).join("\n\n")}` : ""}`,
+      a: `${q.answer}${q.explanation ? `\n\n${q.explanation}` : ""}\n\nSource: [${q.source.name}](${q.source.url})`,
+    })),
   };
 };
 

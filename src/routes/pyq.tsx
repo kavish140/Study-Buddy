@@ -10,7 +10,9 @@ import {
   filterBank,
   isCorrectBankAnswer,
   loadQuestionBank,
-  sampleBank,
+  drawBankQuestions,
+  resetQuestionHistory,
+  unseenBankQuestions,
   type BankQuestion,
 } from "@/lib/question-bank";
 
@@ -88,12 +90,39 @@ function QuestionBankPage() {
         </div>
         <Button
           disabled={!questions.length}
-          onClick={() => setPractice(sampleBank(questions, Math.min(10, questions.length)))}
+          onClick={() => {
+            try {
+              const remaining = unseenBankQuestions(questions).length;
+              setPractice(drawBankQuestions(questions, Math.min(10, Math.max(1, remaining))));
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Unable to select questions");
+            }
+          }}
         >
-          Practice {Math.min(10, questions.length)}
+          Practice unseen questions
         </Button>
       </div>
       <div className="card-light rounded-2xl p-4 text-sm space-y-2">
+        <p>
+          New selections skip questions already chosen by this account in this browser. History
+          does not sync across devices. Saved attempts and review can repeat intentionally.
+        </p>
+        <Button
+          variant="outline"
+          className="max-w-full whitespace-normal h-auto py-2"
+          onClick={() => {
+            try {
+              resetQuestionHistory();
+              toast.success(
+                "Selection history reset. Previously selected questions can appear again.",
+              );
+            } catch {
+              toast.error("Unable to reset question history. Check browser storage access.");
+            }
+          }}
+        >
+          Allow repeats: reset history
+        </Button>
         <p>
           <strong>{bank.data?.length ?? "…"} questions</strong> available for{" "}
           {EXAMS[exam as keyof typeof EXAMS]}.

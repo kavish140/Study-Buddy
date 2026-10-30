@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { checkAuthService, supabase } from "@/lib/supabase";
 import { BACKEND_UNAVAILABLE } from "@/lib/backend-request";
 import { observeSession } from "@/lib/auth-session";
+import { setQuestionHistoryUser } from "@/lib/question-bank";
 
 type AuthState = { session: Session | null; loading: boolean; error: string | null };
 type AuthValue = AuthState & {
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return observeSession(supabase.auth, {
       onSession: (session) => {
         const userId = session?.user.id ?? null;
+        setQuestionHistoryUser(userId);
         if (previousUserId.current !== userId) {
           queryClient.clear();
           previousUserId.current = userId;

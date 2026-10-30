@@ -9,7 +9,7 @@ import {
   examIdFromName,
   filterBank,
   loadQuestionBank,
-  sampleBank,
+  drawBankQuestions,
   type BankQuestion,
 } from "@/lib/question-bank";
 import { XP_REWARDS } from "@/lib/storage";
@@ -284,7 +284,7 @@ function DiagnosticTestModal({
         toast.info(
           "Not enough bank questions match those topics; this diagnostic uses a mixed-subject selection.",
         );
-      diagnosticPool.current = sampleBank(pool, DIAGNOSTIC_QUESTIONS);
+      diagnosticPool.current = drawBankQuestions(pool, DIAGNOSTIC_QUESTIONS);
       setSecondsLeft(DIAGNOSTIC_DURATION_SECONDS);
       setIsTimerActive(true);
       await loadNextQuestion([], 0);

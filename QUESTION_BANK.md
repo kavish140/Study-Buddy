@@ -7,6 +7,17 @@ questions and evaluating students' explanations. The old Edge Function question
 creation actions return HTTP 410. Existing study history is retained; older
 unattributed quizzes cannot be retaken as new bank quizzes.
 
+Question selection now reserves stable question IDs in shared, account-scoped
+browser storage across all five tools. New attempts skip previously selected IDs,
+including selections from abandoned attempts, and stop with an explicit exhaustion
+message rather than silently recycling them. Mock sections are reserved together;
+a failed section does not consume earlier sections. History survives reloads and
+sign-outs on the same browser, but is not synced across devices and is lost if site
+data is cleared. The Question Bank provides an explicit "Allow repeats" reset.
+Browsing the library, intentional retakes and spaced-repetition review are allowed
+to revisit existing questions. History begins with selections made by this version;
+earlier attempts are not retroactively added.
+
 Run `npm run questions:sync` to reproduce the snapshots. Sources are pinned to
 revisions in `scripts/question-importers.mjs`; downloaded-file SHA-256 checksums,
 source URLs, licenses, exclusions and counts are recorded in

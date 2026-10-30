@@ -8,6 +8,8 @@ import {
   isCorrectBankAnswer,
   loadQuestionBank,
   sampleBank,
+  createQuestionRotation,
+  setQuestionHistoryUser,
 } from "../src/lib/question-bank.ts";
 import { importJEEBench, importMainPractice } from "./question-importers.mjs";
 
@@ -38,6 +40,21 @@ test("every shipped question has a traceable source and usable answer key", () =
 });
 
 test("quizzes and mocks only fetch static question-bank files, with no AI fallback", async (t) => {
+  const previousStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  const values = new Map();
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+    },
+  });
+  setQuestionHistoryUser("test-user");
+  t.after(() => {
+    setQuestionHistoryUser(null);
+    if (previousStorage) Object.defineProperty(globalThis, "localStorage", previousStorage);
+    else delete globalThis.localStorage;
+  });
   const requests = [];
   t.mock.method(globalThis, "fetch", async (url) => {
     requests.push(url);
@@ -58,10 +75,70 @@ test("quizzes and mocks only fetch static question-bank files, with no AI fallba
   });
   assert.equal(mock.sections.length, 3);
   assert.ok(mock.sections.every((s) => s.questions.length === 5));
+  const quizSources = new Set(quiz.questions.map((q) => q.source.original_id));
+  assert.ok(
+    mock.sections.flatMap((s) => s.questions).every((q) => !quizSources.has(q.source.original_id)),
+  );
   assert.ok(requests.length > 0);
   assert.throws(() => sampleBank([], 5), /AI question generation is disabled/);
   assert.throws(() => sampleBank(main, NaN));
   assert.deepEqual(await loadQuestionBank("neet"), []);
+});
+
+test("selection history survives reload, is account-scoped, and never silently recycles", () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  const pool = advanced.slice(0, 12);
+  const first = createQuestionRotation(storage, "alice").draw([{ questions: pool, count: 5 }])[0];
+  const reloaded = createQuestionRotation(storage, "alice");
+  const second = reloaded.draw([{ questions: pool, count: 5 }])[0];
+  assert.equal(new Set([...first, ...second].map((q) => q.id)).size, 10);
+  assert.equal(reloaded.unseen(pool).length, 2);
+  const beforeFailure = new Map(values);
+  assert.throws(() => reloaded.draw([{ questions: pool, count: 3 }]), /Only 2 unseen/);
+  assert.deepEqual(values, beforeFailure);
+  assert.equal(createQuestionRotation(storage, "bob").unseen(pool).length, 12);
+  reloaded.reset();
+  assert.equal(reloaded.unseen(pool).length, 12);
+});
+
+test("mock reservations are atomic and overlapping sections cannot duplicate questions", () => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  const rotation = createQuestionRotation(storage, "alice");
+  const pool = advanced.slice(0, 10);
+  assert.throws(
+    () =>
+      rotation.draw([
+        { questions: pool, count: 5 },
+        { questions: pool, count: 6 },
+      ]),
+    /unseen/,
+  );
+  assert.equal(rotation.unseen(pool).length, 10);
+  const groups = rotation.draw([
+    { questions: pool, count: 5 },
+    { questions: pool, count: 5 },
+  ]);
+  assert.equal(new Set(groups.flat().map((q) => q.id)).size, 10);
+  const broken = createQuestionRotation({ getItem: () => "{invalid", setItem: () => {} }, "alice");
+  assert.throws(() => broken.draw([{ questions: pool, count: 1 }]));
+  const full = createQuestionRotation(
+    {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("Storage full");
+      },
+    },
+    "alice",
+  );
+  assert.throws(() => full.draw([{ questions: pool, count: 1 }]), /Storage full/);
 });
 
 test("numerical and multi-answer practice grades against source answers", () => {
