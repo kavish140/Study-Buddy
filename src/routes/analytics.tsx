@@ -446,14 +446,14 @@ function DiagnosticTestModal({
               <h2 className="text-xl font-bold font-heading mb-2">Question Bank Diagnostic</h2>
               <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
                 {weakTopics.length > 0
-                  ? `${DIAGNOSTIC_QUESTIONS} questions drawn from your ${weakTopics.length} weakest topic${weakTopics.length > 1 ? "s" : ""}. Difficulty adapts after each answer.`
-                  : `${DIAGNOSTIC_QUESTIONS} mixed questions across various topics. Difficulty adapts based on your performance.`}
+                  ? `${DIAGNOSTIC_QUESTIONS} questions drawn from your ${weakTopics.length} weakest topic${weakTopics.length > 1 ? "s" : ""}. Questions retain their source difficulty rating.`
+                  : `${DIAGNOSTIC_QUESTIONS} mixed questions across various topics. Questions retain their source difficulty rating.`}
               </p>
               <div className="grid grid-cols-3 gap-3 mb-8 max-w-sm mx-auto">
                 {[
                   { label: "Questions", value: DIAGNOSTIC_QUESTIONS },
                   { label: "Max Time", value: "60 min" },
-                  { label: "Adaptive", value: "Yes" },
+                  { label: "Source", value: "PYQs" },
                 ].map(({ label, value }) => (
                   <div
                     key={label}
@@ -912,8 +912,7 @@ function AnalyticsPage() {
               <div className="flex-1 text-center md:text-left">
                 <h3 className="font-bold text-base mb-1">Take the Question Bank Diagnostic</h3>
                 <p className="text-sm text-muted-foreground">
-                  6 questions · difficulty adapts after each answer · results unlock detailed topic
-                  analysis
+                  6 sourced questions · results unlock detailed topic analysis
                 </p>
               </div>
               <Button
