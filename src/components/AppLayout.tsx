@@ -37,6 +37,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { useFocusTimer, FOCUS_MODES } from "@/contexts/FocusTimerContext";
 import { LegalFooter } from "./LegalFooter";
 import { StudyBuddyMark } from "./StudyBuddyMark";
+import { hasAdminEmail } from "@/lib/admin-access";
 
 type NavItem = {
   to: string;
@@ -188,6 +189,26 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     ],
   },
 ];
+
+function navigationGroups(email?: string | null) {
+  return hasAdminEmail(email)
+    ? [
+        ...NAV_GROUPS,
+        {
+          label: "Administration",
+          items: [
+            {
+              to: "/admin",
+              label: "Admin",
+              icon: Settings,
+              colorVar: "--primary",
+              bgVar: "--accent",
+            },
+          ],
+        },
+      ]
+    : NAV_GROUPS;
+}
 
 /** Primary tabs shown in the mobile bottom bar (max 4) */
 const MOBILE_PRIMARY: NavItem[] = [
@@ -350,7 +371,7 @@ function FeaturePanel({
         </div>
 
         {/* Nav Groups */}
-        {NAV_GROUPS.map((group) => (
+        {navigationGroups(user?.email).map((group) => (
           <div key={group.label}>
             <div className="feature-panel__group-label">{group.label}</div>
             <div className="feature-panel__grid">
@@ -800,7 +821,7 @@ export function AppLayout() {
             </div>
 
             {/* Feature grid in sheet */}
-            {NAV_GROUPS.map((group) => (
+            {navigationGroups(user?.email).map((group) => (
               <div key={group.label} className="mb-3">
                 <div
                   className="text-[10px] font-bold uppercase tracking-widest mb-2 px-1"

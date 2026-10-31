@@ -181,6 +181,7 @@ function RootComponent() {
   const isAuthPage =
     isNotFound ||
     path === "/login" ||
+    path === "/admin" ||
     path === "/onboarding" ||
     path === "/landing" ||
     LEGAL_PATHS.includes(path.replace(/\/$/, ""));
