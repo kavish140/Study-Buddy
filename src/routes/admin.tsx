@@ -19,6 +19,7 @@ import { supabase } from "@/lib/supabase";
 import { ADMIN_EMAIL, csvExport, hasAdminEmail } from "@/lib/admin-access";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AdminStudyReset } from "@/components/AdminStudyReset";
 import {
   Dialog,
   DialogContent,
@@ -533,6 +534,9 @@ function DataManager({
                             >
                               Reset onboarding
                             </Button>
+                          )}
+                          {mode === "users" && (
+                            <AdminStudyReset userId={String(row.id)} email={String(row.email)} />
                           )}
                           {canDelete && (
                             <Button

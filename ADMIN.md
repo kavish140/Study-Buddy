@@ -28,6 +28,34 @@ record ID and time, without copying private content into permanent audit history
 This does not provide account deletion/banning, email delivery, credential changes,
 or infrastructure configuration. Those operations remain in the Supabase console.
 
+## Reversible study-data reset
+
+In Users, select **Study data…** and review the per-table record counts. Erasure
+requires checking an acknowledgement, typing `ERASE <exact user email>`, and
+waiting ten seconds. The database enforces these checks, expires the preview
+after fifteen minutes, and rejects a changed record count until reviewed again.
+
+Migration `008_reversible_study_reset.sql` adds a private backup table and guarded
+RPCs. It has been applied and recorded on the currently linked Supabase project.
+The operation backs up and removes subjects, quizzes, mock tests, notes,
+plans, review cards, focus sessions, performance logs, chats, XP/stats, saved PYQs,
+and question-selection history. It preserves login, profile/exam settings,
+community posts/replies/upvotes, and audit history. Question history disables
+legacy browser reimport after reset. Browser-only preferences and open sessions
+are not remotely cleared; an open session can save fresh work after the reset.
+
+Reopen **Study data…** to restore with `RESTORE <email>`. Backups have no automatic
+expiry, and another reset is blocked until the active backup is restored. Restore
+inserts the original rows alongside new work and merges question history. Any
+unique-key conflict aborts the entire restore and retains the backup, without
+overwriting newer records. Resolve the conflicting records before retrying.
+Restore consumes the backup and clears its private snapshot; metadata and audit
+events remain. Backup contents are accessible only to the guarded database
+functions, not by direct student or administrator table queries.
+
+Run `scripts/admin-study-reset.integration.sql` as database owner after migration
+008 to test with disposable accounts. Every test mutation rolls back.
+
 Run `npm test`, `npx tsc --noEmit`, and `npm run build`. Run
 `scripts/admin.integration.sql` in the Supabase SQL editor after the migration to
 exercise database authorization and mutation auditing. The integration tests use
