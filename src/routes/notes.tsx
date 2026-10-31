@@ -26,7 +26,7 @@ import { useAppContext } from "@/hooks/use-app-context";
 export const Route = createFileRoute("/notes")({
   head: () => ({
     meta: [
-      { title: "Notes & Flashcards — AcePrep" },
+      { title: "Notes & Flashcards — Study Buddy" },
       {
         name: "description",
         content: "AI summaries paired with sourced question-bank cards.",

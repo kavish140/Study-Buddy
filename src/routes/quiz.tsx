@@ -25,7 +25,7 @@ import { withoutInlineCredit } from "@/lib/legal";
 export const Route = createFileRoute("/quiz")({
   head: () => ({
     meta: [
-      { title: "Quizzes — AcePrep" },
+      { title: "Quizzes — Study Buddy" },
       {
         name: "description",
         content: "Practice quizzes from sourced question banks and review your attempts.",

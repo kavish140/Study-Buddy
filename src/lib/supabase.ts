@@ -14,6 +14,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: { fetch: backendFetch },
+  // This client restores browser sessions only. SSR must never retain a user's
+  // session in a module shared between Worker requests.
+  auth: {
+    persistSession: typeof window !== "undefined",
+    autoRefreshToken: typeof window !== "undefined",
+    detectSessionInUrl: typeof window !== "undefined",
+  },
 });
 
 export async function checkAuthService() {

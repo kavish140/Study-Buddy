@@ -28,8 +28,8 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings · AcePrep" },
-      { name: "description", content: "Manage your AcePrep profile, exam preferences and theme" },
+      { title: "Settings · Study Buddy" },
+      { name: "description", content: "Manage your Study Buddy profile, exam preferences and theme" },
     ],
   }),
   component: SettingsPage,
@@ -164,7 +164,7 @@ function SettingsPage() {
       setNotifPermission(result);
       setNotifEnabled(result === "granted");
       if (result === "granted") {
-        new Notification("AcePrep", { body: "Daily reminders enabled! 🎓" });
+        new Notification("Study Buddy", { body: "Daily reminders enabled! 🎓" });
         toast.success("Notifications enabled!");
       }
     } else {

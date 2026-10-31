@@ -26,7 +26,7 @@ import { withoutInlineCredit } from "@/lib/legal";
 export const Route = createFileRoute("/review")({
   head: () => ({
     meta: [
-      { title: "Smart Review · AcePrep" },
+      { title: "Smart Review · Study Buddy" },
       { name: "description", content: "Spaced repetition flashcards from your wrong answers" },
     ],
   }),

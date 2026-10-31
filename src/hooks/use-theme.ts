@@ -21,10 +21,20 @@ const VALID_THEMES: Theme[] = ["light", "dark", "system"];
 
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "system";
-    const stored = localStorage.getItem("aceprep-theme");
-    return stored && VALID_THEMES.includes(stored as Theme) ? (stored as Theme) : "system";
+    // The first browser render must match the server's theme.
+    return "system";
   });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("aceprep-theme");
+      if (stored && VALID_THEMES.includes(stored as Theme)) setThemeState(stored as Theme);
+    } catch {
+      // System theme still works when browser storage is unavailable.
+    }
+    setMounted(true);
+  }, []);
 
   // A counter that forces React to re-derive effectiveTheme when the OS
   // preference flips while the user is in "system" mode.
@@ -69,7 +79,9 @@ export function useTheme() {
     });
   }, []);
 
-  const effectiveTheme: "light" | "dark" = theme === "system" ? getSystemTheme() : theme;
+  const effectiveTheme: "light" | "dark" = !mounted
+    ? "light"
+    : theme === "system" ? getSystemTheme() : theme;
 
   return { theme, effectiveTheme, setTheme, toggle };
 }

@@ -28,7 +28,7 @@ import { useAppContext } from "@/hooks/use-app-context";
 export const Route = createFileRoute("/community")({
   head: () => ({
     meta: [
-      { title: "Community · AcePrep" },
+      { title: "Community · Study Buddy" },
       {
         name: "description",
         content: "Ask questions, share solutions, and discuss exam topics with other students",

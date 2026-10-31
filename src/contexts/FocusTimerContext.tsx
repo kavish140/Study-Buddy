@@ -298,13 +298,16 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
 
   // ── Document title ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (isRunning) {
-      const m = Math.floor(secondsLeft / 60);
-      const s = secondsLeft % 60;
-      document.title = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} · ${FOCUS_MODES[mode].label} · AcePrep`;
-    } else {
-      document.title = "AcePrep";
-    }
+    if (!isRunning) return;
+    const previousTitle = document.title;
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    const timerTitle = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} · ${FOCUS_MODES[mode].label} · Study Buddy`;
+    document.title = timerTitle;
+    return () => {
+      // Preserve page metadata and any title already set by a route change.
+      if (document.title === timerTitle) document.title = previousTitle;
+    };
   }, [isRunning, secondsLeft, mode]);
 
   // ── Toggle / Reset ─────────────────────────────────────────────────────────

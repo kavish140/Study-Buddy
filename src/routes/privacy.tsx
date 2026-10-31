@@ -4,11 +4,11 @@ import { LegalPage } from "@/components/LegalPage";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — AcePrep" },
+      { title: "Privacy Policy — Study Buddy" },
       {
         name: "description",
         content:
-          "How AcePrep handles account information, study data, AI requests and browser storage.",
+          "How Study Buddy handles account information, study data, AI requests and browser storage.",
       },
     ],
   }),
@@ -21,7 +21,7 @@ function PrivacyPage() {
       <section>
         <h2>Information we process</h2>
         <p>
-          AcePrep processes information to provide your account, study tools and progress tracking:
+          Study Buddy processes information to provide your account, study tools and progress tracking:
         </p>
         <ul>
           <li>
@@ -77,7 +77,7 @@ function PrivacyPage() {
         <h2>Cookies and browser storage</h2>
       <p>When you paste an image or click the clipboard button in AI Tutor, the app reads the image you choose to paste and prepares a local preview. It does not read the clipboard on page load. The image is sent for AI processing when you send the message.</p>
         <p>
-          AcePrep uses browser storage for sign-in sessions, theme and interface preferences, timers
+          Study Buddy uses browser storage for sign-in sessions, theme and interface preferences, timers
           and locally stored study state. The current app does not implement advertising cookies.
           Third-party sign-in and external resource sites may use their own cookies and storage.
         </p>

@@ -16,7 +16,7 @@ import { useTutorial } from "@/components/TutorialProvider";
 export const Route = createFileRoute("/syllabus")({
   head: () => ({
     meta: [
-      { title: "Syllabus — AcePrep" },
+      { title: "Syllabus — Study Buddy" },
       {
         name: "description",
         content: "Track your syllabus topic by topic with AI-assisted parsing.",

@@ -6,7 +6,7 @@ import { EXAM_CATALOG } from "@/lib/exam-catalog";
 export const Route = createFileRoute("/sources")({
   head: () => ({
     meta: [
-      { title: "Sources & Licenses — AcePrep" },
+      { title: "Sources & Licenses — Study Buddy" },
       {
         name: "description",
         content:
@@ -78,7 +78,7 @@ function SourcesPage() {
         <p>
           The catalog below links to NTA, NCERT, IIT Kanpur SATHEE, UPSC, College Board and ETS
           resources. These materials open on the publisher's site; their inclusion does not mean
-          their content has been imported into AcePrep. External sites retain their own terms,
+          their content has been imported into Study Buddy. External sites retain their own terms,
           access requirements and content rights. No affiliation or endorsement is implied.
         </p>
         {EXAM_CATALOG.map((exam) => (

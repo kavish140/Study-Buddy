@@ -1,5 +1,12 @@
 # Study Buddy AI - Supabase Setup & Architecture
 
+## Hosting
+
+The frontend now uses TanStack Start SSR on Cloudflare Workers. See
+[CLOUDFLARE.md](CLOUDFLARE.md) for build settings, rendering/authentication boundaries,
+and the staged domain migration. GitHub Actions validates builds; Cloudflare's
+connected repository performs deployment when changes are pushed.
+
 This document tracks the current architecture, setup requirements, and recent changes made to the Supabase backend (Edge Functions & Database).
 
 ## Local development and recovery checks
@@ -50,8 +57,8 @@ After resuming Supabase, wait for Auth and PostgREST to report healthy, then rel
 and sign in again if the old refresh token is invalid. Confirm the configured Google
 provider, Supabase Site URL, and allowed redirect URLs include the production origin
 `https://jee.sitenova.dev`. Local OAuth testing also requires an allowed localhost
-redirect. Deployment is performed by the existing GitHub Pages workflow on a push to
-`main`; local changes alone do not update production.
+redirect. Cloudflare Workers Builds deploys the connected `main` branch;
+local changes alone do not update production.
 
 ## 1. Database (SQL) Changes
 
@@ -118,7 +125,7 @@ Ensure the following secrets are added to your Supabase project (Settings → Ed
 - `GEMINI_API_KEY`: Used by `image-ai` for vision-based generation (Gemini 3.8 Flash by default).
 - `GROQ_MODEL`: Optional model override; defaults to `openai/gpt-oss-120b` for both structured tools and streaming chat.
 - `GEMINI_MODEL`: Optional vision/PDF model override; defaults to `gemini-3.8-flash`.
-- `ALLOWED_ORIGIN`: (Optional) Set to your production domain (e.g., `https://aceprep.app`). Defaults to `*` if unset.
+- `ALLOWED_ORIGIN`: (Optional) Set to your production origin once the new domain is configured. Defaults to `*` if unset.
 
 ### Deployment Note
 

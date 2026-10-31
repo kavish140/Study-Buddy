@@ -29,11 +29,11 @@ import "./landing.css";
 export const Route = createFileRoute("/landing")({
   head: () => ({
     meta: [
-      { title: "AcePrep — Your complete study toolkit" },
+      { title: "Study Buddy — Your complete study toolkit" },
       {
         name: "description",
         content:
-          "Plan, learn, practice and improve with AcePrep. Explore AI tutoring, syllabus tracking, study plans, notes, JEE practice, spaced repetition, focus sessions and analytics.",
+          "Plan, learn, practice and improve with Study Buddy. Explore AI tutoring, syllabus tracking, study plans, notes, JEE practice, spaced repetition, focus sessions and analytics.",
       },
     ],
   }),
@@ -238,11 +238,11 @@ function LandingPage() {
       </a>
       <header className="ace-header">
         <div className="ace-container ace-nav">
-          <a href="#" className="ace-brand" aria-label="AcePrep home">
+          <a href="#" className="ace-brand" aria-label="Study Buddy home">
             <span className="ace-logo">
               <GraduationCap size={22} aria-hidden="true" />
             </span>
-            AcePrep<span className="ace-brand-dot">.</span>
+            Study Buddy<span className="ace-brand-dot">.</span>
           </a>
           <nav className="ace-desktop-nav" aria-label="Main navigation">
             <a href="#features">Features</a>
@@ -296,7 +296,7 @@ function LandingPage() {
             </h1>
             <p>
               From “where do I start?” to “I get it.” Plan your prep, learn with AI, practice with
-              purpose and see your progress — all in AcePrep.
+              purpose and see your progress — all in Study Buddy.
             </p>
             <div className="ace-hero-actions">
               <Link to="/login" className="ace-button">
@@ -548,7 +548,7 @@ function LandingPage() {
           </h2>
           <p>A plan for the day. Help when you’re stuck. A clear view of how far you’ve come.</p>
           <Link to="/login" className="ace-button">
-            Get started with AcePrep <ArrowRight size={18} aria-hidden="true" />
+            Get started with Study Buddy <ArrowRight size={18} aria-hidden="true" />
           </Link>
         </section>
       </main>
@@ -557,7 +557,7 @@ function LandingPage() {
           <span className="ace-logo">
             <GraduationCap size={20} />
           </span>
-          AcePrep.
+          Study Buddy.
         </a>
         <p>A little clarity. A little consistency. Your preparation, together.</p>
         <Link to="/login" className="ace-text-link">

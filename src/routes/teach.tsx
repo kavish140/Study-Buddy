@@ -26,7 +26,7 @@ import { useAppContext } from "@/hooks/use-app-context";
 export const Route = createFileRoute("/teach")({
   head: () => ({
     meta: [
-      { title: "Teaching Mode · AcePrep" },
+      { title: "Teaching Mode · Study Buddy" },
       {
         name: "description",
         content:

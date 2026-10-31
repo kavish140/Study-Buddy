@@ -37,7 +37,7 @@ import { parseTutorResponse } from "@/lib/tutor-interaction";
 export const Route = createFileRoute("/chat")({
   head: () => ({
     meta: [
-      { title: "AI Tutor \u2014 AcePrep" },
+      { title: "AI Tutor \u2014 Study Buddy" },
       {
         name: "description",
         content:
@@ -87,7 +87,7 @@ function ChatPage() {
     if (!decodedQ.trim()) return;
     deepLinkConsumedRef.current = true;
     // Clear the param from the URL so refreshing doesn't re-send
-    navigate({ search: {}, replace: true });
+    navigate({ search: { q: undefined }, replace: true });
     // Reuse the existing flow that creates a session + sends first message
     handleSendFromEmpty(decodedQ);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -398,7 +398,7 @@ function EmptyState({
           <Sparkles className="h-4 w-4 text-white" />
         </div>
         <div>
-          <div className="font-medium text-sm">AcePrep AI Tutor</div>
+          <div className="font-medium text-sm">Study Buddy AI Tutor</div>
           <div className="text-xs text-muted-foreground flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
             Ready to help
@@ -426,7 +426,7 @@ function EmptyState({
             </div>
           </div>
 
-          <h2 className="text-3xl font-bold font-heading mb-3 text-gradient">AcePrep AI Tutor</h2>
+          <h2 className="text-3xl font-bold font-heading mb-3 text-gradient">Study Buddy AI Tutor</h2>
           <p className="text-muted-foreground mb-10 text-sm leading-relaxed max-w-sm mx-auto">
             Learn by doing: work through one idea at a time, try each checkpoint, and get feedback
             on your reasoning. Hints are always available.
@@ -1001,7 +1001,7 @@ function ChatView({
             ) : (
               <span className="text-muted-foreground flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
-                {examName ? examName + " \u00b7 " : ""}AcePrep AI
+                {examName ? examName + " \u00b7 " : ""}Study Buddy AI
               </span>
             )}
           </div>

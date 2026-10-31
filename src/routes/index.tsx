@@ -24,7 +24,7 @@ import { getTier, TIERS } from "@/lib/storage";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — AcePrep" },
+      { title: "Dashboard — Study Buddy" },
       {
         name: "description",
         content:
@@ -135,7 +135,7 @@ function Dashboard() {
 
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight font-heading">
             {userStats ? `Welcome back! 👋` : "Welcome to "}
-            {!userStats && <span className="text-gradient">AcePrep</span>}
+            {!userStats && <span className="text-gradient">Study Buddy</span>}
           </h1>
           <p className="mt-1.5 text-muted-foreground max-w-lg">
             {examInfo

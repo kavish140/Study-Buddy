@@ -236,7 +236,7 @@ function getPageTitle(path: string): string {
   for (const [route, title] of Object.entries(PAGE_TITLES)) {
     if (route !== "/" && path.startsWith(route)) return title;
   }
-  return "AcePrep";
+  return "Study Buddy";
 }
 
 /** ── Feature Tile component ─────────────────────────────────────────── */
@@ -335,7 +335,7 @@ function FeaturePanel({
                 className="font-bold text-[15px] leading-tight"
                 style={{ color: "var(--foreground)" }}
               >
-                AcePrep
+                Study Buddy
               </div>
               {profile?.exam_name && (
                 <div className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
@@ -627,7 +627,7 @@ export function AppLayout() {
           <div className="top-bar__logo-icon">
             <GraduationCap className="h-4 w-4 text-white" />
           </div>
-          <span className="top-bar__logo-name hidden sm:block">AcePrep</span>
+          <span className="top-bar__logo-name hidden sm:block">Study Buddy</span>
         </Link>
 
         {/* Page title — centered */}

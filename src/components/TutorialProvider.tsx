@@ -26,7 +26,7 @@ export const ALL_TOURS: Tour[] = [
       {
         id: "welcome",
         target: "",
-        title: "Welcome to AcePrep! 👋",
+        title: "Welcome to Study Buddy! 👋",
         body: "Let's take a 90-second tour so you know exactly where everything is. You can skip anytime.",
         placement: "center",
       },

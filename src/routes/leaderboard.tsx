@@ -25,8 +25,8 @@ import { useTutorial } from "@/components/TutorialProvider";
 export const Route = createFileRoute("/leaderboard")({
   head: () => ({
     meta: [
-      { title: "Leaderboard · AcePrep" },
-      { name: "description", content: "See how you rank against other AcePrep students" },
+      { title: "Leaderboard · Study Buddy" },
+      { name: "description", content: "See how you rank against other Study Buddy students" },
     ],
   }),
   component: LeaderboardPage,

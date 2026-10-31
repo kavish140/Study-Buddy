@@ -50,7 +50,7 @@ import { withoutInlineCredit } from "@/lib/legal";
 export const Route = createFileRoute("/analytics")({
   head: () => ({
     meta: [
-      { title: "Analytics — AcePrep" },
+      { title: "Analytics — Study Buddy" },
       {
         name: "description",
         content: "Track your performance, identify weak areas, and monitor your progress.",

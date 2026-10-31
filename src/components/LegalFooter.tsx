@@ -5,7 +5,7 @@ export function LegalFooter() {
         aria-label="Legal"
         className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
       >
-        <span>AcePrep</span>
+        <span>Study Buddy</span>
         <a className="hover:text-foreground underline" href="/privacy">
           Privacy Policy
         </a>

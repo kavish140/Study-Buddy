@@ -18,7 +18,7 @@ import {
 export const Route = createFileRoute("/pyq")({
   head: () => ({
     meta: [
-      { title: "Question Bank — AcePrep" },
+      { title: "Question Bank — Study Buddy" },
       {
         name: "description",
         content:

@@ -90,14 +90,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AcePrep — Ace any competitive exam with AI" },
+      { name: "theme-color", content: "#3b82f6" },
+      { title: "Study Buddy — Ace any competitive exam with AI" },
       {
         name: "description",
         content:
           "Your AI-powered competitive exam prep platform. Mock tests, AI tutor, syllabus tracking, analytics and more — for JEE, NEET, SAT, GRE & beyond.",
       },
-      { name: "author", content: "AcePrep" },
-      { property: "og:title", content: "AcePrep — Ace any competitive exam with AI" },
+      { name: "author", content: "Study Buddy" },
+      { property: "og:title", content: "Study Buddy — Ace any competitive exam with AI" },
       {
         property: "og:description",
         content:
@@ -107,6 +108,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary" },
     ],
     links: [
+      {
+        rel: "icon",
+        type: "image/svg+xml",
+        href: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>",
+      },
       {
         rel: "preconnect",
         href: "https://fonts.googleapis.com",
@@ -138,18 +144,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <>
-      <HeadContent />
-      {children}
-      <Scripts />
-    </>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
   );
 }
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const isNotFound = useRouterState({
+    select: (s) => s.matches.some((match) => match.status === "notFound" || match.globalNotFound),
+  });
   const isAuthPage =
+    isNotFound ||
     path === "/login" ||
     path === "/onboarding" ||
     path === "/landing" ||

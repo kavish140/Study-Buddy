@@ -6,10 +6,10 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Sign in — AcePrep" },
+      { title: "Sign in — Study Buddy" },
       {
         name: "description",
-        content: "Sign in to AcePrep and start acing your competitive exams with AI.",
+        content: "Sign in to Study Buddy and start acing your competitive exams with AI.",
       },
     ],
   }),
@@ -73,7 +73,7 @@ function Login() {
             to="/landing"
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            ← Explore AcePrep
+            ← Explore Study Buddy
           </Link>
         </div>
 
@@ -94,7 +94,7 @@ function Login() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold tracking-tight font-heading">
-            <span className="text-gradient">AcePrep</span>
+            <span className="text-gradient">Study Buddy</span>
           </h1>
           <p className="text-muted-foreground text-sm mt-2 text-center max-w-xs">
             Ace any competitive exam with AI — mock tests, smart tutoring, and personalized study

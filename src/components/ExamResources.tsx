@@ -35,7 +35,7 @@ export function ExamResources({ examId }: { examId: string }) {
         <h4 className="text-xl font-semibold">Study materials & official practice</h4>
         <p className="text-sm text-muted-foreground mt-1">
           {resources.length} {resources.length === 1 ? "resource" : "resources"} from exam publishers and public education institutions. These
-          open on the publisher’s site; their questions are not imported into AcePrep quizzes.
+          open on the publisher’s site; their questions are not imported into Study Buddy quizzes.
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           Sources reviewed {RESOURCE_REVIEW_DATE}. Access and availability may change.

@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/focus")({
   head: () => ({
     meta: [
-      { title: "Focus Timer · AcePrep" },
+      { title: "Focus Timer · Study Buddy" },
       { name: "description", content: "Pomodoro focus timer for deep study sessions" },
     ],
   }),

@@ -23,7 +23,7 @@ import {
 export const Route = createFileRoute("/planner")({
   head: () => ({
     meta: [
-      { title: "Planner — AcePrep" },
+      { title: "Planner — Study Buddy" },
       {
         name: "description",
         content: "AI-built multi-day study schedule based on the topics you need to cover.",

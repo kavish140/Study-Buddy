@@ -6,7 +6,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
     <main className="min-h-screen bg-background px-5 py-10 text-foreground">
       <article className="mx-auto max-w-3xl space-y-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-3 [&_p]:leading-relaxed [&_p]:mt-3 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mt-2 [&_a]:text-primary [&_a]:underline">
         <a href="/landing" className="text-sm">
-          ← AcePrep
+          ← Study Buddy
         </a>
         <header>
           <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
@@ -16,7 +16,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
         <section id="contact">
           <h2>Contact</h2>
           <p>
-            AcePrep is operated by {OPERATOR_NAME}. For privacy requests, service questions or
+            Study Buddy is operated by {OPERATOR_NAME}. For privacy requests, service questions or
             copyright concerns, email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
             Include enough information to identify the issue; never send your password or sign-in
             tokens.

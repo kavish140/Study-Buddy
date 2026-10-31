@@ -25,11 +25,11 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "Get Started — AcePrep" },
+      { title: "Get Started — Study Buddy" },
       {
         name: "description",
         content:
-          "Set up your AcePrep profile: pick your exam, select subjects, and let AI create your study plan.",
+          "Set up your Study Buddy profile: pick your exam, select subjects, and let AI create your study plan.",
       },
     ],
   }),
@@ -195,7 +195,7 @@ function OnboardingPage() {
             <GraduationCap className="h-5 w-5 text-white" />
           </div>
           <div>
-            <div className="font-bold tracking-tight font-heading text-lg">AcePrep</div>
+            <div className="font-bold tracking-tight font-heading text-lg">Study Buddy</div>
             <div className="text-xs text-muted-foreground">Let's set up your profile</div>
           </div>
         </div>

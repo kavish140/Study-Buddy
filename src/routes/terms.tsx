@@ -4,11 +4,11 @@ import { LegalPage } from "@/components/LegalPage";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms & Conditions — AcePrep" },
+      { title: "Terms & Conditions — Study Buddy" },
       {
         name: "description",
         content:
-          "Terms for using AcePrep, including accounts, acceptable use, educational limitations and content rights.",
+          "Terms for using Study Buddy, including accounts, acceptable use, educational limitations and content rights.",
       },
     ],
   }),
@@ -19,9 +19,9 @@ function TermsPage() {
   return (
     <LegalPage title="Terms & Conditions">
       <section>
-        <h2>Using AcePrep</h2>
+        <h2>Using Study Buddy</h2>
         <p>
-          These terms govern your use of AcePrep and its study tools. Use the service only if you
+          These terms govern your use of Study Buddy and its study tools. Use the service only if you
           can accept these terms under the laws that apply to you. If you are under 18, review them
           with your parent or guardian and obtain any permission required by applicable law. If you
           do not agree, do not use the service.
@@ -41,7 +41,7 @@ function TermsPage() {
         </p>
         <ul>
           <li>
-            Do not use AcePrep to cheat in a live examination or violate an exam provider's rules.
+            Do not use Study Buddy to cheat in a live examination or violate an exam provider's rules.
           </li>
           <li>
             Do not harass others, post unlawful material, disclose someone else's private
@@ -60,7 +60,7 @@ function TermsPage() {
       <section>
         <h2>Educational and AI limitations</h2>
         <p>
-          AcePrep is an independent study aid. It does not guarantee marks, ranks, selection,
+          Study Buddy is an independent study aid. It does not guarantee marks, ranks, selection,
           admission or any educational outcome. Exam names and trademarks belong to their respective
           owners; their appearance does not imply affiliation, sponsorship or endorsement.
         </p>
