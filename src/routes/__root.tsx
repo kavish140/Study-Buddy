@@ -20,6 +20,7 @@ import { TutorialProvider } from "../components/TutorialProvider";
 import { TutorialOverlay } from "../components/TutorialOverlay";
 import { HelpButton } from "../components/HelpButton";
 import { useTheme } from "../hooks/use-theme";
+import { useAccent } from "../hooks/use-accent";
 import { AuthProvider } from "../contexts/AuthContext";
 import { LegalFooter } from "../components/LegalFooter";
 import { LEGAL_PATHS } from "../lib/legal";
@@ -154,6 +155,7 @@ function RootComponent() {
     path === "/landing" ||
     LEGAL_PATHS.includes(path.replace(/\/$/, ""));
   const { effectiveTheme } = useTheme();
+  useAccent();
 
   return (
     <QueryClientProvider client={queryClient}>

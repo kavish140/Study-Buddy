@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
+import { ACCENT_OPTIONS, useAccent } from "@/hooks/use-accent";
 import { EXAM_CATALOG } from "@/lib/exam-catalog";
 import { toast } from "sonner";
 import {
@@ -93,6 +94,7 @@ function SettingsPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { theme, setTheme } = useTheme();
+  const { accent, setAccent } = useAccent();
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["userProfile"],
@@ -317,7 +319,7 @@ function SettingsPage() {
         </Section>
 
         {/* ── Theme ── */}
-        <Section icon={Palette} title="Theme" color="#f59e0b">
+        <Section icon={Palette} title="Appearance & Accent" color="#f59e0b">
           <Field label="Appearance">
             <div className="flex gap-2">
               {(
@@ -349,6 +351,34 @@ function SettingsPage() {
               ))}
             </div>
           </Field>
+          <fieldset>
+            <legend className="text-xs font-medium text-muted-foreground mb-2">Accent color</legend>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {ACCENT_OPTIONS.map(({ value, label, color }) => (
+                <label key={value} className="relative cursor-pointer">
+                  <input
+                    type="radio"
+                    name="accent"
+                    value={value}
+                    checked={accent === value}
+                    onChange={() => setAccent(value)}
+                    className="peer sr-only"
+                  />
+                  <span className="flex items-center gap-2 rounded-xl border border-border px-3 py-3 text-xs font-medium peer-checked:border-primary peer-checked:bg-primary/10 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2">
+                    <span className="h-5 w-5 shrink-0 rounded-full" style={{ background: color }} />
+                    {label}
+                    {accent === value && (
+                      <Check className="ml-auto h-3 w-3 text-primary" aria-hidden="true" />
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Blue is the default. Changes apply immediately across the app and landing page, and
+              are saved in this browser.
+            </p>
+          </fieldset>
         </Section>
 
         {/* ── Notifications ── */}

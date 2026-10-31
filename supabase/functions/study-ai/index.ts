@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { INTERACTIVE_TUTOR_PROMPT } from "../_shared/tutor-prompt.ts";
 
 const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
 const corsHeaders = {
@@ -209,8 +210,6 @@ Balance review and new material. 2-4 tasks per day. Tasks must be specific and a
       result = await callGroq(system, user);
     } else if (action === "chat") {
       const examName = data.examName || "JEE Main";
-      const isJEE = examName.toLowerCase().includes("jee");
-      const isNEET = examName.toLowerCase().includes("neet");
 
       const difficultyMandate =
         "Never create or invent practice questions, MCQs, quizzes, mock tests, or flashcard questions. Work only with existing questions supplied by the student or the question bank. If asked for a new question or test, direct the student to /pyq, /quiz or /mock-test. You may explain concepts, solve supplied questions, and evaluate answers.";
@@ -234,17 +233,7 @@ Rules you MUST follow at all times:
 - Be concise but complete — avoid unnecessary filler text.${studentContext}`
           : `You are AcePrep AI Tutor — an expert teacher specializing in ${examName} preparation. You only discuss topics relevant to ${examName} syllabus.
 
-${difficultyMandate}
-
-Rules you MUST follow at all times:
-- When asked for quiz questions, direct the student to the sourced Question Bank at /pyq; never invent questions.
-- When asked to "Explain simpler" → re-explain the last concept using a different analogy or approach, not a dumbed-down version
-- Explain supplied questions step by step. Do not invent new example problems.
-- Use markdown formatting: **bold** for key terms, code blocks for equations, numbered lists for steps
-- For all math/physics: show every step, name every formula used (e.g. "Using Newton's 2nd law: F=ma")
-- For chemistry: show mechanisms, electron configurations, or reaction equations where relevant
-- Never generate new questions at any difficulty.
-- Be concise but complete — avoid unnecessary filler text${studentContext}`;
+${INTERACTIVE_TUTOR_PROMPT}${studentContext}`;
 
       const messages = [
         { role: "system", content: systemPrompt },

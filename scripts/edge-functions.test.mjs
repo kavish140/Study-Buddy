@@ -27,10 +27,17 @@ async function loadFunction(t, name, overrides = {}) {
   });
   const source = (
     await readFile(new URL(`../supabase/functions/${name}/index.ts`, import.meta.url), "utf8")
-  ).replace(
-    /^import .*createClient.*;$/m,
-    'const createClient = () => ({ auth: { getUser: async () => ({ data: { user: { id: "test-user" } }, error: null }) } });',
-  );
+  )
+    .replace(
+      /^import .*createClient.*;$/m,
+      'const createClient = () => ({ auth: { getUser: async () => ({ data: { user: { id: "test-user" } }, error: null }) } });',
+    )
+    .replace(
+      '"../_shared/tutor-prompt.ts"',
+      JSON.stringify(
+        new URL("../supabase/functions/_shared/tutor-prompt.ts", import.meta.url).href,
+      ),
+    );
   const js = stripTypeScriptTypes(source, { mode: "transform", disableExperimentalWarning: true });
   await import(
     `data:text/javascript;base64,${Buffer.from(js + `\n// import ${importId++}`).toString("base64")}`
@@ -97,6 +104,52 @@ test("chat uses the same configurable model and streams", async (t) => {
   assert.equal(payload.model, "replacement-model");
   assert.equal(payload.stream, true);
   assert.equal(payload.response_format, undefined);
+});
+
+test("tutor sessions use checkpoints while community posts keep direct answers", async (t) => {
+  let payload;
+  t.mock.method(globalThis, "fetch", async (_url, init) => {
+    payload = JSON.parse(init.body);
+    return new Response("data: [DONE]\n");
+  });
+  const invoke = await loadFunction(t, "study-ai");
+  await invoke({
+    action: "chat",
+    data: { source: "chat", messages: [{ role: "user", content: "Explain motion" }] },
+  });
+  assert.match(payload.messages[0].content, /ONE checkpoint/);
+  assert.match(payload.messages[0].content, /wait/);
+  assert.match(payload.messages[0].content, /explicit request for a full solution/);
+  await invoke({
+    action: "chat",
+    data: { source: "community", messages: [{ role: "user", content: "Explain motion" }] },
+  });
+  assert.match(payload.messages[0].content, /Do not ask follow-up questions/);
+  assert.doesNotMatch(payload.messages[0].content, /fenced block with language tutor/);
+});
+
+test("attachment tutoring puts session instructions in the system role", async (t) => {
+  let payload;
+  t.mock.method(globalThis, "fetch", async (_url, init) => {
+    payload = JSON.parse(init.body);
+    return Response.json({
+      candidates: [{ finishReason: "STOP", content: { parts: [{ text: "Try one step." }] } }],
+    });
+  });
+  const invoke = await loadFunction(t, "image-ai");
+  for (const mimeType of ["image/png", "application/pdf"]) {
+    const response = await invoke({
+      source: "chat",
+      imageBase64: "test-file",
+      mimeType,
+      prompt: "Help me learn",
+    });
+    assert.equal(response.status, 200);
+    assert.match(payload.systemInstruction.parts[0].text, /ONE checkpoint/);
+    assert.match(payload.systemInstruction.parts[0].text, /transcribing the specific problem/);
+    assert.match(payload.contents[0].parts[0].text, /Help me learn/);
+    assert.doesNotMatch(payload.contents[0].parts[0].text, /ONE checkpoint/);
+  }
 });
 
 test("provider errors preserve useful statuses without leaking raw upstream errors", async (t) => {

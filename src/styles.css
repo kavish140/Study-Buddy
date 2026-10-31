@@ -1429,3 +1429,47 @@
     height: calc(100dvh - 60px);
   }
 }
+
+/* Optional brand accents. Blue keeps the original light/dark theme defaults. */
+:root[data-accent="violet"] {
+  --brand-base: #7c3aed;
+  --brand-bright: #8b5cf6;
+  --brand-hover: #6d28d9;
+}
+:root[data-accent="green"] {
+  --brand-base: #047857;
+  --brand-bright: #059669;
+  --brand-hover: #065f46;
+}
+:root[data-accent="rose"] {
+  --brand-base: #e11d48;
+  --brand-bright: #f43f5e;
+  --brand-hover: #be123c;
+}
+:root:is([data-accent="violet"], [data-accent="green"], [data-accent="rose"]) {
+  --primary: var(--brand-base);
+  --ring: var(--primary);
+  --accent: color-mix(in srgb, var(--primary) 9%, var(--background));
+  --accent-foreground: var(--primary);
+  --sidebar-primary: var(--primary);
+  --sidebar-ring: var(--primary);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--foreground);
+  --gradient-primary: linear-gradient(135deg, var(--brand-base), var(--brand-bright));
+  --gradient-primary-hover: linear-gradient(135deg, var(--brand-hover), var(--brand-base));
+  --shadow-glow: 0 0 20px color-mix(in srgb, var(--primary) 20%, transparent);
+  --shadow-glow-sm: 0 0 10px color-mix(in srgb, var(--primary) 15%, transparent);
+  --gradient-hero: radial-gradient(
+    ellipse at top,
+    color-mix(in srgb, var(--primary) 12%, transparent),
+    transparent 70%
+  );
+  --gradient-glass: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 8%, var(--background)),
+    var(--background)
+  );
+}
+:root.dark:is([data-accent="violet"], [data-accent="green"], [data-accent="rose"]) {
+  --primary: var(--brand-bright);
+}

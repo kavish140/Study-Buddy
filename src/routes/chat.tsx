@@ -32,6 +32,7 @@ import { MarkdownContent } from "@/components/MarkdownContent";
 import { useAppContext } from "@/hooks/use-app-context";
 import { pastedAttachment, validateChatAttachment } from "@/lib/chat-attachments";
 import { PasteImageButton } from "@/components/PasteImageButton";
+import { parseTutorResponse } from "@/lib/tutor-interaction";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -40,7 +41,7 @@ export const Route = createFileRoute("/chat")({
       {
         name: "description",
         content:
-          "Ask your AI tutor any question. Get step-by-step explanations and exam-relevant insights.",
+          "Learn with your AI tutor through guided steps, hints, and interactive checkpoints.",
       },
     ],
   }),
@@ -179,6 +180,9 @@ function ChatPage() {
   };
 
   const handleUpdateSession = (session: ChatSession) => {
+    queryClient.setQueryData<ChatSession[]>(["chatSessions"], (current = []) =>
+      current.map((item) => (item.id === session.id ? session : item)),
+    );
     // Cache imageUrls locally before stripping — the query invalidation on save
     // would otherwise wipe them since they aren't persisted to the DB.
     session.messages.forEach((msg, i) => {
@@ -359,10 +363,22 @@ function EmptyState({
   };
 
   const suggestedPrompts = [
-    { icon: HelpCircle, text: "Explain electronegativity", sub: "Chemistry concept" },
-    { icon: Lightbulb, text: "Explain projectile motion", sub: "Physics concept" },
-    { icon: BookOpen, text: "Summarize French Revolution", sub: "History topic" },
-    { icon: Sparkles, text: "Best strategies for JEE Math", sub: "Exam tips" },
+    {
+      icon: HelpCircle,
+      text: "Help me understand electronegativity",
+      sub: "Learn with checkpoints",
+    },
+    { icon: Lightbulb, text: "Guide me through projectile motion", sub: "One step at a time" },
+    {
+      icon: BookOpen,
+      text: "Review the French Revolution with me",
+      sub: "Explain it in your own words",
+    },
+    {
+      icon: Sparkles,
+      text: "Help me work through a JEE Math problem",
+      sub: "Bring a question to solve together",
+    },
   ];
 
   return (
@@ -412,8 +428,8 @@ function EmptyState({
 
           <h2 className="text-3xl font-bold font-heading mb-3 text-gradient">AcePrep AI Tutor</h2>
           <p className="text-muted-foreground mb-10 text-sm leading-relaxed max-w-sm mx-auto">
-            Ask anything about your exam topics. Get step-by-step solutions, concept explanations,
-            and exam strategies.
+            Learn by doing: work through one idea at a time, try each checkpoint, and get feedback
+            on your reasoning. Hints are always available.
           </p>
 
           <div className="grid grid-cols-2 gap-3 mb-10">
@@ -557,6 +573,7 @@ function ChatView({
   const initialFileHandledRef = useRef(false);
   // AbortController for cancelling ongoing AI requests when session changes or component unmounts
   const abortRef = useRef<AbortController | null>(null);
+  const requestInFlightRef = useRef(false);
 
   // Abort any in-flight AI request when the component unmounts or the session changes
   useEffect(() => {
@@ -663,45 +680,151 @@ function ChatView({
     const msg = text || input.trim();
 
     // Prevent concurrent AI requests
-    if (isStreaming) return;
+    if (isStreaming || requestInFlightRef.current || (!msg && !pendingImage && !pendingPdf)) return;
+    requestInFlightRef.current = true;
 
-    // Abort any previous in-flight request before starting a new one
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    try {
+      // Abort any previous in-flight request before starting a new one
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-    // ── PDF flow
-    if (pendingPdf) {
-      const pdfFile = pendingPdf.file;
-      const userMsg = msg || "Analyze this PDF: " + pdfFile.name;
+      // ── PDF flow
+      if (pendingPdf) {
+        const pdfFile = pendingPdf.file;
+        const userMsg = msg || "Analyze this PDF: " + pdfFile.name;
 
-      // Optimistic UI — show user message immediately
-      const userMessage: ChatMessage = {
-        role: "user",
-        content:
-          "**" + pdfFile.name + "** (" + (pendingPdf.pageCount ?? "?") + " pages)\n\n" + userMsg,
-        timestamp: new Date().toISOString(),
-      };
-      const updatedMessages = [...session.messages, userMessage];
-      const title =
-        session.messages.length === 0 ? "\ud83d\udcc4 " + pdfFile.name.slice(0, 40) : session.title;
-      const updatedSession: ChatSession = { ...session, messages: updatedMessages, title };
-      onUpdate(updatedSession);
-      setInput("");
-      setPendingPdf(null);
-      setIsStreaming(true);
-      setStreamingContent("");
+        // Optimistic UI — show user message immediately
+        const userMessage: ChatMessage = {
+          role: "user",
+          content:
+            "**" + pdfFile.name + "** (" + (pendingPdf.pageCount ?? "?") + " pages)\n\n" + userMsg,
+          timestamp: new Date().toISOString(),
+        };
+        const updatedMessages = [...session.messages, userMessage];
+        const title =
+          session.messages.length === 0
+            ? "\ud83d\udcc4 " + pdfFile.name.slice(0, 40)
+            : session.title;
+        const updatedSession: ChatSession = { ...session, messages: updatedMessages, title };
+        onUpdate(updatedSession);
+        setInput("");
+        setPendingPdf(null);
+        setIsStreaming(true);
+        setStreamingContent("");
 
-      try {
-        const { text, pageCount } = await extractPdfText(pdfFile);
-        const isScanned = text.trim().length === 0;
+        try {
+          const { text, pageCount } = await extractPdfText(pdfFile);
+          const isScanned = text.trim().length === 0;
 
-        if (isScanned) {
-          // Scanned / image-based PDF — send raw file to Gemini's native PDF reader
-          toast.info(`📷 Scanned PDF detected — Gemini is reading all ${pageCount} pages…`);
+          if (isScanned) {
+            // Scanned / image-based PDF — send raw file to Gemini's native PDF reader
+            toast.info(`📷 Scanned PDF detected — Gemini is reading all ${pageCount} pages…`);
 
-          const result = await solveFromPdf({
-            file: pdfFile,
+            const result = await solveFromPdf({
+              file: pdfFile,
+              prompt: userMsg,
+              examName,
+              source: "chat",
+              signal: controller.signal,
+              appContext,
+            });
+
+            onUpdate({
+              ...updatedSession,
+              messages: [
+                ...updatedMessages,
+                {
+                  role: "assistant",
+                  content: result.response,
+                  timestamp: new Date().toISOString(),
+                },
+              ],
+            });
+            setIsStreaming(false);
+            setStreamingContent("");
+          } else {
+            // Digital PDF with a text layer — use existing streaming text flow
+            const contextMsg = `The student has uploaded a PDF: "${pdfFile.name}" (${pageCount} pages).\n\nPDF CONTENT:\n${text.slice(0, 12000)}${text.length > 12000 ? "\n\n[...content truncated to first 12,000 characters...]" : ""}\n\nStudent's question: ${userMsg}\n\nBegin by restating the selected problem and its givens so we can refer to it in later turns, then guide one step at a time. If no problem is selected, ask which part to work on.`;
+
+            const messagesWithPdf = [
+              ...updatedMessages.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
+              { role: "user" as const, content: contextMsg },
+            ];
+
+            let fullResponse = "";
+            await streamChat({
+              messages: messagesWithPdf,
+              examName,
+              signal: controller.signal,
+              source: "chat",
+              appContext,
+              onChunk: (chunk) => {
+                fullResponse += chunk;
+                setStreamingContent(fullResponse);
+              },
+              onDone: () => {
+                onUpdate({
+                  ...updatedSession,
+                  messages: [
+                    ...updatedMessages,
+                    {
+                      role: "assistant",
+                      content: fullResponse,
+                      timestamp: new Date().toISOString(),
+                    },
+                  ],
+                });
+                setStreamingContent("");
+                setIsStreaming(false);
+              },
+            });
+          }
+        } catch (e) {
+          if ((e as Error).name === "AbortError") return; // silently ignore aborted requests
+          toast.error(e instanceof Error ? e.message : "Failed to read PDF");
+          setIsStreaming(false);
+          setStreamingContent("");
+        }
+        return;
+      }
+
+      // \u2500\u2500 Image flow
+      if (pendingImage) {
+        const imageFile = pendingImage;
+        const userMsg = msg || "Guide me through this question from the image, one step at a time.";
+
+        const userMessage: ChatMessage = {
+          role: "user",
+          content: userMsg,
+          timestamp: new Date().toISOString(),
+          imageUrl: imageFile.previewUrl,
+        };
+
+        const updatedMessages = [...session.messages, userMessage];
+        const title =
+          session.messages.length === 0
+            ? "\ud83d\udcf7 " +
+              Array.from(userMsg).slice(0, 45).join("") +
+              (Array.from(userMsg).length > 45 ? "\u2026" : "")
+            : session.title;
+
+        const updatedSession: ChatSession = {
+          ...session,
+          messages: updatedMessages,
+          title,
+        };
+        onUpdate(updatedSession);
+        setInput("");
+        setPendingImage(null);
+        setIsAnalyzingImage(true);
+        setIsStreaming(true);
+
+        try {
+          const { base64, mimeType } = await compressImage(imageFile.file);
+          const result = await solveFromImage({
+            imageBase64: base64,
+            mimeType,
             prompt: userMsg,
             examName,
             source: "chat",
@@ -709,75 +832,41 @@ function ChatView({
             appContext,
           });
 
+          const assistantMessage: ChatMessage = {
+            role: "assistant",
+            content: result.response,
+            timestamp: new Date().toISOString(),
+          };
+
           onUpdate({
             ...updatedSession,
-            messages: [
-              ...updatedMessages,
-              { role: "assistant", content: result.response, timestamp: new Date().toISOString() },
-            ],
+            messages: [...updatedMessages, assistantMessage],
           });
+        } catch (e) {
+          if ((e as Error).name === "AbortError") return; // silently ignore aborted requests
+          toast.error(e instanceof Error ? e.message : "Failed to analyze image");
+        } finally {
           setIsStreaming(false);
-          setStreamingContent("");
-        } else {
-          // Digital PDF with a text layer — use existing streaming text flow
-          const contextMsg = `The student has uploaded a PDF: "${pdfFile.name}" (${pageCount} pages).\n\nPDF CONTENT:\n${text.slice(0, 12000)}${text.length > 12000 ? "\n\n[...content truncated to first 12,000 characters...]" : ""}\n\nStudent's question: ${userMsg}`;
-
-          const messagesWithPdf = [
-            ...updatedMessages.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
-            { role: "user" as const, content: contextMsg },
-          ];
-
-          let fullResponse = "";
-          await streamChat({
-            messages: messagesWithPdf,
-            examName,
-            signal: controller.signal,
-            source: "chat",
-            appContext,
-            onChunk: (chunk) => {
-              fullResponse += chunk;
-              setStreamingContent(fullResponse);
-            },
-            onDone: () => {
-              onUpdate({
-                ...updatedSession,
-                messages: [
-                  ...updatedMessages,
-                  { role: "assistant", content: fullResponse, timestamp: new Date().toISOString() },
-                ],
-              });
-              setStreamingContent("");
-              setIsStreaming(false);
-            },
-          });
+          setIsAnalyzingImage(false);
         }
-      } catch (e) {
-        if ((e as Error).name === "AbortError") return; // silently ignore aborted requests
-        toast.error(e instanceof Error ? e.message : "Failed to read PDF");
-        setIsStreaming(false);
-        setStreamingContent("");
+        return;
       }
-      return;
-    }
 
-    // \u2500\u2500 Image flow
-    if (pendingImage) {
-      const imageFile = pendingImage;
-      const userMsg = msg || "Solve this question from the image";
+      // Regular text-only flow
+      if (!msg || isStreaming) return;
 
       const userMessage: ChatMessage = {
         role: "user",
-        content: userMsg,
+        content: msg,
         timestamp: new Date().toISOString(),
-        imageUrl: imageFile.previewUrl,
       };
 
       const updatedMessages = [...session.messages, userMessage];
+
+      // Update title on first message
       const title =
         session.messages.length === 0
-          ? "\ud83d\udcf7 " +
-            Array.from(userMsg).slice(0, 45).join("") +
-            (Array.from(userMsg).length > 45 ? "\u2026" : "")
+          ? Array.from(msg).slice(0, 50).join("") + (Array.from(msg).length > 50 ? "\u2026" : "")
           : session.title;
 
       const updatedSession: ChatSession = {
@@ -787,103 +876,46 @@ function ChatView({
       };
       onUpdate(updatedSession);
       setInput("");
-      setPendingImage(null);
-      setIsAnalyzingImage(true);
       setIsStreaming(true);
+      setStreamingContent("");
 
       try {
-        const { base64, mimeType } = await compressImage(imageFile.file);
-        const result = await solveFromImage({
-          imageBase64: base64,
-          mimeType,
-          prompt: userMsg,
+        let fullResponse = "";
+
+        await streamChat({
+          messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
           examName,
           source: "chat",
           signal: controller.signal,
           appContext,
-        });
+          onChunk: (chunk) => {
+            fullResponse += chunk;
+            setStreamingContent(fullResponse);
+          },
+          onDone: () => {
+            const assistantMessage: ChatMessage = {
+              role: "assistant",
+              content: fullResponse,
+              timestamp: new Date().toISOString(),
+            };
 
-        const assistantMessage: ChatMessage = {
-          role: "assistant",
-          content: result.response,
-          timestamp: new Date().toISOString(),
-        };
-
-        onUpdate({
-          ...updatedSession,
-          messages: [...updatedMessages, assistantMessage],
+            const finalSession: ChatSession = {
+              ...updatedSession,
+              messages: [...updatedMessages, assistantMessage],
+            };
+            onUpdate(finalSession);
+            setStreamingContent("");
+            setIsStreaming(false);
+          },
         });
       } catch (e) {
         if ((e as Error).name === "AbortError") return; // silently ignore aborted requests
-        toast.error(e instanceof Error ? e.message : "Failed to analyze image");
-      } finally {
+        toast.error(e instanceof Error ? e.message : "Failed to get response");
         setIsStreaming(false);
-        setIsAnalyzingImage(false);
+        setStreamingContent("");
       }
-      return;
-    }
-
-    // Regular text-only flow
-    if (!msg || isStreaming) return;
-
-    const userMessage: ChatMessage = {
-      role: "user",
-      content: msg,
-      timestamp: new Date().toISOString(),
-    };
-
-    const updatedMessages = [...session.messages, userMessage];
-
-    // Update title on first message
-    const title =
-      session.messages.length === 0
-        ? Array.from(msg).slice(0, 50).join("") + (Array.from(msg).length > 50 ? "\u2026" : "")
-        : session.title;
-
-    const updatedSession: ChatSession = {
-      ...session,
-      messages: updatedMessages,
-      title,
-    };
-    onUpdate(updatedSession);
-    setInput("");
-    setIsStreaming(true);
-    setStreamingContent("");
-
-    try {
-      let fullResponse = "";
-
-      await streamChat({
-        messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
-        examName,
-        source: "chat",
-        signal: controller.signal,
-        appContext,
-        onChunk: (chunk) => {
-          fullResponse += chunk;
-          setStreamingContent(fullResponse);
-        },
-        onDone: () => {
-          const assistantMessage: ChatMessage = {
-            role: "assistant",
-            content: fullResponse,
-            timestamp: new Date().toISOString(),
-          };
-
-          const finalSession: ChatSession = {
-            ...updatedSession,
-            messages: [...updatedMessages, assistantMessage],
-          };
-          onUpdate(finalSession);
-          setStreamingContent("");
-          setIsStreaming(false);
-        },
-      });
-    } catch (e) {
-      if ((e as Error).name === "AbortError") return; // silently ignore aborted requests
-      toast.error(e instanceof Error ? e.message : "Failed to get response");
-      setIsStreaming(false);
-      setStreamingContent("");
+    } finally {
+      requestInFlightRef.current = false;
     }
   };
 
@@ -896,21 +928,27 @@ function ChatView({
 
   const quickActions = [
     {
+      label: "Give me a hint",
+      prompt:
+        "I'm stuck on the current checkpoint. Give me one small hint and let me try again without revealing the answer.",
+      icon: HelpCircle,
+    },
+    {
       label: "Explain simpler",
       prompt:
-        "Re-explain that concept using a different approach or analogy. Keep it at JEE level.",
+        "Re-explain the current step using a simpler approach or analogy, then let me try it.",
       icon: Lightbulb,
     },
     {
-      label: "Explain the method",
+      label: "Show full solution",
       prompt:
-        "Explain the method for solving the existing question we discussed. Do not create a new problem.",
+        "Please show the full explanation or worked solution for the current material, including the reasoning for each step.",
       icon: BookOpen,
     },
     {
-      label: "Summarize key ideas",
+      label: "Recap what I learned",
       prompt:
-        "Summarize the key ideas and mistakes to avoid for the question we discussed. Do not generate questions.",
+        "Briefly recap the key ideas we covered, what my attempts showed, and what I should review next.",
       icon: HelpCircle,
     },
   ];
@@ -984,12 +1022,20 @@ function ChatView({
               <div className="h-12 w-12 rounded-2xl bg-primary/10 grid place-items-center mx-auto mb-3">
                 <Sparkles className="h-6 w-6 text-primary/40" />
               </div>
-              <p className="text-sm text-muted-foreground">Ask me anything about your studies!</p>
+              <p className="text-sm text-muted-foreground">
+                Pick a topic or share a problem. We'll work through it together.
+              </p>
             </div>
           )}
 
           {session.messages.map((msg, i) => (
-            <MessageBubble key={i} message={msg} />
+            <MessageBubble
+              key={i}
+              message={msg}
+              active={i === session.messages.length - 1 && !isStreaming}
+              onAnswer={(answer) => handleSend(answer)}
+              onTry={() => inputRef.current?.focus()}
+            />
           ))}
 
           {isStreaming && streamingContent && (
@@ -1160,7 +1206,7 @@ function ChatView({
                     ? "Add a message about this image... (optional)"
                     : pendingPdf
                       ? "Ask something about this PDF..."
-                      : "Ask a question, or paste an image…"
+                      : "Try the next step, share your reasoning, or ask a question…"
                 }
                 rows={1}
                 className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
@@ -1194,12 +1240,21 @@ function ChatView({
 function MessageBubble({
   message,
   isStreaming = false,
+  active = false,
+  onAnswer,
+  onTry,
 }: {
   message: ChatMessage;
   isStreaming?: boolean;
+  active?: boolean;
+  onAnswer?: (answer: string) => void;
+  onTry?: () => void;
 }) {
   const isUser = message.role === "user";
   const [showTime, setShowTime] = useState(false);
+  const parsed = isUser
+    ? { content: message.content, checkpoint: null }
+    : parseTutorResponse(message.content);
 
   const timeStr = message.timestamp ? formatTimeIST(message.timestamp) : null;
 
@@ -1260,10 +1315,50 @@ function MessageBubble({
                 {message.content}
               </p>
             ) : (
-              <MarkdownContent content={message.content} isStreaming={isStreaming} />
+              <MarkdownContent content={parsed.content} isStreaming={isStreaming} />
             )}
           </div>
         </div>
+
+        {!isUser && parsed.checkpoint && !isStreaming && (
+          <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 space-y-3">
+            <p className="text-xs font-semibold text-primary">Your turn</p>
+            <MarkdownContent content={parsed.checkpoint.question} />
+            <div className="flex flex-wrap gap-2">
+              {parsed.checkpoint.options.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  disabled={!active}
+                  onClick={() =>
+                    onAnswer?.(
+                      `For your checkpoint: ${parsed.checkpoint!.question}\n\nMy response: ${option}`,
+                    )
+                  }
+                  className="text-left text-sm rounded-xl border border-primary/25 px-3 py-2 hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50 disabled:cursor-default"
+                >
+                  {option}
+                </button>
+              ))}
+              {active && (
+                <button
+                  type="button"
+                  onClick={onTry}
+                  className="text-sm text-primary underline underline-offset-4"
+                >
+                  {parsed.checkpoint.options.length
+                    ? "Write my own answer"
+                    : "Try it in my own words"}
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {active
+                ? "Share your reasoning below. You can ask for a hint anytime."
+                : "Previous checkpoint"}
+            </p>
+          </div>
+        )}
 
         {/* Timestamp on hover */}
         {timeStr && (

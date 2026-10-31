@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { INTERACTIVE_TUTOR_PROMPT } from "../_shared/tutor-prompt.ts";
 
 const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
 const corsHeaders = {
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { imageBase64, mimeType, prompt, examName, appContext } = await req.json();
+    const { imageBase64, mimeType, prompt, examName, appContext, source } = await req.json();
 
     if (!imageBase64) {
       throw new Error("No image provided. Please upload an image or PDF.");
@@ -107,9 +108,15 @@ Your task:
 Be thorough, accurate, and encouraging.`;
 
     // Append student context if available
+    const tutoringPrompt =
+      source === "chat"
+        ? `You are AcePrep AI Tutor. ${examContext}
+Read the supplied image or all PDF pages accurately. Start by transcribing the specific problem being discussed, including its givens and any relevant diagram details, so later text-only turns have enough context. If multiple problems are present and none is selected, ask the student to choose one. If text is unclear, ask for clarification instead of guessing. Guide the selected problem one step at a time.
+${INTERACTIVE_TUTOR_PROMPT}`
+        : systemPrompt;
     const fullSystemPrompt = appContext
-      ? `${systemPrompt}\n\nStudent context — use this to give personalised, relevant answers:${appContext}`
-      : systemPrompt;
+      ? `${tutoringPrompt}\n\nStudent context — use this to give personalised, relevant answers:${appContext}`
+      : tutoringPrompt;
 
     const userPrompt = prompt
       ? isPdf
@@ -127,7 +134,7 @@ Be thorough, accurate, and encouraging.`;
       systemInstruction: {
         parts: [
           {
-            text: "Process, explain, or solve the existing questions in the supplied document. Never invent or generate new questions, quizzes, mock tests, or flashcard questions. If asked to create questions, direct the student to the app's sourced question bank.",
+            text: `${fullSystemPrompt}\nProcess only the supplied material. Never invent new practice questions, quizzes, mock tests, or flashcards.`,
           },
         ],
       },
@@ -135,7 +142,7 @@ Be thorough, accurate, and encouraging.`;
         {
           role: "user",
           parts: [
-            { text: fullSystemPrompt + "\n\n" + userPrompt },
+            { text: userPrompt },
             {
               inlineData: {
                 mimeType: mimeType || "image/jpeg",
