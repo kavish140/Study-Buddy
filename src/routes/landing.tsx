@@ -1,612 +1,568 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
-  Brain,
-  Sparkles,
-  BarChart3,
-  FlipHorizontal2,
-  Timer,
-  MessageCircle,
-  Target,
-  Flame,
-  Trophy,
   ArrowRight,
-  GraduationCap,
-  Zap,
-  CheckCircle2,
-  Star,
+  BarChart3,
   BookOpen,
+  Brain,
+  Calendar,
+  Check,
+  CheckCircle2,
   ChevronDown,
+  FileText,
+  Flame,
+  FlipHorizontal2,
+  GraduationCap,
+  LayoutDashboard,
+  Library,
+  Menu,
+  MessageCircle,
+  Sparkles,
+  Target,
+  Timer,
+  Trophy,
+  X,
 } from "lucide-react";
+import { EXAM_CATALOG } from "@/lib/exam-catalog";
+import "./landing.css";
 
 export const Route = createFileRoute("/landing")({
   head: () => ({
     meta: [
-      { title: "AcePrep — Ace Any Competitive Exam with AI" },
+      { title: "AcePrep — Your complete study toolkit" },
       {
         name: "description",
         content:
-          "AI-powered exam prep for JEE, NEET, UPSC, CAT & more. Mock tests, smart flashcards, AI tutor, analytics — all in one platform.",
+          "Plan, learn, practice and improve with AcePrep. Explore AI tutoring, syllabus tracking, study plans, notes, JEE practice, spaced repetition, focus sessions and analytics.",
       },
     ],
   }),
   component: LandingPage,
 });
 
-/* ─── Data ───────────────────────────────────────────────────────────────── */
-
-const FEATURES = [
+const FEATURE_GROUPS = [
   {
-    icon: Sparkles,
-    title: "AI Tutor",
-    desc: "Ask anything, get crystal-clear explanations with step-by-step solutions. Available 24/7.",
-    color: "#8b5cf6",
-    bg: "rgba(139,92,246,0.12)",
-  },
-  {
-    icon: Brain,
-    title: "Practice Quiz",
-    desc: "Practice existing questions from attributed JEE collections and previous-year papers.",
-    color: "#3b82f6",
-    bg: "rgba(59,130,246,0.12)",
-  },
-  {
-    icon: Timer,
-    title: "Mock Tests",
-    desc: "Timed practice assembled from existing bank questions, with scoring and review.",
-    color: "#f59e0b",
-    bg: "rgba(245,158,11,0.12)",
-  },
-  {
-    icon: FlipHorizontal2,
-    title: "Smart Flashcards",
-    desc: "Review sourced question-bank cards with spaced repetition.",
-    color: "#10b981",
-    bg: "rgba(16,185,129,0.12)",
-  },
-  {
-    icon: BarChart3,
-    title: "Deep Analytics",
-    desc: "Track accuracy trends, weak subjects, and time-on-task. Know exactly where to focus.",
-    color: "#f43f5e",
-    bg: "rgba(244,63,94,0.12)",
-  },
-  {
-    icon: MessageCircle,
-    title: "Community",
-    desc: "Discuss doubts with peers. AI automatically answers unresolved questions.",
-    color: "#06b6d4",
-    bg: "rgba(6,182,212,0.12)",
-  },
-];
-
-const STEPS = [
-  {
-    n: "01",
-    title: "Pick Your Exam",
-    desc: "Select from JEE, NEET, UPSC, CAT, SAT, GRE and more. AcePrep instantly loads the right syllabus and question patterns.",
-    color: "#8b5cf6",
-  },
-  {
-    n: "02",
-    title: "Study Smarter",
-    desc: "Use AI Tutor, mock tests, and smart flashcards to learn faster. The adaptive engine focuses on your weak spots.",
-    color: "#3b82f6",
-  },
-  {
-    n: "03",
-    title: "Track & Improve",
-    desc: "Analytics surface your progress, streak, and rank. Climb the leaderboard and hit your target score.",
-    color: "#10b981",
-  },
-];
-
-const EXAMS = [
-  { label: "JEE Main", icon: "⚗️", color: "#3b82f6" },
-  { label: "JEE Advanced", icon: "🔬", color: "#6366f1" },
-  { label: "NEET", icon: "🧬", color: "#10b981" },
-  { label: "UPSC", icon: "🏛️", color: "#f59e0b" },
-  { label: "CAT", icon: "📊", color: "#f43f5e" },
-  { label: "SAT", icon: "🎓", color: "#8b5cf6" },
-  { label: "GRE", icon: "📝", color: "#06b6d4" },
-  { label: "GATE", icon: "⚙️", color: "#a855f7" },
-];
-
-const STATS = [
-  { value: "10,000+", label: "Active Students", icon: "🎓" },
-  { value: "50,000+", label: "Questions Practiced", icon: "✅" },
-  { value: "95%", label: "Satisfaction Rate", icon: "⭐" },
-  { value: "Free", label: "Always", icon: "🚀" },
-];
-
-const TESTIMONIALS = [
-  {
-    name: "Aditya R.",
-    exam: "JEE Advanced",
-    text: "The AI tutor explained integration by parts better than my coaching class. Cleared JEE with AIR 847.",
-    emoji: "🏆",
-    stars: 5,
-  },
-  {
-    name: "Priya S.",
-    exam: "NEET",
-    text: "Smart flashcards saved me during the final week. I reviewed 300 cards in 2 hours without fatigue.",
-    emoji: "🧬",
-    stars: 5,
-  },
-  {
-    name: "Karan M.",
-    exam: "CAT",
-    text: "Analytics showed I was wasting time on DI and weak in Quant. Fixed both in 3 weeks. 98.4 percentile!",
-    emoji: "📊",
-    stars: 5,
-  },
-];
-
-/* ─── Hook: animate on scroll ─────────────────────────────────────────────── */
-function useInView(threshold = 0.15) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          obs.disconnect();
-        }
+    id: "plan",
+    label: "01 / GET ORGANIZED",
+    title: "Give your preparation a plan.",
+    description:
+      "Turn a long syllabus into a clear next step. Keep your goals, topics and daily tasks together.",
+    features: [
+      {
+        icon: LayoutDashboard,
+        title: "Personal dashboard",
+        description:
+          "See syllabus progress, today's tasks, due review cards and your exam countdown in one place.",
       },
-      { threshold },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return { ref, inView };
-}
+      {
+        icon: BookOpen,
+        title: "Syllabus tracker",
+        description:
+          "Track topics by subject, mark them complete and use AI to parse your own syllabus.",
+      },
+      {
+        icon: Calendar,
+        title: "Study planner",
+        description:
+          "Build a multi-day schedule from unfinished topics, or add and check off your own dated tasks.",
+      },
+    ],
+  },
+  {
+    id: "learn",
+    label: "02 / BUILD UNDERSTANDING",
+    title: "Make the difficult bits click.",
+    description: "Work through a doubt, condense a topic, then explain it in your own words.",
+    features: [
+      {
+        icon: Sparkles,
+        title: "AI Tutor",
+        description:
+          "Get step-by-step explanations, paste or upload images, attach PDFs up to 7.5 MB and revisit saved chats.",
+      },
+      {
+        icon: FileText,
+        title: "Notes & flashcards",
+        description:
+          "Create AI topic summaries and save notes alongside matching flashcards from the available question bank.",
+      },
+      {
+        icon: Brain,
+        title: "Teaching Mode",
+        description:
+          "Explain a concept to the AI. Get feedback on gaps, strengths and how clearly you understand it.",
+      },
+    ],
+  },
+  {
+    id: "practice",
+    label: "03 / PUT IT INTO PRACTICE",
+    title: "Practice. Review. Remember.",
+    description:
+      "Use sourced JEE questions and answer keys, then bring mistakes back into your revision routine.",
+    features: [
+      {
+        icon: Library,
+        title: "Question bank & PYQs",
+        description:
+          "Explore imported JEE Main and Advanced questions, filter the bank and ask AI to explain a question.",
+      },
+      {
+        icon: Target,
+        title: "Practice quizzes",
+        description:
+          "Choose a topic and test your understanding with existing bank questions. Revisit results and explanations.",
+      },
+      {
+        icon: Timer,
+        title: "Timed mock tests",
+        description:
+          "Practice under time pressure with bank-based tests, scoring, answer review and saved attempts.",
+      },
+      {
+        icon: FlipHorizontal2,
+        title: "Smart Review",
+        description:
+          "Revise with spaced repetition, add your own cards and review mistakes saved from quizzes and mocks.",
+      },
+    ],
+  },
+  {
+    id: "grow",
+    label: "04 / KEEP MOVING FORWARD",
+    title: "Build a habit you can see.",
+    description: "Stay focused, find your weak spots and make preparation a little less solitary.",
+    features: [
+      {
+        icon: Flame,
+        title: "Focus Timer",
+        description:
+          "Set custom Pomodoro and break durations, track study sessions and keep the timer running as you navigate.",
+      },
+      {
+        icon: BarChart3,
+        title: "Performance analytics",
+        description:
+          "Explore accuracy, subject strengths, weak areas and study activity. Start with a question-bank diagnostic.",
+      },
+      {
+        icon: MessageCircle,
+        title: "Study community",
+        description:
+          "Post doubts, reply to peers, upvote discussions, accept helpful answers and request AI explanations.",
+      },
+      {
+        icon: Trophy,
+        title: "XP, streaks & leaderboard",
+        description:
+          "Earn XP through study activities, build your streak, unlock badges and see your position on the leaderboard.",
+      },
+    ],
+  },
+];
 
-/* ─── Components ─────────────────────────────────────────────────────────── */
+const PREVIEWS = [
+  {
+    label: "Plan",
+    icon: Calendar,
+    heading: "A little structure. A clearer day.",
+    subheading: "Illustrative study plan",
+    rows: [
+      "Review electrostatics notes",
+      "Practice integration questions",
+      "Explain chemical equilibrium",
+    ],
+    foot: "Your syllabus → your daily study plan",
+    badge: "One topic at a time",
+  },
+  {
+    label: "Learn",
+    icon: Sparkles,
+    heading: "Stuck on a concept? Start here.",
+    subheading: "Example AI Tutor conversation",
+    rows: [
+      "You: Help me understand integration by parts.",
+      "Tutor: Start with the product rule for derivatives.",
+      "Attach a question image or PDF for context.",
+    ],
+    foot: "Text, images and PDFs in one conversation",
+    badge: "Understand the why",
+  },
+  {
+    label: "Review",
+    icon: FlipHorizontal2,
+    heading: "Make revision part of the routine.",
+    subheading: "Illustrative review session",
+    rows: [
+      "Bring back a missed quiz question",
+      "Reveal the answer and explanation",
+      "Rate recall to schedule the next review",
+    ],
+    foot: "Practice → feedback → spaced repetition",
+    badge: "Build lasting recall",
+  },
+];
 
-function FadeIn({
-  children,
-  delay = 0,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  const { ref, inView } = useInView();
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? "translateY(0)" : "translateY(28px)",
-        transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+const FAQS = [
+  {
+    question: "Which exams can I prepare for?",
+    answer:
+      "Choose from the exam profiles on this page for syllabus-based planning and study tools. Imported, automatically graded questions currently cover JEE Main and JEE Advanced. Other exams do not yet have in-app mock tests; external study resources are listed separately.",
+  },
+  {
+    question: "Are the practice questions generated by AI?",
+    answer:
+      "Practice quizzes, mock tests and question-bank cards use existing imported questions and answer keys. AI supports explanations, notes, planning and teaching feedback. Sources and licenses are available on the public Sources page.",
+  },
+  {
+    question: "Can I ask about a photo or PDF?",
+    answer:
+      "Yes. In AI Tutor, paste or upload a question image, or attach a PDF up to 7.5 MB. Add your question to explain what you need help understanding. Longer PDFs may be processed only in part.",
+  },
+  {
+    question: "How do I get started?",
+    answer:
+      "Sign in with Google, choose your exam and subjects, and set up your profile. Then track your syllabus, build a study plan and start using the study tools.",
+  },
+];
 
-/* ─── Main Page ──────────────────────────────────────────────────────────── */
 function LandingPage() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
-  }, []);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [preview, setPreview] = useState(0);
+  const selected = PREVIEWS[preview];
 
   return (
-    <div
-      className="min-h-screen relative overflow-x-hidden"
-      style={{
-        background: "var(--background)",
-        color: "var(--foreground)",
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-      }}
-    >
-      {/* ── Sticky Nav ── */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        style={{
-          background: scrolled ? "var(--background)" : "transparent",
-          borderBottom: scrolled ? "1px solid var(--border)" : "none",
-          backdropFilter: scrolled ? "blur(16px)" : "none",
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-gradient-primary grid place-items-center shadow-glow-sm">
-              <GraduationCap className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-bold text-lg font-heading">AcePrep</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
-            >
+    <div className="ace-landing">
+      <a href="#main-content" className="ace-skip">
+        Skip to content
+      </a>
+      <header className="ace-header">
+        <div className="ace-container ace-nav">
+          <a href="#" className="ace-brand" aria-label="AcePrep home">
+            <span className="ace-logo">
+              <GraduationCap size={22} aria-hidden="true" />
+            </span>
+            AcePrep<span className="ace-brand-dot">.</span>
+          </a>
+          <nav className="ace-desktop-nav" aria-label="Main navigation">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="#exams">Exams</a>
+            <a href="#faq">FAQs</a>
+          </nav>
+          <div className="ace-nav-actions">
+            <Link to="/login" className="ace-signin">
               Sign in
             </Link>
-            <Link
-              to="/login"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-sm font-semibold hover:opacity-90 transition-all hover:shadow-glow-sm"
-              style={{ background: "var(--gradient-primary)" }}
-            >
-              Start Free <ArrowRight className="h-3.5 w-3.5" />
+            <Link to="/login" className="ace-button ace-button-small">
+              Get started <ArrowRight size={15} aria-hidden="true" />
             </Link>
+            <button
+              className="ace-menu-button"
+              aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={menuOpen}
+              aria-controls="landing-mobile-nav"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              {menuOpen ? <X /> : <Menu />}
+            </button>
           </div>
         </div>
-      </nav>
-
-      {/* ── Hero ── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-5 pt-16 pb-24">
-        {/* Background orbs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div
-            className="absolute top-1/4 left-1/6 w-96 h-96 rounded-full opacity-30 animate-float"
-            style={{
-              background: "radial-gradient(circle, rgba(139,92,246,0.3) 0%, transparent 70%)",
-              filter: "blur(40px)",
-            }}
-          />
-          <div
-            className="absolute bottom-1/4 right-1/6 w-80 h-80 rounded-full opacity-25 animate-float"
-            style={{
-              background: "radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%)",
-              filter: "blur(40px)",
-              animationDelay: "-3s",
-            }}
-          />
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10 animate-float"
-            style={{
-              background: "radial-gradient(circle, rgba(99,102,241,0.4) 0%, transparent 60%)",
-              filter: "blur(60px)",
-              animationDelay: "-1.5s",
-            }}
-          />
-          {/* Grid */}
-          <div
-            className="absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(148,163,184,1) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,1) 1px, transparent 1px)",
-              backgroundSize: "60px 60px",
-            }}
-          />
-        </div>
-
-        <div className="relative max-w-4xl mx-auto animate-fade-up">
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold mb-6"
-            style={{
-              borderColor: "var(--primary)",
-              color: "var(--primary)",
-              background: "var(--accent)",
-            }}
-          >
-            <Zap className="h-3 w-3" /> AI-Powered Exam Prep · Free Forever
-          </div>
-
-          {/* Headline */}
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight font-heading leading-[1.05] mb-6">
-            Ace Any{" "}
-            <span
-              className="text-gradient"
-              style={{
-                background: "var(--gradient-primary)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Competitive Exam
-            </span>
-            <br />
-            <span className="text-foreground">with AI</span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Mock tests, AI tutor, smart flashcards, deep analytics, and a study community — all in
-            one platform designed for JEE, NEET, UPSC, CAT, and beyond.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
-            <Link
-              to="/login"
-              className="flex items-center gap-2 px-7 py-3.5 rounded-2xl text-white font-bold text-base hover:opacity-90 transition-all hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0"
-              style={{ background: "var(--gradient-primary)" }}
-            >
-              <Sparkles className="h-4 w-4" /> Start for Free
-            </Link>
-            <a
-              href="#features"
-              className="flex items-center gap-2 px-7 py-3.5 rounded-2xl font-semibold text-base border transition-all hover:opacity-80"
-              style={{
-                borderColor: "var(--border)",
-                color: "var(--foreground)",
-                background: "var(--muted)",
-              }}
-            >
-              See Features <ChevronDown className="h-4 w-4" />
-            </a>
-          </div>
-
-          {/* Exam chips */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {EXAMS.map((e) => (
-              <span
-                key={e.label}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border"
-                style={{ borderColor: `${e.color}30`, background: `${e.color}12`, color: e.color }}
-              >
-                {e.icon} {e.label}
+        {menuOpen && (
+          <nav id="landing-mobile-nav" className="ace-mobile-nav" aria-label="Mobile navigation">
+            {[
+              ["Features", "features"],
+              ["How it works", "how-it-works"],
+              ["Exams", "exams"],
+              ["FAQs", "faq"],
+            ].map(([label, id]) => (
+              <a key={id} href={`#${id}`} onClick={() => setMenuOpen(false)}>
+                {label}
+              </a>
+            ))}
+          </nav>
+        )}
+      </header>
+      <main id="main-content">
+        <section className="ace-hero ace-container">
+          <div className="ace-hero-copy">
+            <div className="ace-eyebrow">
+              <span className="ace-status-dot" /> YOUR AMBITION. YOUR STUDY SPACE.
+            </div>
+            <h1>
+              Big exam goals.
+              <br />
+              Meet your <span>everyday edge.</span>
+            </h1>
+            <p>
+              From “where do I start?” to “I get it.” Plan your prep, learn with AI, practice with
+              purpose and see your progress — all in AcePrep.
+            </p>
+            <div className="ace-hero-actions">
+              <Link to="/login" className="ace-button">
+                Build your study routine <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+              <a href="#features" className="ace-text-link">
+                Explore every feature <ChevronDown size={16} aria-hidden="true" />
+              </a>
+            </div>
+            <div className="ace-hero-notes">
+              <span>
+                <Check size={14} /> Google sign-in
               </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-bounce opacity-50">
-          <ChevronDown className="h-5 w-5" />
-        </div>
-      </section>
-
-      {/* ── Stats strip ── */}
-      <section
-        className="relative py-12 border-y"
-        style={{ borderColor: "var(--border)", background: "var(--accent)" }}
-      >
-        <div className="max-w-5xl mx-auto px-5 grid grid-cols-2 sm:grid-cols-4 gap-8">
-          {STATS.map((s, i) => (
-            <FadeIn key={s.label} delay={i * 80} className="text-center">
-              <div className="text-3xl mb-1">{s.icon}</div>
-              <div className="text-2xl font-extrabold font-heading text-gradient">{s.value}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
-            </FadeIn>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section id="features" className="py-24 px-5">
-        <div className="max-w-6xl mx-auto">
-          <FadeIn className="text-center mb-16">
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-              style={{ background: "var(--accent)", color: "var(--primary)" }}
-            >
-              <Target className="h-3 w-3" /> Everything you need
+              <span>
+                <Check size={14} /> No download needed
+              </span>
             </div>
-            <h2 className="text-4xl sm:text-5xl font-extrabold font-heading mb-4">
-              One platform, <span className="text-gradient">every feature</span>
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              No more juggling apps. AcePrep puts your entire exam prep workflow in one beautifully
-              designed place.
-            </p>
-          </FadeIn>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FEATURES.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <FadeIn key={f.title} delay={i * 70}>
-                  <div
-                    className="card-light p-6 rounded-2xl h-full group cursor-default transition-all duration-300 hover:-translate-y-1 hover:shadow-lg relative overflow-hidden"
-                    style={{ borderTop: `3px solid ${f.color}` }}
-                  >
-                    <div
-                      className="absolute -right-8 -top-8 h-24 w-24 rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      style={{ background: f.bg, filter: "blur(20px)" }}
-                    />
-                    <div
-                      className="h-11 w-11 rounded-xl grid place-items-center mb-4 transition-transform group-hover:scale-110 duration-200"
-                      style={{ background: f.bg, color: f.color }}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="font-bold text-base mb-2">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-                  </div>
-                </FadeIn>
-              );
-            })}
           </div>
-        </div>
-      </section>
-
-      {/* ── How it works ── */}
-      <section className="py-24 px-5 relative" style={{ background: "var(--accent)" }}>
-        <div className="max-w-4xl mx-auto">
-          <FadeIn className="text-center mb-16">
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-              style={{
-                background: "var(--background)",
-                color: "var(--primary)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <BookOpen className="h-3 w-3" /> Simple by design
-            </div>
-            <h2 className="text-4xl sm:text-5xl font-extrabold font-heading mb-4">
-              Up and running in <span className="text-gradient">3 steps</span>
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              No complex setup. Sign in with Google and start prepping in under a minute.
-            </p>
-          </FadeIn>
-
-          <div className="space-y-6">
-            {STEPS.map((step, i) => (
-              <FadeIn key={step.n} delay={i * 120}>
-                <div className="card-light rounded-2xl p-6 flex items-start gap-5 group hover:-translate-y-0.5 transition-transform duration-200">
-                  <div
-                    className="text-3xl font-extrabold font-heading shrink-0 w-12 text-center leading-none"
-                    style={{ color: step.color }}
+          <div className="ace-preview-wrap">
+            <div className="ace-preview" aria-label="Study tools preview">
+              <div className="ace-preview-top">
+                <span>
+                  <span className="ace-tiny-logo">
+                    <GraduationCap size={15} />
+                  </span>{" "}
+                  Your study workspace
+                </span>
+                <span className="ace-demo-label">DEMO</span>
+              </div>
+              <div className="ace-preview-tabs" role="group" aria-label="Choose a product preview">
+                {PREVIEWS.map(({ label, icon: Icon }, index) => (
+                  <button
+                    key={label}
+                    aria-pressed={preview === index}
+                    onClick={() => setPreview(index)}
                   >
-                    {step.n}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">{step.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
-                  </div>
-                  <div
-                    className="ml-auto h-10 w-10 rounded-xl grid place-items-center shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0"
-                    style={{ background: `${step.color}20`, color: step.color }}
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Testimonials ── */}
-      <section className="py-24 px-5">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-16">
-            <div
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-              style={{ background: "var(--accent)", color: "var(--primary)" }}
-            >
-              <Trophy className="h-3 w-3" /> Student success stories
-            </div>
-            <h2 className="text-4xl sm:text-5xl font-extrabold font-heading mb-4">
-              Toppers <span className="text-gradient">love AcePrep</span>
-            </h2>
-          </FadeIn>
-
-          <div className="grid sm:grid-cols-3 gap-4">
-            {TESTIMONIALS.map((t, i) => (
-              <FadeIn key={t.name} delay={i * 100}>
-                <div className="card-light p-6 rounded-2xl h-full flex flex-col gap-4 hover:-translate-y-1 transition-transform duration-200">
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: t.stars }).map((_, j) => (
-                      <Star key={j} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">"{t.text}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-gradient-primary grid place-items-center text-lg">
-                      {t.emoji}
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold">{t.name}</div>
-                      <div className="text-xs text-muted-foreground">{t.exam}</div>
-                    </div>
-                  </div>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Feature Highlights ── */}
-      <section className="py-12 px-5" style={{ background: "var(--accent)" }}>
-        <div className="max-w-3xl mx-auto">
-          <FadeIn>
-            <div className="card-light rounded-2xl p-8 text-center">
-              <h3 className="text-xl font-bold mb-6">Everything included. Always free.</h3>
-              <div className="grid sm:grid-cols-2 gap-3 text-sm text-left">
-                {[
-                  "AI Tutor — unlimited questions",
-                  "Mock Tests with full analytics",
-                  "Smart Flashcard system",
-                  "Syllabus Tracker with AI topics",
-                  "Study Planner auto-generated",
-                  "Question Bank with AI explanations",
-                  "Community with AI answers",
-                  "Leaderboard with rank tiers",
-                  "Focus Timer (Pomodoro)",
-                  "Teaching Mode — AI feedback",
-                  "Deep Analytics & Diagnostics",
-                  "Dark / Light / System theme",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-2 text-muted-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    {item}
-                  </div>
+                    <Icon size={15} aria-hidden="true" />
+                    {label}
+                  </button>
                 ))}
               </div>
+              <div className="ace-preview-body" aria-live="polite">
+                <p className="ace-preview-caption">{selected.subheading}</p>
+                <h2>{selected.heading}</h2>
+                <div className="ace-preview-rows">
+                  {selected.rows.map((row, index) => (
+                    <div key={row}>
+                      <span className={`ace-row-marker ${index === 0 ? "is-done" : ""}`}>
+                        {index === 0 ? <Check size={13} /> : `0${index + 1}`}
+                      </span>
+                      <span>{row}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="ace-preview-foot">
+                  <span>
+                    <Flame size={15} /> {selected.foot}
+                  </span>
+                </div>
+              </div>
             </div>
-          </FadeIn>
+            <div className="ace-preview-sticker">
+              <span>
+                <Sparkles size={19} />
+              </span>
+              <div>
+                <strong>{selected.badge}</strong>
+                <small>A toolkit for your next step.</small>
+              </div>
+            </div>
+          </div>
+        </section>
+        <div className="ace-workflow-strip">
+          <div className="ace-container">
+            <span>ONE CONNECTED STUDY ROUTINE</span>
+            <div>
+              {[
+                "Plan your day",
+                "Understand concepts",
+                "Practice & revise",
+                "Track your growth",
+              ].map((step, i) => (
+                <span key={step}>
+                  <span className="ace-step-dot">0{i + 1}</span>
+                  {step}
+                  {i < 3 && <ArrowRight size={16} className="ace-strip-arrow" />}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
-      </section>
-
-      {/* ── Final CTA ── */}
-      <section className="py-28 px-5 relative overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div
-            className="absolute top-0 left-0 right-0 bottom-0 opacity-30"
-            style={{
-              background:
-                "radial-gradient(ellipse at center, rgba(139,92,246,0.25) 0%, transparent 70%)",
-            }}
-          />
-        </div>
-
-        <FadeIn className="relative max-w-2xl mx-auto text-center">
-          <div className="text-6xl mb-6">🚀</div>
-          <h2 className="text-4xl sm:text-5xl font-extrabold font-heading mb-4">
-            Your rank is waiting.
-            <br />
-            <span className="text-gradient">Start today.</span>
-          </h2>
-          <p className="text-muted-foreground text-lg mb-10">
-            Join thousands of students using AcePrep to crack JEE, NEET, UPSC and more. Sign in with
-            Google — it takes 10 seconds.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              to="/login"
-              className="flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-bold text-lg hover:opacity-90 transition-all hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0"
-              style={{ background: "var(--gradient-primary)" }}
-            >
-              <Flame className="h-5 w-5" /> Get Started Free
+        <section id="features" className="ace-section ace-container">
+          <div className="ace-section-heading">
+            <div className="ace-eyebrow">THE COMPLETE TOOLKIT</div>
+            <h2>
+              Everything your preparation needs.
+              <br />
+              <span>Right where you need it.</span>
+            </h2>
+            <p>Four parts of a better study routine. Explore the tools that bring them together.</p>
+          </div>
+          <nav className="ace-feature-jumps" aria-label="Feature categories">
+            {FEATURE_GROUPS.map((group) => (
+              <a key={group.id} href={`#${group.id}`}>
+                {group.id === "grow"
+                  ? "Focus & grow"
+                  : group.id === "learn"
+                    ? "Learn & understand"
+                    : group.id === "practice"
+                      ? "Practice & revise"
+                      : "Plan & organize"}
+                <ArrowRight size={14} />
+              </a>
+            ))}
+          </nav>
+          <div className="ace-feature-groups">
+            {FEATURE_GROUPS.map((group) => (
+              <div
+                key={group.id}
+                id={group.id}
+                className={`ace-feature-group ace-group-${group.id}`}
+              >
+                <div className="ace-group-heading">
+                  <span className="ace-eyebrow">{group.label}</span>
+                  <h3>{group.title}</h3>
+                  <p>{group.description}</p>
+                </div>
+                <div className="ace-feature-grid">
+                  {group.features.map(({ icon: Icon, title, description }) => (
+                    <article className="ace-feature" key={title}>
+                      <span className="ace-feature-icon">
+                        <Icon size={21} aria-hidden="true" />
+                      </span>
+                      <h4>{title}</h4>
+                      <p>{description}</p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="ace-extra">
+            <CheckCircle2 size={20} aria-hidden="true" />
+            <p>
+              <strong>Make the workspace yours.</strong> Exam and subject preferences, light and
+              dark themes, saved study activity and a guided app tour help you settle into your
+              routine.
+            </p>
+          </div>
+        </section>
+        <section id="how-it-works" className="ace-how">
+          <div className="ace-container">
+            <div className="ace-section-heading">
+              <div className="ace-eyebrow">A SIMPLE WAY TO START</div>
+              <h2>
+                Your next study session,
+                <br />
+                <span>with a little more direction.</span>
+              </h2>
+            </div>
+            <div className="ace-how-grid">
+              {[
+                {
+                  title: "Set your direction",
+                  text: "Sign in, choose your exam and subjects, and set your target date. Your dashboard brings the goal into view.",
+                },
+                {
+                  title: "Make a plan. Start small.",
+                  text: "Track your syllabus, schedule unfinished topics and use a focus session to work through the next one.",
+                },
+                {
+                  title: "Close the learning loop",
+                  text: "Get an explanation, practice available questions, review mistakes and use analytics to decide what comes next.",
+                },
+              ].map((step, i) => (
+                <article key={step.title}>
+                  <span>0{i + 1}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section id="exams" className="ace-section ace-container ace-exams">
+          <div>
+            <div className="ace-eyebrow">BUILT AROUND YOUR GOAL</div>
+            <h2>
+              Your exam.
+              <br />
+              <span>Your starting point.</span>
+            </h2>
+            <p>
+              Choose an exam profile to shape your syllabus and study plan. Bring your own topics
+              into the workflow, too.
+            </p>
+            <Link to="/sources" className="ace-text-link">
+              Explore study resources & sources <ArrowRight size={16} />
             </Link>
           </div>
-          <p className="text-xs text-muted-foreground mt-5">
-            No credit card. No download. Free forever.
-          </p>
-        </FadeIn>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer
-        className="border-t py-8 px-5"
-        style={{ borderColor: "var(--border)", background: "var(--accent)" }}
-      >
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-lg bg-gradient-primary grid place-items-center">
-              <GraduationCap className="h-3 w-3 text-white" />
+          <div>
+            <div className="ace-exam-grid">
+              {EXAM_CATALOG.map((exam) => (
+                <div key={exam.id}>
+                  <span aria-hidden="true">{exam.icon}</span>
+                  <strong>{exam.shortName}</strong>
+                  {["jee-main", "jee-advanced"].includes(exam.id) && (
+                    <small>In-app question bank</small>
+                  )}
+                </div>
+              ))}
             </div>
-            <span className="font-bold text-sm">AcePrep</span>
+            <p className="ace-exam-note">
+              <Library size={17} aria-hidden="true" />
+              <span>
+                In-app quizzes, mocks and sourced practice currently cover JEE. External resources
+                for NEET UG, UPSC Prelims, SAT and GRE are available separately.
+              </span>
+            </p>
           </div>
-          <div className="text-xs text-muted-foreground text-center">
-            AI-powered exam prep · Built for serious students
+        </section>
+        <section id="faq" className="ace-section ace-container ace-faq">
+          <div>
+            <div className="ace-eyebrow">A FEW USEFUL DETAILS</div>
+            <h2>
+              Before you
+              <br />
+              <span>dive in.</span>
+            </h2>
           </div>
-          <Link
-            to="/login"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Sign in →
+          <div>
+            {FAQS.map((faq) => (
+              <details key={faq.question}>
+                <summary>
+                  {faq.question}
+                  <ChevronDown size={18} aria-hidden="true" />
+                </summary>
+                <p>{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+        <section className="ace-container ace-cta">
+          <div className="ace-eyebrow">MAKE ROOM FOR PROGRESS</div>
+          <h2>
+            Your next chapter
+            <br />
+            starts with one session.
+          </h2>
+          <p>A plan for the day. Help when you’re stuck. A clear view of how far you’ve come.</p>
+          <Link to="/login" className="ace-button">
+            Get started with AcePrep <ArrowRight size={18} aria-hidden="true" />
           </Link>
-        </div>
+        </section>
+      </main>
+      <footer className="ace-footer ace-container">
+        <a href="#" className="ace-brand">
+          <span className="ace-logo">
+            <GraduationCap size={20} />
+          </span>
+          AcePrep.
+        </a>
+        <p>A little clarity. A little consistency. Your preparation, together.</p>
+        <Link to="/login" className="ace-text-link">
+          Sign in <ArrowRight size={15} />
+        </Link>
       </footer>
     </div>
   );
