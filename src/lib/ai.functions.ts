@@ -3,6 +3,7 @@ import { backendFetch } from "./backend-request";
 import { consumeChatStream, readAIJson } from "./ai-response";
 import { validateAIResult } from "./ai-validation";
 import { drawBankQuestions, examIdFromName, filterBank, loadQuestionBank } from "./question-bank";
+import { MAX_PDF_BYTES } from "./chat-attachments";
 
 async function invokeEdgeFunction<T = Record<string, unknown>>(
   action: string,
@@ -49,8 +50,9 @@ export const generateNotes = async ({
   return {
     ...notes,
     flashcards: cards.map((q) => ({
+      source: q.source,
       q: `${q.question}${q.options.length ? `\n\n${q.options.map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`).join("\n\n")}` : ""}`,
-      a: `${q.answer}${q.explanation ? `\n\n${q.explanation}` : ""}\n\nSource: [${q.source.name}](${q.source.url})`,
+      a: `${q.answer}${q.explanation ? `\n\n${q.explanation}` : ""}`,
     })),
   };
 };
@@ -133,7 +135,7 @@ export async function solveFromPdf({
   if (!userData?.session) throw new Error("Authentication required");
 
   // Read the PDF as base64.
-  if (file.size > 7.5 * 1024 * 1024) throw new Error("PDF too large. Maximum size is 7.5MB.");
+  if (file.size > MAX_PDF_BYTES) throw new Error("PDF too large. Maximum size is 7.5 MB.");
   // Use chunked String.fromCharCode to avoid call-stack overflow on large files.
   const arrayBuffer = await file.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);

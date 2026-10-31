@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { withoutInlineCredit } from "@/lib/legal";
 
 export const Route = createFileRoute("/review")({
   head: () => ({
@@ -340,11 +341,11 @@ function ReviewPage() {
                   Answer
                 </div>
                 <div className="text-lg font-medium text-center leading-relaxed w-full">
-                  <MarkdownContent content={currentCard.answer} />
+                  <MarkdownContent content={withoutInlineCredit(currentCard.answer)} />
                 </div>
                 {currentCard.explanation && (
                   <div className="mt-4 text-sm text-muted-foreground text-center w-full">
-                    <MarkdownContent content={currentCard.explanation} />
+                    <MarkdownContent content={withoutInlineCredit(currentCard.explanation)} />
                   </div>
                 )}
               </div>

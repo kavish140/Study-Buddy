@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { useAppContext } from "@/hooks/use-app-context";
+import { withoutInlineCredit } from "@/lib/legal";
 
 export const Route = createFileRoute("/quiz")({
   head: () => ({
@@ -165,6 +166,16 @@ function QuizPage() {
         Practice existing JEE questions from published papers. Mixed practice includes Main and
         Advanced questions. No AI question generation.
       </p>
+
+      {profile?.exam_id && !profile.exam_id.startsWith("jee") && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          In-app quizzes currently cover JEE.{" "}
+          <a className="text-primary underline" href={`/sources#${profile.exam_id}`}>
+            Find study materials for your exam
+          </a>
+          .
+        </p>
+      )}
 
       <div className="p-5 rounded-2xl card-light mt-6" data-tour="tour-quiz-topic">
         <div className="flex items-center gap-2 text-sm font-medium mb-4">
@@ -317,16 +328,6 @@ function QuizRunner({
         {quiz.questions.map((q: QuizQuestion, i) => (
           <div key={`q-${i}-${q.question.slice(0, 20)}`} className="p-5 rounded-2xl card-light">
             <div className="text-xs text-muted-foreground mb-1">Question {i + 1}</div>
-            {q.source && (
-              <a
-                className="text-xs text-primary underline"
-                href={q.source.url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {q.source.name} · {q.source.license}
-              </a>
-            )}
             {/* Question text — MarkdownContent renders inline LaTeX like $\sin x$ */}
             <div className="font-medium text-sm leading-relaxed">
               <MarkdownContent content={q.question} />
@@ -405,7 +406,7 @@ function QuizRunner({
                   Explanation
                 </span>
                 <div className="mt-1.5 text-sm text-muted-foreground">
-                  <MarkdownContent content={q.explanation || ""} />
+                  <MarkdownContent content={withoutInlineCredit(q.explanation)} />
                 </div>
               </div>
             )}

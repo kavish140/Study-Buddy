@@ -65,7 +65,11 @@ export type Note = {
   id: string;
   topic: string;
   summary: string;
-  flashcards: { q: string; a: string }[];
+  flashcards: {
+    q: string;
+    a: string;
+    source?: { name: string; url: string; license: string; original_id?: string };
+  }[];
   createdAt: number;
 };
 

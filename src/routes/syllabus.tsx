@@ -328,6 +328,13 @@ function SyllabusPage() {
       </p>
 
       {/* Class 11 / 12 quick-loader for JEE/NEET */}
+      {profile?.exam_id && (
+        <p className="mt-4 text-sm">
+          <a className="text-primary underline" href={`/sources#${profile.exam_id}`}>
+            Browse study materials for your exam
+          </a>
+        </p>
+      )}
       {isJeeNeet && (
         <div className="card-light p-5 rounded-2xl mt-6">
           <div className="flex items-center gap-2 text-sm font-medium mb-3">

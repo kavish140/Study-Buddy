@@ -181,13 +181,20 @@ export async function resetQuestionHistory() {
   removeLegacyHistory(account.userId);
 }
 export function examIdFromName(name = "") {
-  return /mixed/i.test(name) && /jee/i.test(name)
-    ? "jee"
-    : /advanced/i.test(name)
-      ? "jee-advanced"
-      : /jee|main/i.test(name)
-        ? "jee-main"
-        : "";
+  if (/neet/i.test(name)) return "neet";
+  if (/upsc|civil services/i.test(name)) return "upsc-prelims";
+  if (/\bsat\b/i.test(name)) return "sat";
+  if (/\bgre\b|graduate record/i.test(name)) return "gre";
+  if (/mixed/i.test(name) && /jee/i.test(name)) return "jee";
+  if (/jee.*adv|joint entrance.*advanced/i.test(name)) return "jee-advanced";
+  return /jee|joint entrance.*main/i.test(name) ? "jee-main" : "";
+}
+
+function requireImportedBank(examId: string) {
+  if (!["jee", "jee-main", "jee-advanced"].includes(examId))
+    throw new Error(
+      "In-app practice questions are not imported for this exam yet. Open Question Bank for publisher study materials, official practice and previous-year papers.",
+    );
 }
 
 export function toQuizQuestion(q: BankQuestion) {
@@ -197,7 +204,7 @@ export function toQuizQuestion(q: BankQuestion) {
     question: q.question,
     options: q.options,
     answerIndex: q.correct_options[0],
-    explanation: q.explanation || `Answer key: ${q.answer}. Source: ${q.source.name}.`,
+    explanation: q.explanation || `Answer key: ${q.answer}.`,
     topic: q.topic || q.subject,
     source: q.source,
   };
@@ -209,7 +216,9 @@ export async function bankQuiz(data: {
   difficulty?: string;
   examName?: string;
 }) {
-  const all = await loadQuestionBank(examIdFromName(data.examName || "JEE Main"));
+  const examId = examIdFromName(data.examName || "JEE Main");
+  requireImportedBank(examId);
+  const all = await loadQuestionBank(examId);
   return {
     questions: (
       await drawBankQuestions(
@@ -224,7 +233,9 @@ export async function bankMock(data: {
   examName: string;
   sections: { name: string; questions: number }[];
 }) {
-  const bank = await loadQuestionBank(examIdFromName(data.examName));
+  const examId = examIdFromName(data.examName);
+  requireImportedBank(examId);
+  const bank = await loadQuestionBank(examId);
   if (!data.sections.length) throw new Error("Select at least one subject for this mock test.");
   const selected = await drawBankGroups(
     data.sections.map((section) => ({

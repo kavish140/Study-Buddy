@@ -36,6 +36,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTutorial } from "./TutorialProvider";
 import { useTheme } from "@/hooks/use-theme";
 import { useFocusTimer, FOCUS_MODES } from "@/contexts/FocusTimerContext";
+import { LegalFooter } from "./LegalFooter";
 
 type NavItem = {
   to: string;
@@ -733,6 +734,7 @@ export function AppLayout() {
         )}
       >
         <Outlet />
+        <LegalFooter />
       </main>
 
       {/* ── Mobile bottom tab bar ────────────────────────────────────── */}

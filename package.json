@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "resources:export": "node scripts/export-study-resources.mjs",
     "questions:sync": "node scripts/sync-question-bank.mjs",
     "test": "node --test --test-isolation=none scripts/*.test.mjs",
     "dev": "vite dev",

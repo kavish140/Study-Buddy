@@ -138,6 +138,18 @@ createServer(async (req, res) => {
     return;
   }
   const table = url.pathname.split("/").at(-1);
+  if (table === "chat_sessions" && req.method === "POST") {
+    // Keep synthetic chats in memory so attachment previews can be tested across
+    // the same create/refetch lifecycle as the real app, without production data.
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const session = JSON.parse(body);
+    const index = tables.chat_sessions.findIndex((row) => row.id === session.id);
+    if (index < 0) tables.chat_sessions.push(session);
+    else tables.chat_sessions[index] = session;
+    res.end(JSON.stringify(req.headers.accept?.includes("vnd.pgrst.object") ? session : [session]));
+    return;
+  }
   const rows = tables[table] ?? [];
   res.setHeader("Content-Range", `0-${Math.max(0, rows.length - 1)}/${rows.length}`);
   res.end(

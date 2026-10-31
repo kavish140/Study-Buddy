@@ -180,7 +180,15 @@ function Login() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-6">
-          By signing in, you agree to our Terms of Service and Privacy Policy.
+          By signing in, you agree to our{" "}
+          <Link to="/terms" className="underline">
+            Terms & Conditions
+          </Link>{" "}
+          and acknowledge our{" "}
+          <Link to="/privacy" className="underline">
+            Privacy Policy
+          </Link>
+          .
         </p>
         <p className="text-xs text-muted-foreground/70 text-center mt-2 flex items-center justify-center gap-1.5">
           <span>✨</span>

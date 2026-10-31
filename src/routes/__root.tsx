@@ -21,6 +21,8 @@ import { TutorialOverlay } from "../components/TutorialOverlay";
 import { HelpButton } from "../components/HelpButton";
 import { useTheme } from "../hooks/use-theme";
 import { AuthProvider } from "../contexts/AuthContext";
+import { LegalFooter } from "../components/LegalFooter";
+import { LEGAL_PATHS } from "../lib/legal";
 
 function NotFoundComponent() {
   return (
@@ -146,7 +148,11 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const isAuthPage = path === "/login" || path === "/onboarding" || path === "/landing";
+  const isAuthPage =
+    path === "/login" ||
+    path === "/onboarding" ||
+    path === "/landing" ||
+    LEGAL_PATHS.includes(path.replace(/\/$/, ""));
   const { effectiveTheme } = useTheme();
 
   return (
@@ -157,6 +163,7 @@ function RootComponent() {
         <FocusTimerProvider>
           <TutorialProvider>
             {isAuthPage ? <Outlet /> : <AppLayout />}
+            {isAuthPage && <LegalFooter />}
             {!isAuthPage && (
               <>
                 <TutorialOverlay />

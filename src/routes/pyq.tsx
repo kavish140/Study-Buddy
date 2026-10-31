@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, CheckCircle2, ChevronRight, ExternalLink, RotateCcw } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronRight, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -22,14 +22,22 @@ export const Route = createFileRoute("/pyq")({
       {
         name: "description",
         content:
-          "Practice sourced JEE questions and previous-year papers without AI question generation.",
+          "Find sourced questions, official practice banks and study materials for JEE, NEET, UPSC, SAT and GRE.",
       },
     ],
   }),
   component: QuestionBankPage,
 });
 
-const EXAMS = { jee: "Mixed JEE", "jee-main": "JEE Main", "jee-advanced": "JEE Advanced" };
+const EXAMS = {
+  jee: "Mixed JEE",
+  "jee-main": "JEE Main",
+  "jee-advanced": "JEE Advanced",
+  neet: "NEET UG",
+  "upsc-prelims": "UPSC Prelims",
+  sat: "SAT",
+  gre: "GRE",
+};
 
 function Source({ question: q }: { question: BankQuestion }) {
   return (
@@ -40,21 +48,19 @@ function Source({ question: q }: { question: BankQuestion }) {
           ? "Previous-year question"
           : "Practice collection · paper provenance unverified"}
       </p>
-      <a
-        className="inline-flex items-center gap-1 text-primary underline"
-        href={q.source.url}
-        target="_blank"
-        rel="noreferrer"
-      >
-        {q.source.name} <ExternalLink size={11} />
-      </a>
-      <span className="ml-2">{q.source.license}</span>
     </div>
   );
 }
 
 function QuestionBankPage() {
   const [exam, setExam] = useState("jee");
+  const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
+  const examChosen = useRef(false);
+  useEffect(() => {
+    if (!examChosen.current && profile?.exam_id && profile.exam_id in EXAMS)
+      setExam(profile.exam_id);
+  }, [profile?.exam_id]);
+  const hasImportedBank = exam.startsWith("jee");
   const [subject, setSubject] = useState("");
   const [year, setYear] = useState("");
   const [search, setSearch] = useState("");
@@ -135,34 +141,25 @@ function QuestionBankPage() {
           Allow repeats: reset history
         </Button>
         <p>
-          <strong>{bank.data?.length ?? "…"} questions</strong> available for{" "}
+          <strong>{bank.data?.length ?? "…"} imported questions</strong> available for{" "}
           {EXAMS[exam as keyof typeof EXAMS]}.
         </p>
-        <p className="text-muted-foreground">
-          Published-paper questions retain source and year. Current coverage includes JEE Main
-          mathematics and JEE Advanced Physics, Chemistry and Mathematics. Missing answers,
-          unavailable diagrams, and the unverified community collection are excluded. This is not a
-          complete exam archive.
-        </p>
-        <a
-          className="text-primary underline"
-          href="/question-bank/manifest.json"
-          target="_blank"
-          rel="noreferrer"
-        >
+        {hasImportedBank ? (
+          <p className="text-muted-foreground">
+            Published-paper questions retain source and year. Current coverage includes JEE Main
+            mathematics and JEE Advanced Physics, Chemistry and Mathematics. Missing answers,
+            unavailable diagrams, and the unverified community collection are excluded. This is not
+            a complete exam archive.
+          </p>
+        ) : (
+          <p className="text-muted-foreground">
+            See Sources & Licenses for study materials, question banks and papers. In-app quizzes
+            and timed mocks are not available for this exam yet.
+          </p>
+        )}
+        <a className="text-primary underline" href="/sources">
           Sources and attribution
         </a>
-        <p>
-          <a
-            className="text-primary underline"
-            href="https://sathee.iitk.ac.in/pyqs/jee/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Browse the larger free SATHEE PYQ archive
-          </a>{" "}
-          · opens an external resource; its questions are not imported here.
-        </p>
       </div>
       <div className="card-light rounded-2xl p-4 flex flex-wrap gap-3">
         <select
@@ -170,6 +167,7 @@ function QuestionBankPage() {
           className="rounded-lg border p-2 bg-background"
           value={exam}
           onChange={(e) => {
+            examChosen.current = true;
             setExam(e.target.value);
             setSubject("");
             setYear("");
@@ -188,7 +186,7 @@ function QuestionBankPage() {
           onChange={(e) => setSubject(e.target.value)}
         >
           <option value="">All subjects</option>
-          {["Physics", "Chemistry", "Mathematics"].map((s) => (
+          {[...new Set((bank.data ?? []).map((q) => q.subject))].sort().map((s) => (
             <option key={s}>{s}</option>
           ))}
         </select>
@@ -224,7 +222,9 @@ function QuestionBankPage() {
         </div>
       ) : !questions.length ? (
         <p className="card-light rounded-2xl p-8">
-          No matching questions. Broaden your filters. AI question generation is disabled.
+          {hasImportedBank
+            ? "No matching questions. Broaden your filters. AI question generation is disabled."
+            : "No imported practice questions for this exam yet. Study materials and external practice are listed on the Sources & Licenses page."}
         </p>
       ) : (
         <>

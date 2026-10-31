@@ -9,13 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TeachRouteImport } from './routes/teach'
 import { Route as SyllabusRouteImport } from './routes/syllabus'
+import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as PyqRouteImport } from './routes/pyq'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NotesRouteImport } from './routes/notes'
@@ -29,6 +32,11 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TeachRoute = TeachRouteImport.update({
   id: '/teach',
   path: '/teach',
@@ -37,6 +45,11 @@ const TeachRoute = TeachRouteImport.update({
 const SyllabusRoute = SyllabusRouteImport.update({
   id: '/syllabus',
   path: '/syllabus',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourcesRoute = SourcesRouteImport.update({
+  id: '/sources',
+  path: '/sources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -62,6 +75,11 @@ const QuizRoute = QuizRouteImport.update({
 const PyqRoute = PyqRouteImport.update({
   id: '/pyq',
   path: '/pyq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlannerRoute = PlannerRouteImport.update({
@@ -138,13 +156,16 @@ export interface FileRoutesByFullPath {
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
   '/planner': typeof PlannerRoute
+  '/privacy': typeof PrivacyRoute
   '/pyq': typeof PyqRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sources': typeof SourcesRoute
   '/syllabus': typeof SyllabusRoute
   '/teach': typeof TeachRoute
+  '/terms': typeof TermsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -159,13 +180,16 @@ export interface FileRoutesByTo {
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
   '/planner': typeof PlannerRoute
+  '/privacy': typeof PrivacyRoute
   '/pyq': typeof PyqRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sources': typeof SourcesRoute
   '/syllabus': typeof SyllabusRoute
   '/teach': typeof TeachRoute
+  '/terms': typeof TermsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -181,13 +205,16 @@ export interface FileRoutesById {
   '/notes': typeof NotesRoute
   '/onboarding': typeof OnboardingRoute
   '/planner': typeof PlannerRoute
+  '/privacy': typeof PrivacyRoute
   '/pyq': typeof PyqRoute
   '/quiz': typeof QuizRoute
   '/review': typeof ReviewRoute
   '/settings': typeof SettingsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/sources': typeof SourcesRoute
   '/syllabus': typeof SyllabusRoute
   '/teach': typeof TeachRoute
+  '/terms': typeof TermsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -204,13 +231,16 @@ export interface FileRouteTypes {
     | '/notes'
     | '/onboarding'
     | '/planner'
+    | '/privacy'
     | '/pyq'
     | '/quiz'
     | '/review'
     | '/settings'
     | '/sitemap.xml'
+    | '/sources'
     | '/syllabus'
     | '/teach'
+    | '/terms'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -225,13 +255,16 @@ export interface FileRouteTypes {
     | '/notes'
     | '/onboarding'
     | '/planner'
+    | '/privacy'
     | '/pyq'
     | '/quiz'
     | '/review'
     | '/settings'
     | '/sitemap.xml'
+    | '/sources'
     | '/syllabus'
     | '/teach'
+    | '/terms'
   id:
     | '__root__'
     | '/'
@@ -246,13 +279,16 @@ export interface FileRouteTypes {
     | '/notes'
     | '/onboarding'
     | '/planner'
+    | '/privacy'
     | '/pyq'
     | '/quiz'
     | '/review'
     | '/settings'
     | '/sitemap.xml'
+    | '/sources'
     | '/syllabus'
     | '/teach'
+    | '/terms'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -268,17 +304,27 @@ export interface RootRouteChildren {
   NotesRoute: typeof NotesRoute
   OnboardingRoute: typeof OnboardingRoute
   PlannerRoute: typeof PlannerRoute
+  PrivacyRoute: typeof PrivacyRoute
   PyqRoute: typeof PyqRoute
   QuizRoute: typeof QuizRoute
   ReviewRoute: typeof ReviewRoute
   SettingsRoute: typeof SettingsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SourcesRoute: typeof SourcesRoute
   SyllabusRoute: typeof SyllabusRoute
   TeachRoute: typeof TeachRoute
+  TermsRoute: typeof TermsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/teach': {
       id: '/teach'
       path: '/teach'
@@ -291,6 +337,13 @@ declare module '@tanstack/react-router' {
       path: '/syllabus'
       fullPath: '/syllabus'
       preLoaderRoute: typeof SyllabusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sources': {
+      id: '/sources'
+      path: '/sources'
+      fullPath: '/sources'
+      preLoaderRoute: typeof SourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -326,6 +379,13 @@ declare module '@tanstack/react-router' {
       path: '/pyq'
       fullPath: '/pyq'
       preLoaderRoute: typeof PyqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planner': {
@@ -428,13 +488,16 @@ const rootRouteChildren: RootRouteChildren = {
   NotesRoute: NotesRoute,
   OnboardingRoute: OnboardingRoute,
   PlannerRoute: PlannerRoute,
+  PrivacyRoute: PrivacyRoute,
   PyqRoute: PyqRoute,
   QuizRoute: QuizRoute,
   ReviewRoute: ReviewRoute,
   SettingsRoute: SettingsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SourcesRoute: SourcesRoute,
   SyllabusRoute: SyllabusRoute,
   TeachRoute: TeachRoute,
+  TermsRoute: TermsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

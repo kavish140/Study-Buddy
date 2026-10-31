@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { useAppContext } from "@/hooks/use-app-context";
+import { withoutInlineCredit } from "@/lib/legal";
 
 export const Route = createFileRoute("/mock-test")({
   head: () => ({
@@ -281,7 +282,7 @@ function WrongQuestionsPanel({ mockTests }: { mockTests: MockTest[] }) {
               <div className="font-semibold text-foreground text-[11px] uppercase tracking-wide mb-1">
                 Explanation
               </div>
-              <MarkdownContent content={item.q.explanation} />
+              <MarkdownContent content={withoutInlineCredit(item.q.explanation)} />
             </div>
           )}
 
@@ -418,6 +419,20 @@ function SetupScreen({
       )}
 
       {/* Generate card */}
+      {examInfo && !examInfo.id.startsWith("jee") && (
+        <>
+          <p className="mt-4 text-sm text-muted-foreground">
+            In-app mock questions are not imported for {examInfo.name} yet. Study materials and
+            external practice tests are available on the Sources & Licenses page.
+          </p>
+          <a
+            className="mt-3 inline-block text-sm text-primary underline"
+            href={`/sources#${examInfo.id}`}
+          >
+            Browse study materials and practice tests
+          </a>
+        </>
+      )}
       <div className="card-light p-6 rounded-2xl mt-8" data-tour="tour-mock-new">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-11 w-11 rounded-xl bg-gradient-primary grid place-items-center text-white">
@@ -481,7 +496,7 @@ function SetupScreen({
 
         <Button
           onClick={handleGenerate}
-          disabled={generating || !examInfo}
+          disabled={generating || !examInfo || !examInfo.id.startsWith("jee")}
           className="w-full bg-gradient-primary h-12"
         >
           {generating ? (
@@ -815,16 +830,6 @@ function TestScreen({ test, onFinish }: { test: MockTest; onFinish: (test: MockT
               </div>
 
               <div className="text-lg font-medium leading-relaxed mb-6">
-                {currentQ.source && (
-                  <a
-                    className="block mb-3 text-xs text-primary underline"
-                    href={currentQ.source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {currentQ.source.name} · {currentQ.source.license}
-                  </a>
-                )}
                 <MarkdownContent content={currentQ.question} />
               </div>
 
@@ -1232,7 +1237,7 @@ function ResultScreen({ test, onBack }: { test: MockTest; onBack: () => void }) 
                       <span className="text-xs font-semibold text-foreground uppercase tracking-wide block mb-1">
                         Explanation
                       </span>
-                      <MarkdownContent content={q.explanation || ""} />
+                      <MarkdownContent content={withoutInlineCredit(q.explanation)} />
                     </div>
                   )}
                 </div>

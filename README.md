@@ -4,6 +4,35 @@ This document tracks the current architecture, setup requirements, and recent ch
 
 ## Local development and recovery checks
 
+AI Tutor accepts pasted binary images from both clipboard items and files. The
+clipboard button uses the browser's Clipboard API on a click; permission failures
+offer shortcut/upload recovery. Attachments selected before a chat exists preserve
+the typed prompt. Run `scripts/preview-fixtures.mjs` with the dev server configured
+to its loopback Supabase fixture to test attachment creation without live AI calls.
+PDF uploads remain capped at 7.5 MiB (shown as 7.5 MB in the UI), with a matching
+10 MiB base64 cap in `image-ai`. Text extraction currently reads up to 20 pages and
+sends at most 12,000 extracted characters; scanned PDFs use the native PDF route.
+
+The public Sources & Licenses page (`/sources`) includes an external source catalog for
+NEET UG, UPSC Prelims, SAT and GRE, alongside imported-bank attribution and license links.
+Question screens retain provenance internally and show subject/year/type instead of
+per-question publisher credits. Older saved attempts and cards hide known generated
+credit suffixes at display time without changing their stored text. `/privacy` and `/terms`
+describe the current implementation, with operator contact details in `src/lib/legal.ts`.
+Legal pages are public and linked from the app footer and sign-in screen. Privacy text
+must be reviewed when processors, storage, account deletion or age/consent flows change.
+`src/lib/exam-resources.ts` records publisher, subjects, resource type, access,
+year and evidence URL. Run `npm run resources:export` after editing it to refresh the
+downloadable `public/study-resources.json`. The 31 October 2026 review includes NTA,
+NCERT, IIT Kanpur SATHEE, UPSC, College Board and ETS sources. Publisher-index and
+announcement evidence does not guarantee current availability of each target URL.
+
+These entries link to external materials; they do not add question text or answer
+rows to the practice engine. Imported, automatically gradable questions still cover
+JEE only. Non-JEE in-app mocks remain disabled until a validated dataset is imported.
+UPSC paper PDFs are indexed separately from answer keys; NEET keys require the exact
+paper and booklet code. Account-gated banks are accessed on their publisher's site.
+
 Create a gitignored `.env.local` with `VITE_SUPABASE_URL` and
 `VITE_SUPABASE_ANON_KEY` (the public anon or publishable key, never a service-role
 key). The GitHub Pages build uses the corresponding repository Actions secrets.

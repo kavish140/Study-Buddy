@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { withoutInlineCredit } from "@/lib/legal";
 import { cn } from "@/lib/utils";
 import { useAppContext } from "@/hooks/use-app-context";
 
@@ -291,7 +292,7 @@ function NoteCard({ note, onRemove }: { note: Note; onRemove: () => void }) {
             >
               {/* Q or A — rendered through MarkdownContent for LaTeX support */}
               <div className="text-sm leading-relaxed">
-                <MarkdownContent content={revealed ? card!.a : card!.q} />
+                <MarkdownContent content={revealed ? withoutInlineCredit(card!.a) : card!.q} />
               </div>
 
               {/* "Tap to reveal" hint only on question side */}

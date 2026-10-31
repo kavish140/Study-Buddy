@@ -45,6 +45,7 @@ import {
 import type { SavedQuiz, MockTest, PerformanceLog } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { withoutInlineCredit } from "@/lib/legal";
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({
@@ -257,7 +258,7 @@ function DiagnosticTestModal({
         question: q.question,
         options: q.options,
         answerIndex: q.correct_options[0],
-        explanation: q.explanation || `Source answer key: ${q.answer}. ${q.source.name}`,
+        explanation: q.explanation || `Answer key: ${q.answer}.`,
         userAnswer: null,
         source: q.source,
       },
@@ -547,14 +548,6 @@ function DiagnosticTestModal({
                   <div className="text-base font-medium leading-relaxed mb-3">
                     <MarkdownContent content={q.question} />
                   </div>
-                  <a
-                    className="text-xs text-primary underline block mb-4"
-                    href={q.source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {q.source.name} · {q.source.license}
-                  </a>
 
                   {/* Options */}
                   <div className="space-y-2 mb-5">
@@ -612,7 +605,7 @@ function DiagnosticTestModal({
                       <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wide block mb-1">
                         Explanation
                       </span>
-                      {q.explanation}
+                      {withoutInlineCredit(q.explanation)}
                     </div>
                   )}
 

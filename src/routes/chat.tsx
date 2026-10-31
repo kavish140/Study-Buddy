@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { useAppContext } from "@/hooks/use-app-context";
+import { pastedAttachment, validateChatAttachment } from "@/lib/chat-attachments";
+import { PasteImageButton } from "@/components/PasteImageButton";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -66,6 +68,7 @@ function ChatPage() {
   const [pendingFirstMsg, setPendingFirstMsg] = useState<string | null>(null);
   // Tracks a pending file (image/PDF) selected before a session exists
   const [pendingInitialFile, setPendingInitialFile] = useState<File | null>(null);
+  const [pendingInitialDraft, setPendingInitialDraft] = useState("");
   const { triggerPageTour } = useTutorial();
   const deepLinkConsumedRef = useRef(false);
   // Local cache of image data-URLs keyed by "sessionId:messageIndex" so they
@@ -146,7 +149,14 @@ function ChatPage() {
   };
 
   // Called from EmptyState when a file is selected — auto-creates a session then queues the file
-  const handleFileFromEmpty = (file: File) => {
+  const handleFileFromEmpty = (file: File, draft = "") => {
+    if (saveMutation.isPending) return;
+    try {
+      validateChatAttachment(file);
+    } catch (error) {
+      toast.error((error as Error).message);
+      return;
+    }
     const newSession: ChatSession = {
       id: uid(),
       title: "New chat",
@@ -158,6 +168,7 @@ function ChatPage() {
         setActiveSessionId(newSession.id);
         setShowSidebar(false);
         setPendingInitialFile(file);
+        setPendingInitialDraft(draft);
       },
     });
   };
@@ -282,6 +293,7 @@ function ChatPage() {
       <main className="flex-1 flex flex-col min-h-0 min-w-0">
         {activeSession ? (
           <ChatView
+            key={activeSession.id}
             session={activeSession}
             examName={profile?.exam_name}
             appContext={contextSummary}
@@ -290,13 +302,18 @@ function ChatPage() {
             initialMessage={pendingFirstMsg ?? undefined}
             onInitialMessageConsumed={() => setPendingFirstMsg(null)}
             initialFile={pendingInitialFile ?? undefined}
-            onInitialFileConsumed={() => setPendingInitialFile(null)}
+            initialDraft={pendingInitialDraft}
+            onInitialFileConsumed={() => {
+              setPendingInitialFile(null);
+              setPendingInitialDraft("");
+            }}
           />
         ) : (
           <EmptyState
             onSend={handleSendFromEmpty}
             onToggleSidebar={() => setShowSidebar(!showSidebar)}
             onFileSelected={handleFileFromEmpty}
+            creating={saveMutation.isPending}
           />
         )}
       </main>
@@ -309,10 +326,12 @@ function EmptyState({
   onSend,
   onToggleSidebar,
   onFileSelected,
+  creating,
 }: {
   onSend: (msg: string) => void;
   onToggleSidebar: () => void;
-  onFileSelected: (file: File) => void;
+  onFileSelected: (file: File, draft?: string) => void;
+  creating: boolean;
 }) {
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -441,7 +460,7 @@ function EmptyState({
                   const file = e.target.files?.[0];
                   if (file) {
                     // Auto-create a new session and queue the file for attachment
-                    onFileSelected(file);
+                    onFileSelected(file, input);
                   }
                   e.target.value = "";
                 }}
@@ -457,18 +476,19 @@ function EmptyState({
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onPaste={(e) => {
-                  const file = e.clipboardData.files?.[0];
+                  const file = pastedAttachment(e.clipboardData);
                   if (file) {
                     e.preventDefault();
-                    onFileSelected(file);
+                    onFileSelected(file, input);
                   }
                 }}
-                placeholder="Ask a question... (Enter to send)"
+                placeholder="Ask a question, or paste an image…"
                 rows={1}
                 autoFocus
                 className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
               />
             </div>
+            <PasteImageButton onFile={(file) => onFileSelected(file, input)} disabled={creating} />
             <Button
               onClick={() => handleSend()}
               disabled={!input.trim()}
@@ -490,7 +510,7 @@ function EmptyState({
               </kbd>{" "}
               new line
             </span>
-            <span>\ud83d\udcce attach file</span>
+            <span>Paste images · PDF max 7.5 MB</span>
           </p>
         </div>
       </div>
@@ -508,6 +528,7 @@ function ChatView({
   initialMessage,
   onInitialMessageConsumed,
   initialFile,
+  initialDraft,
   onInitialFileConsumed,
 }: {
   session: ChatSession;
@@ -518,9 +539,10 @@ function ChatView({
   initialMessage?: string;
   onInitialMessageConsumed?: () => void;
   initialFile?: File;
+  initialDraft?: string;
   onInitialFileConsumed?: () => void;
 }) {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialDraft ?? "");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
@@ -608,12 +630,10 @@ function ChatView({
       toast.error("Only images (JPG, PNG, WEBP) and PDFs are supported.");
       return;
     }
-    const maxSizeMB = type === "pdf" ? 7.5 : 10;
-    const MAX_FILE_SIZE = maxSizeMB * 1024 * 1024;
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error(
-        `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum is ${maxSizeMB}MB.`,
-      );
+    try {
+      validateChatAttachment(file);
+    } catch (error) {
+      toast.error((error as Error).message);
       return;
     }
     // Clear the other pending type
@@ -621,8 +641,12 @@ function ChatView({
     setPendingImage(null);
 
     if (type === "image") {
-      const previewUrl = await createImagePreview(file);
-      setPendingImage({ file, previewUrl });
+      try {
+        const previewUrl = await createImagePreview(file);
+        setPendingImage({ file, previewUrl });
+      } catch {
+        toast.error("Unable to read this image. Try copying it again or attaching the saved file.");
+      }
     } else {
       // PDF \u2014 extract page count immediately for the preview badge
       setPendingPdf({ file });
@@ -1125,7 +1149,7 @@ function ChatView({
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onPaste={(e) => {
-                  const file = e.clipboardData.files?.[0];
+                  const file = pastedAttachment(e.clipboardData);
                   if (file) {
                     e.preventDefault();
                     handleFileSelect(file);
@@ -1136,7 +1160,7 @@ function ChatView({
                     ? "Add a message about this image... (optional)"
                     : pendingPdf
                       ? "Ask something about this PDF..."
-                      : "Ask a question, or drop an image / PDF here..."
+                      : "Ask a question, or paste an image…"
                 }
                 rows={1}
                 className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
@@ -1144,6 +1168,7 @@ function ChatView({
               />
             </div>
 
+            <PasteImageButton onFile={handleFileSelect} disabled={isStreaming} />
             <Button
               onClick={() => handleSend()}
               disabled={(!input.trim() && !pendingImage && !pendingPdf) || isStreaming}
@@ -1156,6 +1181,9 @@ function ChatView({
               )}
             </Button>
           </div>
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">
+            Paste or attach images · PDFs up to 7.5 MB
+          </p>
         </div>
       </div>
     </>
