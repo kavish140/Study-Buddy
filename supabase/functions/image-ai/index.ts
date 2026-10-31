@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { loadStudentContext } from "../_shared/student-context.ts";
 import { INTERACTIVE_TUTOR_PROMPT } from "../_shared/tutor-prompt.ts";
 
 const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
@@ -114,8 +115,10 @@ Be thorough, accurate, and encouraging.`;
 Read the supplied image or all PDF pages accurately. Start by transcribing the specific problem being discussed, including its givens and any relevant diagram details, so later text-only turns have enough context. If multiple problems are present and none is selected, ask the student to choose one. If text is unclear, ask for clarification instead of guessing. Guide the selected problem one step at a time.
 ${INTERACTIVE_TUTOR_PROMPT}`
         : systemPrompt;
-    const fullSystemPrompt = appContext
-      ? `${tutoringPrompt}\n\nStudent context — use this to give personalised, relevant answers:${appContext}`
+    const studentContext =
+      source === "chat" ? await loadStudentContext(supabaseClient, user.id) : appContext;
+    const fullSystemPrompt = studentContext
+      ? `${tutoringPrompt}\n\nStudent context — use this to give personalised, relevant answers:${studentContext}`
       : tutoringPrompt;
 
     const userPrompt = prompt

@@ -32,6 +32,9 @@ export const Route = createFileRoute("/quiz")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { topic?: string } => ({
+    topic: typeof search.topic === "string" ? search.topic.slice(0, 200) : undefined,
+  }),
   component: QuizPage,
 });
 
@@ -54,7 +57,11 @@ function QuizPage() {
     onError: (error) => toast.error(error.message || "Operation failed"),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["quizzes"] }),
   });
-  const [topic, setTopic] = useState("");
+  const { topic: tutorTopic } = Route.useSearch();
+  const [topic, setTopic] = useState(tutorTopic ?? "");
+  useEffect(() => {
+    setTopic(tutorTopic ?? "");
+  }, [tutorTopic]);
   const [count, setCount] = useState("5");
   const [bankExam, setBankExam] = useState("Mixed JEE");
   const [examChosen, setExamChosen] = useState(false);
@@ -167,8 +174,8 @@ function QuizPage() {
     <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Practice Quiz</h1>
       <p className="text-muted-foreground mt-1">
-        Practice sourced JEE and NEET questions. Mixed JEE practice includes Main and
-        Advanced questions. No AI question generation.
+        Practice sourced JEE and NEET questions. Mixed JEE practice includes Main and Advanced
+        questions. No AI question generation.
       </p>
 
       {profile?.exam_id && !hasImportedQuestionBank(profile.exam_id) && (
@@ -188,7 +195,10 @@ function QuizPage() {
         <select
           aria-label="Question source exam"
           value={bankExam}
-          onChange={(e) => { setExamChosen(true); setBankExam(e.target.value); }}
+          onChange={(e) => {
+            setExamChosen(true);
+            setBankExam(e.target.value);
+          }}
           className="mb-3 w-full rounded-lg border p-2 text-sm bg-background"
         >
           <option>Mixed JEE</option>

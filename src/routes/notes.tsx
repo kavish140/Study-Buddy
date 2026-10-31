@@ -33,6 +33,9 @@ export const Route = createFileRoute("/notes")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { topic?: string } => ({
+    topic: typeof search.topic === "string" ? search.topic.slice(0, 200) : undefined,
+  }),
   component: NotesPage,
 });
 
@@ -62,7 +65,11 @@ function NotesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notes"] }),
   });
 
-  const [topic, setTopic] = useState("");
+  const { topic: tutorTopic } = Route.useSearch();
+  const [topic, setTopic] = useState(tutorTopic ?? "");
+  useEffect(() => {
+    setTopic(tutorTopic ?? "");
+  }, [tutorTopic]);
   const [loading, setLoading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 

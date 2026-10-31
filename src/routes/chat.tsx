@@ -1,4 +1,4 @@
-import { createFileRoute, useSearch, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useSearch, useNavigate, Link } from "@tanstack/react-router";
 import { formatTimeIST } from "@/lib/date-utils";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ import { MarkdownContent } from "@/components/MarkdownContent";
 import { useAppContext } from "@/hooks/use-app-context";
 import { pastedAttachment, validateChatAttachment } from "@/lib/chat-attachments";
 import { PasteImageButton } from "@/components/PasteImageButton";
+import { parseTutorTools, tutorToolTarget, TUTOR_TOOLS } from "@/lib/tutor-tools";
 import { parseTutorResponse } from "@/lib/tutor-interaction";
 
 export const Route = createFileRoute("/chat")({
@@ -426,10 +427,13 @@ function EmptyState({
             </div>
           </div>
 
-          <h2 className="text-3xl font-bold font-heading mb-3 text-gradient">Study Buddy AI Tutor</h2>
+          <h2 className="text-3xl font-bold font-heading mb-3 text-gradient">
+            Study Buddy AI Tutor
+          </h2>
           <p className="text-muted-foreground mb-10 text-sm leading-relaxed max-w-sm mx-auto">
             Learn by doing: work through one idea at a time, try each checkpoint, and get feedback
-            on your reasoning. Hints are always available.
+            on your reasoning. I can use your saved study progress and open practice, notes,
+            planning, and review tools.
           </p>
 
           <div className="grid grid-cols-2 gap-3 mb-10">
@@ -1252,9 +1256,12 @@ function MessageBubble({
 }) {
   const isUser = message.role === "user";
   const [showTime, setShowTime] = useState(false);
+  const toolResult = isUser
+    ? { content: message.content, actions: [] }
+    : parseTutorTools(message.content);
   const parsed = isUser
     ? { content: message.content, checkpoint: null }
-    : parseTutorResponse(message.content);
+    : parseTutorResponse(toolResult.content);
 
   const timeStr = message.timestamp ? formatTimeIST(message.timestamp) : null;
 
@@ -1320,6 +1327,20 @@ function MessageBubble({
           </div>
         </div>
 
+        {!isUser && !isStreaming && toolResult.actions.length > 0 && (
+          <div className="flex flex-wrap gap-2" aria-label="Tutor study tools">
+            {toolResult.actions.map((action) => (
+              <Link
+                key={action.tool}
+                {...tutorToolTarget(action)}
+                className="rounded-xl border border-primary/25 bg-primary/5 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              >
+                {TUTOR_TOOLS[action.tool].label}
+                {action.topic ? ` · ${action.topic}` : ""}
+              </Link>
+            ))}
+          </div>
+        )}
         {!isUser && parsed.checkpoint && !isStreaming && (
           <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 space-y-3">
             <p className="text-xs font-semibold text-primary">Your turn</p>

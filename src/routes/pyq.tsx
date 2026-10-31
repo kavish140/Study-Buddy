@@ -28,6 +28,9 @@ export const Route = createFileRoute("/pyq")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { topic?: string } => ({
+    topic: typeof search.topic === "string" ? search.topic.slice(0, 200) : undefined,
+  }),
   component: QuestionBankPage,
 });
 
@@ -66,7 +69,11 @@ function QuestionBankPage() {
   const hasImportedBank = hasImportedQuestionBank(exam);
   const [subject, setSubject] = useState("");
   const [year, setYear] = useState("");
-  const [search, setSearch] = useState("");
+  const { topic: tutorTopic } = Route.useSearch();
+  const [search, setSearch] = useState(tutorTopic ?? "");
+  useEffect(() => {
+    setSearch(tutorTopic ?? "");
+  }, [tutorTopic]);
   const [pyqOnly, setPyqOnly] = useState(false);
   const [visible, setVisible] = useState(25);
   const [practice, setPractice] = useState<BankQuestion[] | null>(null);
@@ -156,8 +163,8 @@ function QuestionBankPage() {
           </p>
         ) : (
           <p className="text-muted-foreground">
-            Official study materials, question banks and papers are listed below. In-app quizzes
-            and timed mocks are not available for this exam yet.
+            Official study materials, question banks and papers are listed below. In-app quizzes and
+            timed mocks are not available for this exam yet.
           </p>
         )}
         <a className="text-primary underline" href="/sources">

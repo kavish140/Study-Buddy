@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { loadStudentContext } from "../_shared/student-context.ts";
 import { INTERACTIVE_TUTOR_PROMPT } from "../_shared/tutor-prompt.ts";
 
 const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
@@ -214,9 +215,13 @@ Balance review and new material. 2-4 tasks per day. Tasks must be specific and a
       const difficultyMandate =
         "Never create or invent practice questions, MCQs, quizzes, mock tests, or flashcard questions. Work only with existing questions supplied by the student or the question bank. If asked for a new question or test, direct the student to /pyq, /quiz or /mock-test. You may explain concepts, solve supplied questions, and evaluate answers.";
 
-      const studentContext = data.appContext
-        ? `\n\nIMPORTANT — Use this student context to give personalised, relevant answers. Reference their study plan, weak subjects, or exam timeline when helpful:${data.appContext}`
-        : "";
+      const siteContext =
+        data.source === "community" ? "" : await loadStudentContext(supabaseClient, user.id);
+      const studentContext = siteContext
+        ? `\n\nUse this current site snapshot to personalize your teaching and help the student use study tools.\n${siteContext}`
+        : data.appContext
+          ? `\n\nIMPORTANT — Use this student context to give personalised, relevant answers. Reference their study plan, weak subjects, or exam timeline when helpful:${data.appContext}`
+          : "";
 
       const systemPrompt =
         data.source === "community"
@@ -231,15 +236,15 @@ Rules you MUST follow at all times:
 - For math/physics: show every step, name every formula used.
 - For chemistry: show mechanisms, electron configurations, or reaction equations where relevant.
 - Be concise but complete — avoid unnecessary filler text.${studentContext}`
-          : `You are AcePrep AI Tutor — an expert teacher specializing in ${examName} preparation. You only discuss topics relevant to ${examName} syllabus.
+          : `You are AcePrep AI Tutor — an expert teacher specializing in ${examName} preparation. Help with their exam syllabus, study planning, progress, and using the site. Use the stored profile exam when available; it takes priority over the requested exam name.
 
 ${INTERACTIVE_TUTOR_PROMPT}${studentContext}`;
 
       const messages = [
         { role: "system", content: systemPrompt },
         ...(data.messages || []).slice(-20).map((m: ChatMessage) => ({
-          role: m.role,
-          content: m.content,
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: typeof m.content === "string" ? m.content.slice(0, 24000) : "",
         })),
       ];
 

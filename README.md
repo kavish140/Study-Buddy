@@ -17,6 +17,20 @@ This document tracks the current architecture, setup requirements, and recent ch
 
 ## Local development and recovery checks
 
+AI Tutor reads a fresh, authenticated student snapshot in `study-ai` and in
+`image-ai` attachment chats. It includes the profile, syllabus topics, recent and
+upcoming plan items, quiz/mock results, topic performance, saved-note summaries,
+review schedules, focus sessions, stats, and recent conversations. Each data
+source is scoped to the caller's user ID using their JWT and RLS. History and
+text sizes are bounded; failed sections are marked unavailable.
+
+Tutor replies can offer buttons for the site's study tools. Quiz, notes, and
+question-bank buttons carry an optional topic into the destination's form/filter.
+Controls appear after a completed reply, accept only known tool names, and open
+on a student click. Opening a tool does not start a timer/test or change records.
+Deploy both updated Supabase functions (`study-ai` and `image-ai`) together with
+the frontend for these features to take effect; no database migration is needed.
+
 AI Tutor accepts pasted binary images from both clipboard items and files. The
 clipboard button uses the browser's Clipboard API on a click; permission failures
 offer shortcut/upload recovery. Attachments selected before a chat exists preserve

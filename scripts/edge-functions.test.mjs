@@ -30,7 +30,13 @@ async function loadFunction(t, name, overrides = {}) {
   )
     .replace(
       /^import .*createClient.*;$/m,
-      'const createClient = () => ({ auth: { getUser: async () => ({ data: { user: { id: "test-user" } }, error: null }) } });',
+      'const createClient = () => ({ from: () => { const q = { select: () => q, eq: () => q, order: () => q, gte: () => q, limit: () => q, abortSignal: async () => ({data: [{display_name: "Ada"}], count: 1, error: null}) }; return q; }, auth: { getUser: async () => ({ data: { user: { id: "test-user" } }, error: null }) } });',
+    )
+    .replace(
+      '"../_shared/student-context.ts"',
+      JSON.stringify(
+        new URL("../supabase/functions/_shared/student-context.ts", import.meta.url).href,
+      ),
     )
     .replace(
       '"../_shared/tutor-prompt.ts"',
@@ -117,6 +123,9 @@ test("tutor sessions use checkpoints while community posts keep direct answers",
     action: "chat",
     data: { source: "chat", messages: [{ role: "user", content: "Explain motion" }] },
   });
+  assert.match(payload.messages[0].content, /STUDENT SITE SNAPSHOT/);
+  assert.match(payload.messages[0].content, /Ada/);
+  assert.match(payload.messages[0].content, /tutor-tools/);
   assert.match(payload.messages[0].content, /ONE checkpoint/);
   assert.match(payload.messages[0].content, /wait/);
   assert.match(payload.messages[0].content, /explicit request for a full solution/);
@@ -125,6 +134,7 @@ test("tutor sessions use checkpoints while community posts keep direct answers",
     data: { source: "community", messages: [{ role: "user", content: "Explain motion" }] },
   });
   assert.match(payload.messages[0].content, /Do not ask follow-up questions/);
+  assert.doesNotMatch(payload.messages[0].content, /STUDENT SITE SNAPSHOT/);
   assert.doesNotMatch(payload.messages[0].content, /fenced block with language tutor/);
 });
 
@@ -145,6 +155,7 @@ test("attachment tutoring puts session instructions in the system role", async (
       prompt: "Help me learn",
     });
     assert.equal(response.status, 200);
+    assert.match(payload.systemInstruction.parts[0].text, /STUDENT SITE SNAPSHOT/);
     assert.match(payload.systemInstruction.parts[0].text, /ONE checkpoint/);
     assert.match(payload.systemInstruction.parts[0].text, /transcribing the specific problem/);
     assert.match(payload.contents[0].parts[0].text, /Help me learn/);
