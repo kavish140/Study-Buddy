@@ -45,7 +45,32 @@ select existing questions without replacement, and report actual subject/topic
 metadata. Numerical practice compares against the source value; multiple-correct
 practice requires the complete source answer set (no official partial-mark scheme).
 
-## Larger sources reviewed
+## NEET UG
+
+The bank also contains 342 NEET UG MCQs: 86 Physics, 156 Chemistry and 100 Biology.
+They come from Kshitij Gupta's Apache-2.0-declared `Kshitij-PES/NEET_Dataset`, pinned
+at `615882ae7a172dc6a2a782d74418039f1d889a30`. The source describes its questions
+and keys as transcribed from NEET papers. These keys have not been independently
+re-keyed against each NTA booklet; this is a partial community-curated bank, not
+an official or fully verified exam archive.
+
+`node scripts/sync-neet-bank.mjs` imports only source-identified 2021–2024 records.
+It excludes study-note entries, ambiguous 2025/mock records, missing diagrams,
+invalid choices/keys and duplicates. Matching-list questions and circuit/figure/graph
+references and non-Biology structure questions are conservatively excluded after
+incomplete transcriptions were found. Explicitly reviewed incomplete reaction and
+decay sequences are excluded by source ID in the importer.
+Separate statement lists are retained in the
+question stem. Generated source explanations are omitted; source answer keys are
+retained without filling gaps. `npm run questions:sync` also runs this importer.
+Checksums, per-subject counts and exclusions appear in `manifest.json`.
+
+NEET selection, quizzes and practice mocks use the same cloud history reservations
+as JEE. The bank can be exhausted, especially in Biology; reduce the requested size
+or explicitly reset history when repeats are wanted. Practice mocks mix years and
+are not replicas of an official paper. Other non-JEE exams remain external-only.
+
+## Larger sources reviewed (JEE)
 
 - SATHEE (IIT Kanpur / Ministry of Education): a substantially larger free archive
   with 2009–2024 JEE coverage. Linked as an external resource. No documented bulk

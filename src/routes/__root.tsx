@@ -25,6 +25,10 @@ import { AuthProvider } from "../contexts/AuthContext";
 import { LegalFooter } from "../components/LegalFooter";
 import { LEGAL_PATHS } from "../lib/legal";
 
+const SITE_ORIGIN = new URL(import.meta.env.VITE_SITE_URL || "https://study-buddy.sitenova.dev").origin;
+const SOCIAL_IMAGE = `${SITE_ORIGIN}/og-study-buddy.png`;
+const SOCIAL_DESCRIPTION = "Plan your prep, learn with AI, and practice with purpose. Your study tools, together in Study Buddy.";
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -98,14 +102,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Your AI-powered competitive exam prep platform. Mock tests, AI tutor, syllabus tracking, analytics and more — for JEE, NEET, SAT, GRE & beyond.",
       },
       { name: "author", content: "Study Buddy" },
-      { property: "og:title", content: "Study Buddy — Ace any competitive exam with AI" },
+      { property: "og:title", content: "Study Buddy — Big exam goals. Better study days." },
       {
         property: "og:description",
         content:
-          "Mock tests, AI tutor, smart study plans, and analytics — your complete exam prep OS.",
+          SOCIAL_DESCRIPTION,
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:site_name", content: "Study Buddy" },
+      { property: "og:url", content: `${SITE_ORIGIN}/landing` },
+      { property: "og:image", content: SOCIAL_IMAGE },
+      { property: "og:image:secure_url", content: SOCIAL_IMAGE },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Study Buddy — Big exam goals. Better study days. AI tutoring, study plans and sourced practice." },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Study Buddy — Big exam goals. Better study days." },
+      { name: "twitter:description", content: SOCIAL_DESCRIPTION },
+      { name: "twitter:image", content: SOCIAL_IMAGE },
+      { name: "twitter:image:alt", content: "Study Buddy: AI tutoring, study plans and sourced practice." },
     ],
     links: [
       {

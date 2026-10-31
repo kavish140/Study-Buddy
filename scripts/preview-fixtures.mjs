@@ -2,6 +2,8 @@
 import { createServer } from "node:http";
 
 const userId = "00000000-0000-4000-8000-000000000001";
+const neetPreview = process.argv.includes("--neet");
+const reservedQuestions = new Set();
 const user = {
   id: userId,
   aud: "authenticated",
@@ -25,10 +27,10 @@ const tables = {
       id: "profile",
       user_id: userId,
       display_name: "Preview Student",
-      exam_id: "jee-main",
-      exam_name: "JEE Main",
+      exam_id: neetPreview ? "neet" : "jee-main",
+      exam_name: neetPreview ? "NEET UG" : "JEE Main",
       target_date: "2028-01-01",
-      selected_subjects: ["Physics", "Chemistry", "Mathematics"],
+      selected_subjects: ["Physics", "Chemistry", neetPreview ? "Biology" : "Mathematics"],
       onboarding_completed: true,
     },
   ],
@@ -138,6 +140,32 @@ createServer(async (req, res) => {
     return;
   }
   const table = url.pathname.split("/").at(-1);
+  // Synthetic history only: exercise bank selection without contacting Supabase.
+  if (url.pathname === "/rest/v1/rpc/reserve_question_groups" && req.method === "POST") {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const { p_groups } = JSON.parse(body);
+    const pending = new Set(reservedQuestions);
+    const groups = [];
+    for (const group of p_groups) {
+      const ids = group.ids.filter((id) => !pending.has(id)).slice(0, group.count);
+      if (!group.allow_partial && ids.length < group.count) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ message: "Not enough unseen fixture questions" }));
+        return;
+      }
+      ids.forEach((id) => pending.add(id));
+      groups.push(ids);
+    }
+    pending.forEach((id) => reservedQuestions.add(id));
+    res.end(JSON.stringify(groups));
+    return;
+  }
+  if (url.pathname === "/rest/v1/rpc/reset_question_history" && req.method === "POST") {
+    reservedQuestions.clear();
+    res.end("null");
+    return;
+  }
   if (table === "chat_sessions" && req.method === "POST") {
     // Keep synthetic chats in memory so attachment previews can be tested across
     // the same create/refetch lifecycle as the real app, without production data.

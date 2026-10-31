@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { getMockTestQuestions } from "@/lib/question-bank";
+import { getMockTestQuestions, hasImportedQuestionBank } from "@/lib/question-bank";
 import { getExamById } from "@/lib/exam-catalog";
 import { uid, type MockTest, type MockTestSection, type MockTestQuestion } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -419,7 +419,7 @@ function SetupScreen({
       )}
 
       {/* Generate card */}
-      {examInfo && !examInfo.id.startsWith("jee") && (
+      {examInfo && !hasImportedQuestionBank(examInfo.id) && (
         <>
           <p className="mt-4 text-sm text-muted-foreground">
             In-app mock questions are not imported for {examInfo.name} yet. Study materials and
@@ -496,7 +496,7 @@ function SetupScreen({
 
         <Button
           onClick={handleGenerate}
-          disabled={generating || !examInfo || !examInfo.id.startsWith("jee")}
+          disabled={generating || !examInfo || !hasImportedQuestionBank(examInfo.id)}
           className="w-full bg-gradient-primary h-12"
         >
           {generating ? (

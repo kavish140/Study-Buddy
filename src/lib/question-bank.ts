@@ -23,12 +23,15 @@ export type BankQuestion = {
 };
 
 const cache = new Map<string, Promise<BankQuestion[]>>();
+export function hasImportedQuestionBank(examId = "") {
+  return ["jee", "jee-main", "jee-advanced", "neet"].includes(examId);
+}
 export function loadQuestionBank(examId: string): Promise<BankQuestion[]> {
   if (examId === "jee")
     return Promise.all([loadQuestionBank("jee-main"), loadQuestionBank("jee-advanced")]).then(
       (banks) => banks.flat(),
     );
-  if (!["jee-main", "jee-advanced"].includes(examId)) return Promise.resolve([]);
+  if (!hasImportedQuestionBank(examId)) return Promise.resolve([]);
   if (!cache.has(examId)) {
     const pending = fetch(`/question-bank/${examId}.json`)
       .then(async (response) => {
@@ -191,7 +194,7 @@ export function examIdFromName(name = "") {
 }
 
 function requireImportedBank(examId: string) {
-  if (!["jee", "jee-main", "jee-advanced"].includes(examId))
+  if (!hasImportedQuestionBank(examId))
     throw new Error(
       "In-app practice questions are not imported for this exam yet. Open Question Bank for publisher study materials, official practice and previous-year papers.",
     );

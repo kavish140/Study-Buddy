@@ -1,13 +1,14 @@
 {
-  "updated": "2026-10-30T13:22:38.199Z",
-  "count": 939,
+  "updated": "2026-10-31T12:13:56.149Z",
+  "count": 1281,
   "rejected": 1581,
   "heldForReview": 771,
   "deduplicated": 6,
   "sourceCounts": {
     "JEEBench · IIT Delhi DAIR": 473,
     "JEE Main practice collection · eQOURSE / soughed": 0,
-    "Physics Wallah AI · JEE Main 2025 Mathematics": 466
+    "Physics Wallah AI · JEE Main 2025 Mathematics": 466,
+    "Kshitij Gupta · NEET UG question collection": 342
   },
   "exams": {
     "jee-main": {
@@ -17,6 +18,10 @@
     "jee-advanced": {
       "count": 473,
       "mcq": 94
+    },
+    "neet": {
+      "count": 342,
+      "mcq": 342
     }
   },
   "sources": [
@@ -43,6 +48,14 @@
       "revision": "da0f8cb21ff63d4e56d8f06136e9cafdd817d2f8",
       "kind": "pyq",
       "evidence": "Publisher states answers were cross-checked against NTA final keys"
+    },
+    {
+      "name": "Kshitij Gupta · NEET UG question collection",
+      "url": "https://huggingface.co/datasets/Kshitij-PES/NEET_Dataset",
+      "license": "Apache-2.0",
+      "revision": "615882ae7a172dc6a2a782d74418039f1d889a30",
+      "kind": "pyq",
+      "evidence": "Curator-transcribed NEET papers and supplied answer keys; not independently re-keyed. Only 2021–2024 records are imported; ambiguous 2025/mock records are excluded."
     }
   ],
   "downloads": [
@@ -89,6 +102,22 @@
     {
       "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
       "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "url": "https://huggingface.co/datasets/Kshitij-PES/NEET_Dataset/resolve/615882ae7a172dc6a2a782d74418039f1d889a30/dataset.json",
+      "sha256": "a1fa4946d11384f67b725c3e530ff5166613683ed40ce1952627f0dec0adb3bf"
     }
-  ]
+  ],
+  "neetImport": {
+    "input": 833,
+    "imported": 342,
+    "excluded": 490,
+    "deduplicated": 1,
+    "subjects": {
+      "Physics": 86,
+      "Chemistry": 156,
+      "Biology": 100
+    },
+    "note": "Study notes, 2025/mock records, invalid choices/keys, incomplete matching lists and circuit/diagram/graph references excluded. Generated explanations omitted. Source-supplied keys are not independently verified."
+  }
 }

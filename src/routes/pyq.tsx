@@ -10,6 +10,7 @@ import {
   filterBank,
   isCorrectBankAnswer,
   loadQuestionBank,
+  hasImportedQuestionBank,
   drawBankQuestions,
   resetQuestionHistory,
   type BankQuestion,
@@ -60,7 +61,7 @@ function QuestionBankPage() {
     if (!examChosen.current && profile?.exam_id && profile.exam_id in EXAMS)
       setExam(profile.exam_id);
   }, [profile?.exam_id]);
-  const hasImportedBank = exam.startsWith("jee");
+  const hasImportedBank = hasImportedQuestionBank(exam);
   const [subject, setSubject] = useState("");
   const [year, setYear] = useState("");
   const [search, setSearch] = useState("");
@@ -146,10 +147,10 @@ function QuestionBankPage() {
         </p>
         {hasImportedBank ? (
           <p className="text-muted-foreground">
-            Published-paper questions retain source and year. Current coverage includes JEE Main
-            mathematics and JEE Advanced Physics, Chemistry and Mathematics. Missing answers,
-            unavailable diagrams, and the unverified community collection are excluded. This is not
-            a complete exam archive.
+            {exam === "neet"
+              ? "NEET coverage includes Physics, Chemistry and Biology from a curated 2021–2024 collection. Supplied keys have not been independently checked against every NTA booklet. Study notes, ambiguous mock records and missing diagrams are excluded."
+              : "Current JEE coverage includes Main mathematics and Advanced Physics, Chemistry and Mathematics. Missing answers, unavailable diagrams and the unverified community collection are excluded."}{" "}
+            This is not a complete exam archive.
           </p>
         ) : (
           <p className="text-muted-foreground">

@@ -21,6 +21,10 @@ for (const [path, expected] of [
   assert.match(rendered, /<html[^>]*lang="en"/);
   assert.doesNotMatch(rendered, /This page didn&#x27;t load|AcePrep/);
   assert.ok(!html.includes('src="/src/main.tsx"'), "No obsolete SPA entry");
+  assert.match(html, /property="og:image" content="https:\/\/study-buddy\.sitenova\.dev\/og-study-buddy\.png"/);
+  assert.match(html, /property="og:image:width" content="1200"/);
+  assert.match(html, /property="og:image:height" content="630"/);
+  assert.match(html, /name="twitter:card" content="summary_large_image"/);
   clientAsset ??= html.match(/(?:src|href)="(\/assets\/[^" ]+\.js)"/)?.[1];
   console.log(`PASS SSR ${path}`);
 }
@@ -47,3 +51,13 @@ const robots = await fetch(`${origin}/robots.txt`);
 assert.equal(robots.status, 200);
 assert.match(await robots.text(), /User-agent: \*/);
 console.log("PASS hydration asset and robots.txt");
+
+const socialImage = await fetch(`${origin}/og-study-buddy.png`, {
+  headers: { "user-agent": "WhatsApp/2.0" },
+});
+assert.equal(socialImage.status, 200);
+assert.match(socialImage.headers.get("content-type"), /image\/png/);
+const png = Buffer.from(await socialImage.arrayBuffer());
+assert.equal(png.readUInt32BE(16), 1200);
+assert.equal(png.readUInt32BE(20), 630);
+console.log("PASS public 1200×630 social image");

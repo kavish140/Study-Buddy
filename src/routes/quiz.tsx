@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, RotateCcw, Check, X } from "lucide-react";
 import { uid, XP_REWARDS, type SavedQuiz, type QuizQuestion } from "@/lib/storage";
-import { getQuizQuestions } from "@/lib/question-bank";
+import { getQuizQuestions, hasImportedQuestionBank } from "@/lib/question-bank";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,10 @@ function QuizPage() {
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState("5");
   const [bankExam, setBankExam] = useState("Mixed JEE");
+  const [examChosen, setExamChosen] = useState(false);
+  useEffect(() => {
+    if (!examChosen && profile?.exam_id === "neet") setBankExam("NEET UG");
+  }, [profile?.exam_id, examChosen]);
   const [difficulty, setDifficulty] = useState<"any" | "easy" | "medium" | "hard">("any");
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState<SavedQuiz | null>(null);
@@ -75,9 +79,9 @@ function QuizPage() {
         },
       });
 
-      // Defensive: ensure AI returned a valid non-empty questions array
+      // A bank selection must contain usable questions.
       if (!Array.isArray(res.questions) || res.questions.length === 0) {
-        throw new Error("AI returned an empty quiz — please try again.");
+        throw new Error("No bank questions were selected — please try again.");
       }
 
       // Defensive: coerce answerIndex to number in case AI returns a string,
@@ -163,13 +167,13 @@ function QuizPage() {
     <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Practice Quiz</h1>
       <p className="text-muted-foreground mt-1">
-        Practice existing JEE questions from published papers. Mixed practice includes Main and
+        Practice sourced JEE and NEET questions. Mixed JEE practice includes Main and
         Advanced questions. No AI question generation.
       </p>
 
-      {profile?.exam_id && !profile.exam_id.startsWith("jee") && (
+      {profile?.exam_id && !hasImportedQuestionBank(profile.exam_id) && (
         <p className="mt-4 text-sm text-muted-foreground">
-          In-app quizzes currently cover JEE.{" "}
+          In-app quizzes currently cover JEE and NEET.{" "}
           <a className="text-primary underline" href={`/sources#${profile.exam_id}`}>
             Find study materials for your exam
           </a>
@@ -184,12 +188,13 @@ function QuizPage() {
         <select
           aria-label="Question source exam"
           value={bankExam}
-          onChange={(e) => setBankExam(e.target.value)}
+          onChange={(e) => { setExamChosen(true); setBankExam(e.target.value); }}
           className="mb-3 w-full rounded-lg border p-2 text-sm bg-background"
         >
           <option>Mixed JEE</option>
           <option>JEE Main</option>
           <option>JEE Advanced</option>
+          <option>NEET UG</option>
         </select>
         <div
           className="grid md:grid-cols-[1fr_120px_140px_auto] gap-2"

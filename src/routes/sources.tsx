@@ -30,6 +30,15 @@ function SourcesPage() {
         </p>
         <ul>
           <li>
+            <a href="https://huggingface.co/datasets/Kshitij-PES/NEET_Dataset" target="_blank" rel="noreferrer">
+              Kshitij Gupta — NEET UG question collection
+            </a>{" "}
+            — upstream license: <a href="/question-bank/LICENSE-Apache-2.0.txt">Apache License 2.0</a>.
+            Used for a partial 2021–2024 Physics, Chemistry and Biology bank. Source-supplied keys
+            have not been independently checked against every NTA booklet. Study notes, ambiguous
+            2025/mock records and missing diagrams are excluded; generated source explanations are omitted.
+          </li>
+          <li>
             <a
               href="https://huggingface.co/datasets/daman1209arora/jeebench"
               target="_blank"

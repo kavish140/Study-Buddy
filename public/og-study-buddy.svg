@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#080D22"/><stop offset="1" stop-color="#101D42"/></linearGradient>
+    <linearGradient id="tile" x2="1" y2="1"><stop stop-color="#2563EB"/><stop offset="1" stop-color="#3B82F6"/></linearGradient>
+    <linearGradient id="fade" x2="1" y2="1"><stop stop-color="#3B82F6" stop-opacity=".15"/><stop offset="1" stop-color="#3B82F6" stop-opacity="0"/></linearGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#93C5FD" stroke-opacity=".045"/></pattern>
+    <g id="book">
+      <circle cx="23" cy="20" r="5" fill="white"/>
+      <circle cx="41" cy="20" r="5" fill="white" fill-opacity=".8"/>
+      <path d="M14 30a2 2 0 0 1 2-2c6.6 0 11.6 2.3 16 6.3V51c-4.4-4-9.4-6.3-16-6.3a2 2 0 0 1-2-2V30Z" fill="white"/>
+      <path d="M50 30a2 2 0 0 0-2-2c-6.6 0-11.6 2.3-16 6.3V51c4.4-4 9.4-6.3 16-6.3a2 2 0 0 0 2-2V30Z" fill="white" fill-opacity=".8"/>
+      <path d="M32 35v14" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <circle cx="960" cy="300" r="350" fill="url(#fade)"/>
+  <g font-family="Arial, sans-serif">
+    <rect x="64" y="58" width="56" height="56" rx="16" fill="#3B82F6"/>
+    <use href="#book" transform="translate(64 58) scale(.875)"/>
+    <text x="136" y="96" fill="#F8FAFC" font-size="32" font-weight="700" letter-spacing="-1">Study Buddy<tspan fill="#60A5FA">.</tspan></text>
+    <text x="66" y="181" fill="#93C5FD" font-size="14" font-weight="700" letter-spacing="3">YOUR AMBITION. YOUR STUDY SPACE.</text>
+    <text x="62" y="272" fill="white" font-size="67" font-weight="700" letter-spacing="-2.5">Big exam goals.</text>
+    <text x="62" y="353" fill="#60A5FA" font-size="67" font-weight="700" letter-spacing="-2.5">Better study days.</text>
+    <text x="66" y="411" fill="#BBC8E1" font-size="23">Plan your prep. Learn with AI. Practice with purpose.</text>
+    <g fill="#E2EAFF" font-size="16" font-weight="700">
+      <rect x="65" y="454" width="126" height="42" rx="21" fill="#15254A" stroke="#2A4070"/>
+      <text x="88" y="481">AI tutoring</text>
+      <rect x="201" y="454" width="135" height="42" rx="21" fill="#15254A" stroke="#2A4070"/>
+      <text x="223" y="481">Study plans</text>
+      <rect x="346" y="454" width="177" height="42" rx="21" fill="#15254A" stroke="#2A4070"/>
+      <text x="369" y="481">Sourced practice</text>
+    </g>
+    <path d="M65 542H1135" stroke="#29406B"/>
+    <text x="66" y="581" fill="#9AAFD3" font-size="18">study-buddy.sitenova.dev</text>
+    <text x="1135" y="581" text-anchor="end" fill="#9AAFD3" font-size="15">One topic. One session. One step forward.</text>
+    <g transform="translate(848 173) rotate(9 112 112)">
+      <rect x="-16" y="-16" width="256" height="256" rx="72" fill="#3B82F6" fill-opacity=".08" stroke="#93C5FD" stroke-opacity=".15"/>
+      <rect width="224" height="224" rx="63" fill="url(#tile)"/>
+      <use href="#book" transform="scale(3.5)"/>
+    </g>
+    <circle cx="1090" cy="145" r="18" fill="#1D3566"/>
+    <path d="m1083 145 5 5 9-10" fill="none" stroke="#93C5FD" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M815 441q110 45 250-5" fill="none" stroke="#3B82F6" stroke-width="2" stroke-dasharray="4 8"/>
+  </g>
+</svg>

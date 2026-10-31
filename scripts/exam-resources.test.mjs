@@ -41,6 +41,7 @@ test("non-JEE names resolve correctly and never silently select a JEE quiz", asy
     ["GRE General Test", "gre"],
   ]) {
     assert.equal(examIdFromName(name), id);
+    if (id === "neet") continue; // NEET now has an imported bank; exercised by question-bank tests.
     await assert.rejects(bankQuiz({ topic: "", count: 5, examName: name }), /not imported/);
     await assert.rejects(
       bankMock({ examName: name, sections: [{ name: "Math", questions: 5 }] }),

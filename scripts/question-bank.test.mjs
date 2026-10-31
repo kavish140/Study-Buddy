@@ -12,7 +12,7 @@ import {
   resetQuestionHistory,
   setQuestionHistoryUser,
 } from "../src/lib/question-bank.ts";
-import { importJEEBench, importMainPractice } from "./question-importers.mjs";
+import { importJEEBench, importMainPractice, importNEET } from "./question-importers.mjs";
 
 const main = JSON.parse(
   await readFile(new URL("../public/question-bank/jee-main.json", import.meta.url), "utf8"),
@@ -20,11 +20,14 @@ const main = JSON.parse(
 const advanced = JSON.parse(
   await readFile(new URL("../public/question-bank/jee-advanced.json", import.meta.url), "utf8"),
 );
+const neet = JSON.parse(
+  await readFile(new URL("../public/question-bank/neet.json", import.meta.url), "utf8"),
+);
 
 test("every shipped question has a traceable source and usable answer key", () => {
   assert.ok(main.length + advanced.length > 515);
   const ids = new Set();
-  for (const q of [...main, ...advanced]) {
+  for (const q of [...main, ...advanced, ...neet]) {
     assert.ok(!ids.has(q.id));
     ids.add(q.id);
     assert.ok(q.source.original_id && q.source.url.startsWith("https://") && q.source.license);
@@ -58,8 +61,8 @@ test("quizzes and mocks only fetch static question-bank files, with no AI fallba
   const requests = [];
   t.mock.method(globalThis, "fetch", async (url) => {
     requests.push(url);
-    assert.match(url, /^\/question-bank\/jee-(main|advanced)\.json$/);
-    return Response.json(url.includes("advanced") ? advanced : main);
+    assert.match(url, /^\/question-bank\/(jee-main|jee-advanced|neet)\.json$/);
+    return Response.json(url.includes("neet") ? neet : url.includes("advanced") ? advanced : main);
   });
   const quiz = await bankQuiz({
     topic: "Physics",
@@ -84,7 +87,54 @@ test("quizzes and mocks only fetch static question-bank files, with no AI fallba
   assert.ok(requests.length > 0);
   assert.throws(() => sampleBank([], 5), /AI question generation is disabled/);
   assert.throws(() => sampleBank(main, NaN));
-  assert.deepEqual(await loadQuestionBank("neet"), []);
+  const neetQuiz = await bankQuiz({ topic: "motion", count: 2, examName: "NEET UG" });
+  assert.equal(neetQuiz.questions.length, 2);
+  assert.ok(neetQuiz.questions.every((q) => /neet/i.test(q.source.original_id)));
+  const neetMock = await bankMock({
+    examName: "NEET UG",
+    sections: ["Physics", "Chemistry", "Biology"].map((name) => ({ name, questions: 3 })),
+  });
+  assert.ok(neetMock.sections.every((s) => s.questions.length === 3));
+  assert.ok(requests.includes("/question-bank/neet.json"));
+  assert.equal((await loadQuestionBank("neet")).length, neet.length);
+});
+
+test("NEET import preserves source keys and statement lists without importing notes, mocks or generated reasoning", () => {
+  const row = {
+    question_id: "NEET_2023_TEST_1", subject: "Biology",
+    question: "Choose the correct statement.", statements: ["A. First statement", "B. Second statement"],
+    options: { a: "First", b: "Second", c: "Both", d: "Neither" },
+    correct_answer_key: "c", brief_explanation: "Generated source reasoning",
+  };
+  const q = importNEET(row);
+  assert.equal(q.exam_id, "neet");
+  assert.equal(q.year, 2023);
+  assert.match(q.question, /A\. First statement\n\nB\. Second statement/);
+  assert.deepEqual(q.correct_options, [2]);
+  assert.equal(q.answer, "Both");
+  assert.equal(q.explanation, undefined);
+  assert.equal(importNEET({ ...row, question_id: "NEET_2025_TEST_1" }), null);
+  assert.equal(importNEET({ entry_id: "NCERT_XI_CH1_001", source_text: "A note" }), null);
+  assert.equal(importNEET({ ...row, correct_answer_key: "e" }), null);
+  assert.equal(importNEET({ ...row, statements: { A: "Missing list" } }), null);
+  assert.equal(importNEET({ ...row, question: "Match List-I with List-II" }), null);
+  assert.equal(importNEET({ ...row, options: { a: "Statement I is incorrect.", b: "Statement I is false.", c: "Both", d: "Neither" } }), null);
+  assert.ok(importNEET({ ...row, options: { a: "α²", b: "α³", c: "β²", d: "β³" } }));
+  assert.equal(importNEET({ ...row, question: "Consider the following figure" }), null);
+  assert.equal(importNEET({ ...row, subject: "Physics", question: "A system follows the cycle abcda. Find work along path bc." }), null);
+  assert.equal(importNEET({ ...row, subject: "Chemistry", question: "Choose the correct structure." }), null);
+  assert.equal(importNEET({ ...row, options: { a: "Same", b: "Same", c: "Other", d: "Neither" } }), null);
+  assert.ok(neet.length > 300);
+  assert.deepEqual([...new Set(neet.map((q) => q.subject))].sort(), ["Biology", "Chemistry", "Physics"]);
+  assert.ok(neet.every((q) => q.year >= 2021 && q.year <= 2024 && q.explanation === undefined));
+});
+
+test("NEET manifest counts match the shipped snapshot", async () => {
+  const manifest = JSON.parse(await readFile(new URL("../public/question-bank/manifest.json", import.meta.url), "utf8"));
+  assert.equal(manifest.exams.neet.count, neet.length);
+  assert.equal(manifest.count, main.length + advanced.length + neet.length);
+  for (const [subject, count] of Object.entries(manifest.neetImport.subjects))
+    assert.equal(neet.filter((q) => q.subject === subject).length, count);
 });
 
 test("cloud failures and invalid reservations never fall back to local sampling", async (t) => {

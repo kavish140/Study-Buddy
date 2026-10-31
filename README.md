@@ -7,6 +7,12 @@ The frontend now uses TanStack Start SSR on Cloudflare Workers. See
 and the staged domain migration. GitHub Actions validates builds; Cloudflare's
 connected repository performs deployment when changes are pushed.
 
+The shared-link preview uses `public/og-study-buddy.png` (1200 × 630), with its
+editable vector source alongside it. SSR emits absolute Open Graph and Twitter
+image URLs for `https://study-buddy.sitenova.dev`, or `VITE_SITE_URL` when set.
+Run `node scripts/check-ssr.mjs` against the built preview to check the metadata
+and public image response without browser JavaScript.
+
 This document tracks the current architecture, setup requirements, and recent changes made to the Supabase backend (Edge Functions & Database).
 
 ## Local development and recovery checks
@@ -35,8 +41,9 @@ NCERT, IIT Kanpur SATHEE, UPSC, College Board and ETS sources. Publisher-index a
 announcement evidence does not guarantee current availability of each target URL.
 
 These entries link to external materials; they do not add question text or answer
-rows to the practice engine. Imported, automatically gradable questions still cover
-JEE only. Non-JEE in-app mocks remain disabled until a validated dataset is imported.
+rows to the practice engine. Imported, automatically gradable questions cover
+JEE and a partial NEET UG collection. Other exams' in-app mocks remain disabled
+until a usable dataset is imported. See QUESTION_BANK.md for coverage and limitations.
 UPSC paper PDFs are indexed separately from answer keys; NEET keys require the exact
 paper and booklet code. Account-gated banks are accessed on their publisher's site.
 

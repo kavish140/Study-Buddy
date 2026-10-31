@@ -1,6 +1,14 @@
 import { createHash } from "node:crypto";
 
 export const SOURCES = {
+  neet: {
+    name: "Kshitij Gupta · NEET UG question collection",
+    url: "https://huggingface.co/datasets/Kshitij-PES/NEET_Dataset",
+    license: "Apache-2.0",
+    revision: "615882ae7a172dc6a2a782d74418039f1d889a30",
+    kind: "pyq",
+    evidence: "Curator-transcribed NEET papers and supplied answer keys; not independently re-keyed. Only 2021–2024 records are imported; ambiguous 2025/mock records are excluded.",
+  },
   jeebench: {
     name: "JEEBench · IIT Delhi DAIR",
     url: "https://huggingface.co/datasets/daman1209arora/jeebench",
@@ -94,6 +102,62 @@ function finish(question, source, originalId) {
     source: { ...source, original_id: String(originalId) },
     tags: [question.subject, question.topic].filter(Boolean),
   };
+}
+
+const NEET_REVIEW_EXCLUSIONS = {
+  NEET_2024_21: "Decay sequence omits the intermediate emissions",
+  NEET_2023_CHE_29: "Reaction stem omits the reaction itself",
+  NEET_2021_CHE_46: "Ketone derivative lacks the required substituent structure",
+  NEET_2021_CHE_50: "Reaction sequence omits the intermediate product",
+};
+
+export function importNEET(row) {
+  const year = Number(/^NEET_(20\d{2})_/.exec(row.question_id ?? "")?.[1]);
+  // The source mixes study notes, PYQs and a 2025 mock. Do not turn notes or
+  // ambiguous mock records into previous-year questions or invent metadata.
+  if (![2021, 2022, 2023, 2024].includes(year)) return null;
+  if (!["Physics", "Chemistry", "Biology"].includes(row.subject)) return null;
+  if (typeof row.question !== "string" || !row.question.trim()) return null;
+  if (row.statements !== undefined &&
+      (!Array.isArray(row.statements) || row.statements.some((s) => typeof s !== "string"))) return null;
+  const normalize = (value) => cleanText(value)
+    .replace(/\\u([0-9a-f]{4})/gi, (_all, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/\\n/g, "\n");
+  const full = normalize([row.question, ...(row.statements ?? [])].join("\n\n"));
+  // Some transcriptions omit lists/circuits or use placeholder descriptions.
+  // Conservatively omit these categories rather than completing them ourselves.
+  const visualContent = full + " " + Object.values(row.options ?? {}).join(" ");
+  if (/diagram|figure|graph|circuit|image|\bplot\b|match.*(?:list|column)|matching|\[based on|spb&ies|\bcycle\s+[a-e]{3,}\b|\bpath\s+[a-e]{2}\b|following reaction:\s*$/i.test(visualContent)) return null;
+  if (row.subject !== "Biology" && /structure/i.test(visualContent)) return null;
+  if (Object.hasOwn(NEET_REVIEW_EXCLUSIONS, row.question_id)) return null;
+  const keys = Object.keys(row.options ?? {});
+  const order = ["1", "2", "3", "4"].every((key) => keys.includes(key))
+    ? ["1", "2", "3", "4"]
+    : ["a", "b", "c", "d"].every((key) => keys.includes(key))
+      ? ["a", "b", "c", "d"]
+      : ["A", "B", "C", "D"];
+  if (keys.length !== 4 || !order.every((key) => keys.includes(key))) return null;
+  if (order.some((key) => typeof row.options[key] !== "string")) return null;
+  const options = order.map((key) => normalize(row.options[key]));
+  const distinct = options.map((option) => option.normalize("NFKC").toLowerCase()
+    .replace(/incorrect/g, "false").replace(/correct/g, "true")
+    .replace(/[.,:;!?\s]/g, ""));
+  if (new Set(distinct).size !== 4) return null;
+  const index = order.indexOf(String(row.correct_answer_key));
+  return finish({
+    exam_id: "neet",
+    year,
+    subject: row.subject,
+    topic: "",
+    question: full,
+    question_type: "mcq",
+    options,
+    correct_options: [index],
+    answer: options[index],
+    // The source's explanations were generated. Import only its questions and
+    // supplied answer keys; do not present generated reasoning as verified.
+    difficulty: null,
+  }, SOURCES.neet, row.question_id);
 }
 
 export function importJEEBench(row) {
