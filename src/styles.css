@@ -1168,7 +1168,6 @@
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: var(--gradient-primary);
   display: grid;
   place-items: center;
   box-shadow: var(--shadow-glow-sm);

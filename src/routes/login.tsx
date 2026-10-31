@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { StudyBuddyMark } from "@/components/StudyBuddyMark";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -79,20 +80,7 @@ function Login() {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="h-16 w-16 rounded-2xl bg-gradient-primary grid place-items-center shadow-glow mb-5">
-            <svg
-              className="h-8 w-8 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-              <path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5" />
-            </svg>
-          </div>
+          <StudyBuddyMark className="h-16 w-16 mb-5 drop-shadow-lg" />
           <h1 className="text-3xl font-bold tracking-tight font-heading">
             <span className="text-gradient">Study Buddy</span>
           </h1>

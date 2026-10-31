@@ -11,7 +11,6 @@ import {
   Calendar,
   FileText,
   LayoutDashboard,
-  GraduationCap,
   Timer,
   BarChart3,
   Sparkles,
@@ -37,6 +36,7 @@ import { useTutorial } from "./TutorialProvider";
 import { useTheme } from "@/hooks/use-theme";
 import { useFocusTimer, FOCUS_MODES } from "@/contexts/FocusTimerContext";
 import { LegalFooter } from "./LegalFooter";
+import { StudyBuddyMark } from "./StudyBuddyMark";
 
 type NavItem = {
   to: string;
@@ -328,7 +328,7 @@ function FeaturePanel({
         <div className="feature-panel__header">
           <div className="feature-panel__logo">
             <div className="top-bar__logo-icon">
-              <GraduationCap className="h-4 w-4 text-white" />
+              <StudyBuddyMark className="h-full w-full" />
             </div>
             <div>
               <div
@@ -580,7 +580,7 @@ export function AppLayout() {
             className="h-14 w-14 rounded-2xl grid place-items-center shadow-glow animate-pulse"
             style={{ background: "var(--gradient-primary)" }}
           >
-            <GraduationCap className="h-7 w-7 text-white" />
+            <StudyBuddyMark className="h-full w-full" />
           </div>
           <div className="text-sm font-medium" style={{ color: "var(--muted-foreground)" }}>
             Loading…
@@ -625,7 +625,7 @@ export function AppLayout() {
         {/* Logo */}
         <Link to="/" className="top-bar__logo ml-2">
           <div className="top-bar__logo-icon">
-            <GraduationCap className="h-4 w-4 text-white" />
+            <StudyBuddyMark className="h-full w-full" />
           </div>
           <span className="top-bar__logo-name hidden sm:block">Study Buddy</span>
         </Link>

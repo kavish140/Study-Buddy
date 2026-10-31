@@ -12,7 +12,6 @@ import {
   FileText,
   Flame,
   FlipHorizontal2,
-  GraduationCap,
   LayoutDashboard,
   Library,
   Menu,
@@ -24,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { EXAM_CATALOG } from "@/lib/exam-catalog";
+import { StudyBuddyMark } from "@/components/StudyBuddyMark";
 import "./landing.css";
 
 export const Route = createFileRoute("/landing")({
@@ -240,7 +240,7 @@ function LandingPage() {
         <div className="ace-container ace-nav">
           <a href="#" className="ace-brand" aria-label="Study Buddy home">
             <span className="ace-logo">
-              <GraduationCap size={22} aria-hidden="true" />
+              <StudyBuddyMark className="h-full w-full" />
             </span>
             Study Buddy<span className="ace-brand-dot">.</span>
           </a>
@@ -320,7 +320,7 @@ function LandingPage() {
               <div className="ace-preview-top">
                 <span>
                   <span className="ace-tiny-logo">
-                    <GraduationCap size={15} />
+                    <StudyBuddyMark className="h-full w-full" />
                   </span>{" "}
                   Your study workspace
                 </span>
@@ -555,7 +555,7 @@ function LandingPage() {
       <footer className="ace-footer ace-container">
         <a href="#" className="ace-brand">
           <span className="ace-logo">
-            <GraduationCap size={20} />
+            <StudyBuddyMark className="h-full w-full" />
           </span>
           Study Buddy.
         </a>

@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import { LEGAL_UPDATED, OPERATOR_NAME, CONTACT_EMAIL } from "@/lib/legal";
+import { StudyBuddyMark } from "./StudyBuddyMark";
 
 export function LegalPage({ title, children }: { title: string; children: ReactNode }) {
   return (
     <main className="min-h-screen bg-background px-5 py-10 text-foreground">
       <article className="mx-auto max-w-3xl space-y-8 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-3 [&_p]:leading-relaxed [&_p]:mt-3 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mt-2 [&_a]:text-primary [&_a]:underline">
-        <a href="/landing" className="text-sm">
+        <a href="/landing" className="inline-flex items-center gap-2 text-sm">
+          <StudyBuddyMark className="h-7 w-7" />
           ← Study Buddy
         </a>
         <header>

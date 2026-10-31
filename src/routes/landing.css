@@ -71,8 +71,6 @@
   place-items: center;
   width: 36px;
   height: 36px;
-  background: var(--ace-color);
-  color: var(--primary-foreground);
   border-radius: 11px;
 }
 .ace-desktop-nav,
@@ -241,8 +239,6 @@
   width: 25px;
   height: 25px;
   border-radius: 7px;
-  background: var(--ace-soft);
-  color: var(--ace-color);
 }
 .ace-demo-label {
   font-size: 8px;
