@@ -85,8 +85,8 @@ function SourcesPage() {
       <section id="resources">
         <h2>External study materials and practice sources</h2>
         <p>
-          The catalog below links to NTA, NCERT, IIT Kanpur SATHEE, UPSC, College Board and ETS
-          resources. These materials open on the publisher's site; their inclusion does not mean
+          The catalog below links to CBSE, NTA, NCERT, IIT Kanpur SATHEE, UPSC, College Board and
+          ETS resources. These materials open on the publisher's site; their inclusion does not mean
           their content has been imported into Study Buddy. External sites retain their own terms,
           access requirements and content rights. No affiliation or endorsement is implied.
         </p>

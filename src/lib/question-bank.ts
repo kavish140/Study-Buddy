@@ -184,6 +184,8 @@ export async function resetQuestionHistory() {
   removeLegacyHistory(account.userId);
 }
 export function examIdFromName(name = "") {
+  if (/cbse/i.test(name) && /(?:class|grade|std(?:andard)?)\s*(?:10|x)\b|\b10(?:th)?\b/i.test(name))
+    return "cbse-class-10";
   if (/neet/i.test(name)) return "neet";
   if (/upsc|civil services/i.test(name)) return "upsc-prelims";
   if (/\bsat\b/i.test(name)) return "sat";

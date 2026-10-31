@@ -4,6 +4,7 @@ export interface ExamSubject {
 }
 
 export interface ExamPattern {
+  summary?: string;
   sections: { name: string; questions: number; timeMinutes: number }[];
   totalTimeMinutes: number;
   totalQuestions: number;
@@ -24,6 +25,124 @@ export interface ExamInfo {
 }
 
 export const EXAM_CATALOG: ExamInfo[] = [
+  {
+    id: "cbse-class-10",
+    name: "CBSE Class 10 Board Exam",
+    shortName: "CBSE Class 10",
+    description:
+      "Grade 10 secondary school board examinations. Choose your enrolled subjects and language course; Mathematics practice covers Basic and Standard. Check the official syllabus for your session.",
+    country: "IN",
+    icon: "🏫",
+    color: "#0d9488",
+    typicalMonth: "February–March / May (second examination)",
+    examPattern: {
+      summary: "Separate subject papers · usually 3 hours each",
+      // There is no single combined paper or fixed question count across subjects.
+      sections: [],
+      totalTimeMinutes: 180,
+      totalQuestions: 0,
+      markingScheme:
+        "Subject-specific marking schemes. Core subjects generally have 80 theory marks and 20 internal assessment marks; check the matching subject sample paper and marking scheme. No negative marking.",
+    },
+    subjects: [
+      {
+        name: "Mathematics",
+        topics: [
+          "Real Numbers",
+          "Polynomials",
+          "Pair of Linear Equations in Two Variables",
+          "Quadratic Equations",
+          "Arithmetic Progressions",
+          "Triangles",
+          "Coordinate Geometry",
+          "Introduction to Trigonometry",
+          "Some Applications of Trigonometry",
+          "Circles",
+          "Areas Related to Circles",
+          "Surface Areas and Volumes",
+          "Statistics",
+          "Probability",
+        ],
+      },
+      {
+        name: "Science",
+        topics: [
+          "Chemical Reactions and Equations",
+          "Acids, Bases and Salts",
+          "Metals and Non-metals",
+          "Carbon and its Compounds",
+          "Life Processes",
+          "Control and Coordination",
+          "How do Organisms Reproduce?",
+          "Heredity",
+          "Light - Reflection and Refraction",
+          "The Human Eye and the Colourful World",
+          "Electricity",
+          "Magnetic Effects of Electric Current",
+          "Our Environment",
+        ],
+      },
+      {
+        name: "Social Science",
+        topics: [
+          "The Rise of Nationalism in Europe",
+          "Nationalism in India",
+          "The Making of a Global World",
+          "The Age of Industrialisation",
+          "Print Culture and the Modern World",
+          "Resources and Development",
+          "Forest and Wildlife Resources",
+          "Water Resources",
+          "Agriculture",
+          "Minerals and Energy Resources",
+          "Manufacturing Industries",
+          "Lifelines of National Economy",
+          "Power Sharing",
+          "Federalism",
+          "Gender, Religion and Caste",
+          "Political Parties",
+          "Outcomes of Democracy",
+          "Development",
+          "Sectors of the Indian Economy",
+          "Money and Credit",
+          "Globalisation and the Indian Economy",
+          "Consumer Rights",
+          "Map Work",
+        ],
+      },
+      {
+        name: "English (Language and Literature)",
+        topics: [
+          "Reading Comprehension",
+          "Grammar",
+          "Formal Letter",
+          "Analytical Paragraph",
+          "First Flight",
+          "Footprints Without Feet",
+        ],
+      },
+      {
+        name: "Hindi A",
+        topics: [
+          "Reading Comprehension",
+          "Grammar",
+          "Writing Skills",
+          "Kshitij Part 2",
+          "Kritika Part 2",
+        ],
+      },
+      {
+        name: "Hindi B",
+        topics: [
+          "Reading Comprehension",
+          "Grammar",
+          "Writing Skills",
+          "Sparsh Part 2",
+          "Sanchayan Part 2",
+        ],
+      },
+    ],
+  },
   {
     id: "jee-main",
     name: "JEE Main",

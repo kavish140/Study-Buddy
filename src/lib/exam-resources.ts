@@ -1,3 +1,5 @@
+import { CBSE_CLASS_10_RESOURCES } from "./cbse-resources.ts";
+
 export type ExamResource = {
   id: string;
   examIds: string[];
@@ -24,6 +26,7 @@ const sat = "https://satsuite.collegeboard.org/practice";
 const satheeEvidence = "https://www.iitk.ac.in/launch-free-crash-course-for-neet-2025";
 
 export const EXAM_RESOURCES: ExamResource[] = [
+  ...CBSE_CLASS_10_RESOURCES,
   {
     id: "ncert-textbooks",
     examIds: ["neet", "upsc-prelims", "jee-main", "jee-advanced"],

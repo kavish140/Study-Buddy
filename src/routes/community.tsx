@@ -38,8 +38,20 @@ export const Route = createFileRoute("/community")({
   component: CommunityPage,
 });
 
-const SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "General"];
+const SUBJECTS = [
+  "Physics",
+  "Chemistry",
+  "Mathematics",
+  "Biology",
+  "Science",
+  "Social Science",
+  "English (Language and Literature)",
+  "Hindi A",
+  "Hindi B",
+  "General",
+];
 const EXAMS = [
+  { id: "cbse-class-10", label: "CBSE Class 10" },
   { id: "jee-main", label: "JEE Main" },
   { id: "jee-advanced", label: "JEE Advanced" },
   { id: "neet", label: "NEET" },

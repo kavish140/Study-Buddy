@@ -1,8 +1,537 @@
 {
   "reviewed": "2026-10-31",
   "scope": "External publisher resources. No question text, answers or textbook content is copied into the in-app question bank.",
-  "count": 20,
+  "count": 47,
   "resources": [
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "website",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-syllabus",
+      "title": "CBSE secondary curriculum and syllabus — 2026–27",
+      "kind": "study-material",
+      "subjects": [
+        "Mathematics",
+        "Science",
+        "Social Science",
+        "English (Language and Literature)",
+        "Hindi A",
+        "Hindi B"
+      ],
+      "url": "https://cbseacademic.nic.in/curriculum_2027.html",
+      "evidenceUrl": "https://cbseacademic.nic.in/curriculum_2027.html",
+      "description": "Select the Class X subject syllabus for your enrolled course. Check prescribed chapters, assessment scope and internal assessment before using older question banks; some chapters are project or internal-assessment only."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "NCERT",
+      "access": "free",
+      "format": "website",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-ncert",
+      "title": "NCERT Class 10 textbooks",
+      "kind": "study-material",
+      "subjects": [
+        "Mathematics",
+        "Science",
+        "Social Science",
+        "English (Language and Literature)",
+        "Hindi A",
+        "Hindi B"
+      ],
+      "url": "https://ncert.nic.in/ebooks.php",
+      "evidenceUrl": "https://epathshala.nic.in/epathshala.php?id=Students&ln=en",
+      "description": "Official textbook portal. Choose Class X and your subject, language and book; use the current CBSE syllabus to check which portions are assessed."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-question-bank-english",
+      "title": "CBSE Class 10 English (Language and Literature) question bank (archive)",
+      "kind": "question-bank",
+      "subjects": [
+        "English (Language and Literature)"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/QuestionBank/ClassX/EnglishX.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/qbclass10.html",
+      "description": "Original CBSE question bank from its Class X index. An older practice resource, not the current board paper; match chapters and question formats to the current syllabus and sample paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-question-bank-maths",
+      "title": "CBSE Class 10 Mathematics question bank (archive)",
+      "kind": "question-bank",
+      "subjects": [
+        "Mathematics"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/QuestionBank/ClassX/MathsX.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/qbclass10.html",
+      "description": "Original CBSE question bank from its Class X index. An older practice resource, not the current board paper; match chapters and question formats to the current syllabus and sample paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-question-bank-science",
+      "title": "CBSE Class 10 Science question bank (archive)",
+      "kind": "question-bank",
+      "subjects": [
+        "Science"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/QuestionBank/ClassX/ScienceX.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/qbclass10.html",
+      "description": "Original CBSE question bank from its Class X index. An older practice resource, not the current board paper; match chapters and question formats to the current syllabus and sample paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-cbe-maths",
+      "title": "CBSE competency-based item bank — Mathematics",
+      "kind": "question-bank",
+      "subjects": [
+        "Mathematics"
+      ],
+      "url": "https://cbseacademic.nic.in/cbe/documents/Item-Bank--Maths---Class-10.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/cbe/assessment.html",
+      "description": "Class 10 item bank published through CBSE's competency-based education programme with British Council and AlphaPlus. Use the publisher's answers and rubrics; check older topics against the current syllabus."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-cbe-science",
+      "title": "CBSE competency-based item bank — Science",
+      "kind": "question-bank",
+      "subjects": [
+        "Science"
+      ],
+      "url": "https://cbseacademic.nic.in/cbe/documents/Item-Bank---Science-Class-10.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/cbe/assessment.html",
+      "description": "Class 10 item bank published through CBSE's competency-based education programme with British Council and AlphaPlus. Use the publisher's answers and rubrics; check older topics against the current syllabus."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-cbe-english",
+      "title": "CBSE competency-based item bank — English (Language and Literature)",
+      "kind": "question-bank",
+      "subjects": [
+        "English (Language and Literature)"
+      ],
+      "url": "https://cbseacademic.nic.in/cbe/documents/Item-Bank---English---Class-10.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/cbe/assessment.html",
+      "description": "Class 10 item bank published through CBSE's competency-based education programme with British Council and AlphaPlus. Use the publisher's answers and rubrics; check older topics against the current syllabus."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-practice-maths-v4",
+      "title": "CBSE Grade 10 Mathematics (Volume 4)",
+      "kind": "question-bank",
+      "subjects": [
+        "Mathematics"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/Manuals/Mathematics_10Vol4.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/manual.html",
+      "description": "Official practice collection listed in CBSE's handbook catalog. Some downloads are large. Older collections can include rationalised topics; follow the current syllabus and the correct language course. This is supplementary practice, not a prediction of board questions."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-practice-science-v2",
+      "title": "CBSE Grade 10 Science (Volume 2)",
+      "kind": "question-bank",
+      "subjects": [
+        "Science"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/Manuals/Science_Grade10_V2.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/manual.html",
+      "description": "Official practice collection listed in CBSE's handbook catalog. Some downloads are large. Older collections can include rationalised topics; follow the current syllabus and the correct language course. This is supplementary practice, not a prediction of board questions."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-practice-social-science-v2",
+      "title": "CBSE Grade 10 Social Science (Volume 2)",
+      "kind": "question-bank",
+      "subjects": [
+        "Social Science"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/Manuals/SocialScience_10Vol2.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/manual.html",
+      "description": "Official practice collection listed in CBSE's handbook catalog. Some downloads are large. Older collections can include rationalised topics; follow the current syllabus and the correct language course. This is supplementary practice, not a prediction of board questions."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-practice-hindi",
+      "title": "CBSE Grade 10 Hindi practice questions",
+      "kind": "question-bank",
+      "subjects": [
+        "Hindi A",
+        "Hindi B"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/Manuals/PQ_Hindi10.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/manual.html",
+      "description": "Official practice collection listed in CBSE's handbook catalog. Some downloads are large. Older collections can include rationalised topics; follow the current syllabus and the correct language course. This is supplementary practice, not a prediction of board questions."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-sqp-2027-maths-basic",
+      "title": "CBSE Class 10 Mathematics (Basic) sample paper — 2026–27",
+      "kind": "question-bank",
+      "subjects": [
+        "Mathematics"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/MathsBasic-SQP.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "Official sample paper for academic session 2026–27, not a past examination paper. Use the matching marking scheme in this catalog. Choose Basic or Standard Mathematics and Hindi A or B according to your registration."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-ms-2027-maths-basic",
+      "title": "CBSE Class 10 Mathematics (Basic) marking scheme — 2026–27",
+      "kind": "answer-key",
+      "subjects": [
+        "Mathematics"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/MathsBasic-MS.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "CBSE's answers, mark allocation and evaluation guidance for the matching 2026–27 sample paper. Use with the same subject and course paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-sqp-2027-maths-standard",
+      "title": "CBSE Class 10 Mathematics (Standard) sample paper — 2026–27",
+      "kind": "question-bank",
+      "subjects": [
+        "Mathematics"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/MathsStandard-SQP.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "Official sample paper for academic session 2026–27, not a past examination paper. Use the matching marking scheme in this catalog. Choose Basic or Standard Mathematics and Hindi A or B according to your registration."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-ms-2027-maths-standard",
+      "title": "CBSE Class 10 Mathematics (Standard) marking scheme — 2026–27",
+      "kind": "answer-key",
+      "subjects": [
+        "Mathematics"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/MathsStandard-MS.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "CBSE's answers, mark allocation and evaluation guidance for the matching 2026–27 sample paper. Use with the same subject and course paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-sqp-2027-science",
+      "title": "CBSE Class 10 Science sample paper — 2026–27",
+      "kind": "question-bank",
+      "subjects": [
+        "Science"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/Science-SQP.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "Official sample paper for academic session 2026–27, not a past examination paper. Use the matching marking scheme in this catalog. Choose Basic or Standard Mathematics and Hindi A or B according to your registration."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-ms-2027-science",
+      "title": "CBSE Class 10 Science marking scheme — 2026–27",
+      "kind": "answer-key",
+      "subjects": [
+        "Science"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/Science-MS.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "CBSE's answers, mark allocation and evaluation guidance for the matching 2026–27 sample paper. Use with the same subject and course paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-sqp-2027-social-science",
+      "title": "CBSE Class 10 Social Science sample paper — 2026–27",
+      "kind": "question-bank",
+      "subjects": [
+        "Social Science"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/SocialScience-SQP.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "Official sample paper for academic session 2026–27, not a past examination paper. Use the matching marking scheme in this catalog. Choose Basic or Standard Mathematics and Hindi A or B according to your registration."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-ms-2027-social-science",
+      "title": "CBSE Class 10 Social Science marking scheme — 2026–27",
+      "kind": "answer-key",
+      "subjects": [
+        "Social Science"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/SocialScience-MS.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "CBSE's answers, mark allocation and evaluation guidance for the matching 2026–27 sample paper. Use with the same subject and course paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-sqp-2027-english",
+      "title": "CBSE Class 10 English (Language and Literature) sample paper — 2026–27",
+      "kind": "question-bank",
+      "subjects": [
+        "English (Language and Literature)"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/EnglishL-SQP.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "Official sample paper for academic session 2026–27, not a past examination paper. Use the matching marking scheme in this catalog. Choose Basic or Standard Mathematics and Hindi A or B according to your registration."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-ms-2027-english",
+      "title": "CBSE Class 10 English (Language and Literature) marking scheme — 2026–27",
+      "kind": "answer-key",
+      "subjects": [
+        "English (Language and Literature)"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/EnglishL-MS.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "CBSE's answers, mark allocation and evaluation guidance for the matching 2026–27 sample paper. Use with the same subject and course paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-sqp-2027-hindi-a",
+      "title": "CBSE Class 10 Hindi A sample paper — 2026–27",
+      "kind": "question-bank",
+      "subjects": [
+        "Hindi A"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/HindiCourseA-SQP.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "Official sample paper for academic session 2026–27, not a past examination paper. Use the matching marking scheme in this catalog. Choose Basic or Standard Mathematics and Hindi A or B according to your registration."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-ms-2027-hindi-a",
+      "title": "CBSE Class 10 Hindi A marking scheme — 2026–27",
+      "kind": "answer-key",
+      "subjects": [
+        "Hindi A"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/HindiCourseA-MS.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "CBSE's answers, mark allocation and evaluation guidance for the matching 2026–27 sample paper. Use with the same subject and course paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-sqp-2027-hindi-b",
+      "title": "CBSE Class 10 Hindi B sample paper — 2026–27",
+      "kind": "question-bank",
+      "subjects": [
+        "Hindi B"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/HindiCourseB-SQP.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "Official sample paper for academic session 2026–27, not a past examination paper. Use the matching marking scheme in this catalog. Choose Basic or Standard Mathematics and Hindi A or B according to your registration."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "pdf",
+      "year": 2027,
+      "verification": "publisher-index",
+      "id": "cbse-10-ms-2027-hindi-b",
+      "title": "CBSE Class 10 Hindi B marking scheme — 2026–27",
+      "kind": "answer-key",
+      "subjects": [
+        "Hindi B"
+      ],
+      "url": "https://cbseacademic.nic.in/web_material/SQP/ClassX_2026_27/HindiCourseB-MS.pdf",
+      "evidenceUrl": "https://cbseacademic.nic.in/SQP_CLASSX_2026-27.html",
+      "description": "CBSE's answers, mark allocation and evaluation guidance for the matching 2026–27 sample paper. Use with the same subject and course paper."
+    },
+    {
+      "examIds": [
+        "cbse-class-10"
+      ],
+      "publisher": "Central Board of Secondary Education (CBSE)",
+      "access": "free",
+      "format": "website",
+      "year": null,
+      "verification": "publisher-index",
+      "id": "cbse-10-past-paper-archive",
+      "title": "CBSE official previous-year question paper archive",
+      "kind": "question-bank",
+      "subjects": [
+        "Mathematics",
+        "Science",
+        "Social Science",
+        "English (Language and Literature)",
+        "Hindi A",
+        "Hindi B"
+      ],
+      "url": "https://www.cbse.gov.in/cbsenew/question-paper.html",
+      "evidenceUrl": "https://www.cbse.gov.in/cbsenew/question-paper.html",
+      "description": "Select Class X, examination year and subject. CBSE publishes original papers, often as ZIP downloads containing multiple sets. Keep the year, paper set and course together; historical papers can cover a different syllabus."
+    },
     {
       "id": "ncert-textbooks",
       "examIds": [

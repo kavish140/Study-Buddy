@@ -423,9 +423,11 @@ function Dashboard() {
               >
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {examInfo.examPattern.totalTimeMinutes} min
+                  {examInfo.examPattern.summary ?? `${examInfo.examPattern.totalTimeMinutes} min`}
                 </span>
-                <span>{examInfo.examPattern.totalQuestions} questions</span>
+                {examInfo.examPattern.totalQuestions > 0 && (
+                  <span>{examInfo.examPattern.totalQuestions} questions</span>
+                )}
                 <Link
                   to="/onboarding"
                   className="hover:underline"

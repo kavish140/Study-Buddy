@@ -279,7 +279,9 @@ function OnboardingPage() {
                         <span>·</span>
                         <span>{exam.subjects.reduce((s, x) => s + x.topics.length, 0)} topics</span>
                         <span>·</span>
-                        <span>{exam.examPattern.totalTimeMinutes} min</span>
+                        <span>
+                          {exam.examPattern.summary ?? `${exam.examPattern.totalTimeMinutes} min`}
+                        </span>
                       </div>
                     </div>
                     {selectedExam?.id === exam.id && (

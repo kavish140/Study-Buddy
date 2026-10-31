@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { ExamResources } from "@/components/ExamResources";
 import {
   filterBank,
   isCorrectBankAnswer,
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/pyq")({
       {
         name: "description",
         content:
-          "Find sourced questions, official practice banks and study materials for JEE, NEET, UPSC, SAT and GRE.",
+          "Find sourced questions, official practice banks and study materials for CBSE Class 10, JEE, NEET, UPSC, SAT and GRE.",
       },
     ],
   }),
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/pyq")({
 });
 
 const EXAMS = {
+  "cbse-class-10": "CBSE Class 10 Board Exam",
   jee: "Mixed JEE",
   "jee-main": "JEE Main",
   "jee-advanced": "JEE Advanced",
@@ -154,7 +156,7 @@ function QuestionBankPage() {
           </p>
         ) : (
           <p className="text-muted-foreground">
-            See Sources & Licenses for study materials, question banks and papers. In-app quizzes
+            Official study materials, question banks and papers are listed below. In-app quizzes
             and timed mocks are not available for this exam yet.
           </p>
         )}
@@ -225,7 +227,7 @@ function QuestionBankPage() {
         <p className="card-light rounded-2xl p-8">
           {hasImportedBank
             ? "No matching questions. Broaden your filters. AI question generation is disabled."
-            : "No imported practice questions for this exam yet. Study materials and external practice are listed on the Sources & Licenses page."}
+            : "Open the official study materials and practice resources below. In-app practice questions are not imported for this exam yet."}
         </p>
       ) : (
         <>
@@ -242,6 +244,7 @@ function QuestionBankPage() {
           )}
         </>
       )}
+      {!hasImportedBank && <ExamResources key={exam} examId={exam} />}
     </div>
   );
 }

@@ -448,7 +448,10 @@ function SetupScreen({
           </div>
         </div>
 
-        {examInfo && (
+        {examInfo && examInfo.examPattern.summary && (
+          <p className="text-sm text-muted-foreground mb-4">{examInfo.examPattern.summary}</p>
+        )}
+        {examInfo && !examInfo.examPattern.summary && (
           <>
             <div className="grid grid-cols-3 gap-3 mb-4">
               <div className="p-3 rounded-xl text-center" style={{ background: "var(--muted)" }}>
