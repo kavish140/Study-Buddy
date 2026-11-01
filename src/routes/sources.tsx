@@ -30,13 +30,27 @@ function SourcesPage() {
         </p>
         <ul>
           <li>
-            <a href="https://huggingface.co/datasets/Kshitij-PES/NEET_Dataset" target="_blank" rel="noreferrer">
+            <a href="https://practice4u.vercel.app/" target="_blank" rel="noreferrer">
+              Practice4U — practice collection
+            </a>{" "}
+            — copyright Practice4U, all rights reserved. Imported into JEE Main, JEE Advanced and
+            NEET practice from a captured collection. Source keys and solutions are retained; paper
+            provenance and whole-bank correctness are unverified. These records are labeled practice
+            rather than verified previous-year questions.
+          </li>
+          <li>
+            <a
+              href="https://huggingface.co/datasets/Kshitij-PES/NEET_Dataset"
+              target="_blank"
+              rel="noreferrer"
+            >
               Kshitij Gupta — NEET UG question collection
             </a>{" "}
-            — upstream license: <a href="/question-bank/LICENSE-Apache-2.0.txt">Apache License 2.0</a>.
-            Used for a partial 2021–2024 Physics, Chemistry and Biology bank. Source-supplied keys
-            have not been independently checked against every NTA booklet. Study notes, ambiguous
-            2025/mock records and missing diagrams are excluded; generated source explanations are omitted.
+            — upstream license:{" "}
+            <a href="/question-bank/LICENSE-Apache-2.0.txt">Apache License 2.0</a>. Used for a
+            partial 2021–2024 Physics, Chemistry and Biology bank. Source-supplied keys have not
+            been independently checked against every NTA booklet. Study notes, ambiguous 2025/mock
+            records and missing diagrams are excluded; generated source explanations are omitted.
           </li>
           <li>
             <a

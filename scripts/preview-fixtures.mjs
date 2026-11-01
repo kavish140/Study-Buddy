@@ -3,6 +3,8 @@ import { createServer } from "node:http";
 
 const userId = "00000000-0000-4000-8000-000000000001";
 const neetPreview = process.argv.includes("--neet");
+const dailySessionPreview = process.argv.includes("--daily-session");
+const coachRequests = [];
 const reservedQuestions = new Set();
 const user = {
   id: userId,
@@ -97,6 +99,23 @@ const tables = {
   forum_replies: [],
 };
 
+if (dailySessionPreview) {
+  tables.plan_items.push({
+    id: "daily-task",
+    user_id: userId,
+    date: "2020-01-01",
+    task: "Revise Newton’s laws and summarize the key ideas",
+    done: false,
+  });
+  tables.performance_logs.push({
+    user_id: userId,
+    subject: "Physics",
+    topic: "Laws of Motion",
+    question_count: 5,
+    correct_count: 1,
+  });
+}
+
 createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:5173");
   res.setHeader(
@@ -119,6 +138,41 @@ createServer(async (req, res) => {
     return;
   }
   res.setHeader("Content-Type", "application/json");
+  if (dailySessionPreview && url.pathname === "/fixture-coach-requests") {
+    res.end(JSON.stringify(coachRequests));
+    return;
+  }
+  if (dailySessionPreview && url.pathname === "/functions/v1/study-ai" && req.method === "POST") {
+    let body = "";
+    for await (const chunk of req) body += chunk;
+    const payload = JSON.parse(body);
+    if (payload.action === "dailySessionCoach") {
+      const prompt = JSON.parse(payload.data.messages.at(-1).content);
+      coachRequests.push({
+        event: prompt.event,
+        activity: prompt.activity,
+        stage: prompt.session.stage,
+        messageCount: payload.data.messages.length,
+        hasHiddenKey:
+          prompt.session.material &&
+          ("answer" in prompt.session.material || "correctAnswer" in prompt.session.material),
+      });
+      if (coachRequests.length > 40) coachRequests.shift();
+      const message =
+        prompt.event === "possible_distraction"
+          ? "We’ve stayed on this step for a little while. Try one small action: identify the concept you need, then tell me where you’re stuck. A short break is fine too."
+          : prompt.studentRequest
+            ? "Let’s take one small step. Identify the known quantities before choosing a formula; I’ll keep the answer hidden until you check your attempt."
+            : prompt.session.stage === "summary"
+              ? "You’ve finished this session. Your saved results show the work you completed; use the recap to choose what to revisit next."
+              : "Let’s work through this step together. Try recalling the central idea first, then use the session controls when you’re ready. You can ask me for a hint anytime.";
+      res.setHeader("Content-Type", "text/event-stream");
+      res.end(
+        `data: ${JSON.stringify({ choices: [{ delta: { content: message } }] })}\n\ndata: [DONE]\n\n`,
+      );
+      return;
+    }
+  }
   if (url.pathname === "/auth/v1/user") {
     res.end(JSON.stringify(user));
     return;
@@ -179,6 +233,42 @@ createServer(async (req, res) => {
     return;
   }
   const rows = tables[table] ?? [];
+  if (
+    dailySessionPreview &&
+    ["quizzes", "performance_logs", "plan_items", "review_cards"].includes(table)
+  ) {
+    const matches = (row) =>
+      [...url.searchParams.entries()]
+        .filter(([, value]) => value.startsWith("eq."))
+        .every(([key, value]) => String(row[key]) === value.slice(3));
+    let result = rows.filter(matches);
+    if (req.method === "POST" || req.method === "PATCH") {
+      let body = "";
+      for await (const chunk of req) body += chunk;
+      const incoming = JSON.parse(body);
+      if (req.method === "PATCH") result.forEach((row) => Object.assign(row, incoming));
+      else {
+        const previous = rows.find((row) =>
+          incoming.id
+            ? row.id === incoming.id
+            : row.subject === incoming.subject && row.topic === incoming.topic,
+        );
+        if (previous) {
+          Object.assign(previous, incoming);
+          result = [previous];
+        } else {
+          rows.push(incoming);
+          result = [incoming];
+        }
+      }
+    }
+    res.end(
+      JSON.stringify(
+        req.headers.accept?.includes("vnd.pgrst.object") ? (result[0] ?? null) : result,
+      ),
+    );
+    return;
+  }
   res.setHeader("Content-Range", `0-${Math.max(0, rows.length - 1)}/${rows.length}`);
   res.end(
     JSON.stringify(req.headers.accept?.includes("vnd.pgrst.object") ? (rows[0] ?? null) : rows),

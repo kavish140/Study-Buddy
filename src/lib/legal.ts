@@ -1,5 +1,5 @@
 export const LEGAL_PATHS = ["/privacy", "/terms", "/sources"];
-export const LEGAL_UPDATED = "31 October 2026";
+export const LEGAL_UPDATED = "1 November 2026";
 export const OPERATOR_NAME = "Kavish Ganatra";
 export const CONTACT_EMAIL = "kavishganatra5@gmail.com";
 

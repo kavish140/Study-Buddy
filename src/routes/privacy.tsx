@@ -21,7 +21,8 @@ function PrivacyPage() {
       <section>
         <h2>Information we process</h2>
         <p>
-          Study Buddy processes information to provide your account, study tools and progress tracking:
+          Study Buddy processes information to provide your account, study tools and progress
+          tracking:
         </p>
         <ul>
           <li>
@@ -75,17 +76,43 @@ function PrivacyPage() {
       </section>
       <section>
         <h2>Cookies and browser storage</h2>
-      <p>When you paste an image or click the clipboard button in AI Tutor, the app reads the image you choose to paste and prepares a local preview. It does not read the clipboard on page load. The image is sent for AI processing when you send the message.</p>
         <p>
-          Study Buddy uses browser storage for sign-in sessions, theme and interface preferences, timers
-          and locally stored study state. The current app does not implement advertising cookies.
-          Third-party sign-in and external resource sites may use their own cookies and storage.
+          When you paste an image or click the clipboard button in AI Tutor, the app reads the image
+          you choose to paste and prepares a local preview. It does not read the clipboard on page
+          load. The image is sent for AI processing when you send the message.
+        </p>
+        <p>
+          Study Buddy uses browser storage for sign-in sessions, theme and interface preferences,
+          timers and locally stored study state. The current app does not implement advertising
+          cookies. Third-party sign-in and external resource sites may use their own cookies and
+          storage.
         </p>
         <p>
           You can sign out, clear site data or restrict storage through your browser. Doing so may
           remove local preferences and interrupt sign-in. Clearing local study data in Settings does
           not delete cloud account data, saved attempts or community content. Resetting question
           history only changes which questions may be selected again.
+        </p>
+      </section>
+      <section>
+        <h2>Daily session coaching and activity summaries</h2>
+        <p>
+          Daily Session can proactively send the current study step, progress, visible study
+          material and your coaching messages to the text AI provider. While activity sharing is
+          enabled, the page also summarizes mouse movement patterns, click/scroll/key counts, tab
+          departures and time without step progress. Raw pointer positions are used locally to
+          derive movement summaries; coordinates are not sent as activity data or saved as records.
+          Activity monitoring does not record typed content, screenshots, other websites or other
+          applications. Messages you deliberately send to the coach are included in AI requests.
+        </p>
+        <p>
+          These counts can suggest when a check-in may help; they do not establish whether a student
+          is distracted or attentive. Collection pauses with the session and stops when the page
+          closes. Local activity counts are held in memory for a rolling minute and sent with
+          coaching requests, not saved as separate study records. You can disable activity sharing
+          before starting or during a session, and mute proactive guidance separately. Turning
+          sharing off clears local activity history for future requests; requests already sent may
+          remain in provider logs under provider retention practices.
         </p>
       </section>
       <section>

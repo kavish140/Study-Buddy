@@ -15,3 +15,9 @@ Questions and answer keys remain attributed to their exam publishers; dataset li
 Kshitij Gupta (Kshitij-PES), NEET Previous Year Questions for Fine-Tuning. Source: https://huggingface.co/datasets/Kshitij-PES/NEET_Dataset . Apache License 2.0, as declared in the dataset card; see LICENSE-Apache-2.0.txt.
 
 Changes: normalized choices and keys, retained statement lists, deduplicated, and excluded study notes, 2025/mock records and missing-diagram questions. Generated source explanations are omitted. Supplied answer keys have not been independently re-keyed against NTA booklets.
+
+## Practice4U import
+
+Practice4U, https://practice4u.vercel.app/ . Copyright Practice4U; all rights reserved. No open redistribution license is asserted. Captured from the user's signed-in session on 2026-11-01.
+
+Changes: filtered to supported exam/type combinations, excluded source-only visual/passage/grid content and invalid choices, converted fields and retained source-supplied keys and solutions. Records are labeled practice; claimed PYQ dates are not presented as verified provenance. Ten random records were spot-checked; this is not whole-bank verification.

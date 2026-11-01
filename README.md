@@ -17,6 +17,37 @@ This document tracks the current architecture, setup requirements, and recent ch
 
 ## Local development and recovery checks
 
+Daily Session (`/daily-session`) combines up to 3/5/8 due flashcards, 3/5/10
+reserved bank questions, and the oldest unfinished task due today or earlier for
+15/30/60-minute budgets. Practice prioritizes topics below 70% historical accuracy
+and fills shortages with mixed questions from the student's exam. Missing steps
+are skipped; unsupported exams can still use reviews and planned tasks. Ratings,
+practice results, topic performance and task completion use existing account APIs;
+no migration is needed. The countdown can pause and does not auto-submit when time
+runs out. Keep the page open: in-progress answers and the recap are held in memory.
+The recap compares accuracy only on topics with prior results and does not claim
+mastery from a short session. Use `node scripts/preview-fixtures.mjs --daily-session`
+with the loopback fixture setup below for synthetic end-to-end checks.
+
+The Daily Session companion streams through the dedicated `dailySessionCoach`
+action in `study-ai`. Deploy the updated `study-ai` Edge Function with this frontend;
+older functions reject this action instead of falling back to the general tutor.
+The coach receives the current visible material (no unrevealed/unchecked answer
+key), progress, the next available UI action, and optionally rolling 60-second
+activity counts. The frontend summarizes sampled pointer movement/direction
+changes, clicks, scrolls, key counts, tab departures and time without step progress.
+It never transmits raw coordinates or key content as activity telemetry. The
+server skips the full student snapshot for this action to avoid leaking answer
+keys through saved history, and uses a separate short coaching prompt.
+Students can disable activity sharing before starting or in the companion, and
+mute proactive guidance separately. Monitoring and coaching pause with the
+session; coaching also stops when the tab is hidden, unfocused or idle for 90
+seconds. Automatic replies have a 15-second cooldown and a 40-request session cap;
+check-ins are spaced at least 90 seconds apart and stop after a service error
+until an explicit retry or a new step. Activity only suggests a check-in; it is
+not an assessment of attention. Counts are kept in memory, not a separate database
+table; provider request logs may retain transmitted summaries. See `/privacy`.
+
 AI Tutor reads a fresh, authenticated student snapshot in `study-ai` and in
 `image-ai` attachment chats. It includes the profile, syllabus topics, recent and
 upcoming plan items, quiz/mock results, topic performance, saved-note summaries,

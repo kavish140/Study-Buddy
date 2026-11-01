@@ -246,7 +246,10 @@ export async function streamChat({
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
       },
-      body: JSON.stringify({ action: "chat", data: { messages, examName, source, appContext } }),
+      body: JSON.stringify({
+        action: source === "daily-session" ? "dailySessionCoach" : "chat",
+        data: { messages, examName, source, appContext },
+      }),
       signal,
     });
   } catch (err) {

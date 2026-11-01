@@ -96,7 +96,13 @@ test("quizzes and mocks only fetch static question-bank files, with no AI fallba
   assert.throws(() => sampleBank(main, NaN));
   const neetQuiz = await bankQuiz({ topic: "motion", count: 2, examName: "NEET UG" });
   assert.equal(neetQuiz.questions.length, 2);
-  assert.ok(neetQuiz.questions.every((q) => /neet/i.test(q.source.original_id)));
+  assert.ok(
+    neetQuiz.questions.every((q) =>
+      neet.some(
+        (row) => row.source.url === q.source.url && row.source.original_id === q.source.original_id,
+      ),
+    ),
+  );
   const neetMock = await bankMock({
     examName: "NEET UG",
     sections: ["Physics", "Chemistry", "Biology"].map((name) => ({ name, questions: 3 })),
@@ -164,7 +170,11 @@ test("NEET import preserves source keys and statement lists without importing no
     "Chemistry",
     "Physics",
   ]);
-  assert.ok(neet.every((q) => q.year >= 2021 && q.year <= 2024 && q.explanation === undefined));
+  assert.ok(
+    neet
+      .filter((q) => q.source.name === "Kshitij Gupta · NEET UG question collection")
+      .every((q) => q.year >= 2021 && q.year <= 2024 && q.explanation === undefined),
+  );
 });
 
 test("NEET manifest counts match the shipped snapshot", async () => {
@@ -174,7 +184,13 @@ test("NEET manifest counts match the shipped snapshot", async () => {
   assert.equal(manifest.exams.neet.count, neet.length);
   assert.equal(manifest.count, main.length + advanced.length + neet.length);
   for (const [subject, count] of Object.entries(manifest.neetImport.subjects))
-    assert.equal(neet.filter((q) => q.subject === subject).length, count);
+    assert.equal(
+      neet.filter(
+        (q) =>
+          q.subject === subject && q.source.name === "Kshitij Gupta · NEET UG question collection",
+      ).length,
+      count,
+    );
 });
 
 test("cloud failures and invalid reservations never fall back to local sampling", async (t) => {

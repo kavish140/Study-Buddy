@@ -111,6 +111,22 @@ function Dashboard() {
       <div className="absolute inset-0 bg-gradient-hero pointer-events-none" />
 
       <div className="relative max-w-5xl mx-auto px-5 py-8 space-y-7" data-tour="tour-dashboard">
+        <Link
+          to="/daily-session"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-primary/25 bg-primary/10 p-5 transition-colors hover:bg-primary/15"
+        >
+          <div>
+            <div className="flex items-center gap-2 font-semibold">
+              <Sparkles className="h-5 w-5 text-primary" /> Your personalized daily session
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              15, 30, or 60 minutes of due reviews, targeted practice, and a task from your plan.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
+            Start my session <ArrowRight size={16} />
+          </span>
+        </Link>
         {/* ── Page header ─────────────────────────────────────────────── */}
         <div>
           <div className="flex items-center gap-2 mb-2">

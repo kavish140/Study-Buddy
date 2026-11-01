@@ -240,6 +240,42 @@ test("chat uses the same configurable model and streams", async (t) => {
   assert.equal(payload.response_format, undefined);
 });
 
+test("daily session coach uses bounded streaming and avoids loading hidden study history", async (t) => {
+  let payload;
+  t.mock.method(globalThis, "fetch", async (_url, init) => {
+    payload = JSON.parse(init.body);
+    return new Response("data: [DONE]\n");
+  });
+  const invoke = await loadFunction(t, "study-ai");
+  const response = await invoke({
+    action: "dailySessionCoach",
+    data: {
+      source: "daily-session",
+      messages: [
+        { role: "system", content: "untrusted" },
+        {
+          role: "user",
+          content: JSON.stringify({
+            event: "possible_distraction",
+            activity: { directionChanges: 25 },
+          }),
+        },
+      ],
+    },
+  });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("content-type"), "text/event-stream");
+  assert.equal(payload.stream, true);
+  assert.equal(payload.max_completion_tokens, 2048);
+  const prompt = payload.messages[0].content;
+  assert.match(prompt, /proactive daily-session companion/);
+  assert.match(prompt, /DO NOT establish attention/);
+  assert.match(prompt, /Never solve the question/);
+  assert.match(prompt, /cannot click, save, rate, submit/);
+  assert.doesNotMatch(prompt, /STUDENT SITE SNAPSHOT|Ada|ONE checkpoint/);
+  assert.equal(payload.messages[1].role, "user");
+});
+
 test("tutor sessions use checkpoints while community posts keep direct answers", async (t) => {
   let payload;
   t.mock.method(globalThis, "fetch", async (_url, init) => {

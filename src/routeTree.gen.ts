@@ -27,6 +27,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as FocusRouteImport } from './routes/focus'
+import { Route as DailySessionRouteImport } from './routes/daily-session'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -123,6 +124,11 @@ const FocusRoute = FocusRouteImport.update({
   path: '/focus',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DailySessionRoute = DailySessionRouteImport.update({
+  id: '/daily-session',
+  path: '/daily-session',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CommunityRoute = CommunityRouteImport.update({
   id: '/community',
   path: '/community',
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/community': typeof CommunityRoute
+  '/daily-session': typeof DailySessionRoute
   '/focus': typeof FocusRoute
   '/landing': typeof LandingRoute
   '/leaderboard': typeof LeaderboardRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/community': typeof CommunityRoute
+  '/daily-session': typeof DailySessionRoute
   '/focus': typeof FocusRoute
   '/landing': typeof LandingRoute
   '/leaderboard': typeof LeaderboardRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/chat': typeof ChatRoute
   '/community': typeof CommunityRoute
+  '/daily-session': typeof DailySessionRoute
   '/focus': typeof FocusRoute
   '/landing': typeof LandingRoute
   '/leaderboard': typeof LeaderboardRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/chat'
     | '/community'
+    | '/daily-session'
     | '/focus'
     | '/landing'
     | '/leaderboard'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/chat'
     | '/community'
+    | '/daily-session'
     | '/focus'
     | '/landing'
     | '/leaderboard'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/chat'
     | '/community'
+    | '/daily-session'
     | '/focus'
     | '/landing'
     | '/leaderboard'
@@ -309,6 +321,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   ChatRoute: typeof ChatRoute
   CommunityRoute: typeof CommunityRoute
+  DailySessionRoute: typeof DailySessionRoute
   FocusRoute: typeof FocusRoute
   LandingRoute: typeof LandingRoute
   LeaderboardRoute: typeof LeaderboardRoute
@@ -457,6 +470,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FocusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/daily-session': {
+      id: '/daily-session'
+      path: '/daily-session'
+      fullPath: '/daily-session'
+      preLoaderRoute: typeof DailySessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/community': {
       id: '/community'
       path: '/community'
@@ -501,6 +521,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   ChatRoute: ChatRoute,
   CommunityRoute: CommunityRoute,
+  DailySessionRoute: DailySessionRoute,
   FocusRoute: FocusRoute,
   LandingRoute: LandingRoute,
   LeaderboardRoute: LeaderboardRoute,

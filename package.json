@@ -6,6 +6,7 @@
   "scripts": {
     "resources:export": "node scripts/export-study-resources.mjs",
     "questions:sync": "node scripts/sync-question-bank.mjs",
+    "questions:import-practice4u": "node scripts/sync-practice4u-bank.mjs",
     "test": "node --test --test-isolation=none scripts/*.test.mjs",
     "dev": "vite dev",
     "build": "vite build",

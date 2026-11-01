@@ -1,6 +1,6 @@
 {
-  "updated": "2026-10-31T12:13:56.149Z",
-  "count": 1281,
+  "updated": "2026-11-01T09:36:19.608Z",
+  "count": 6601,
   "rejected": 1581,
   "heldForReview": 771,
   "deduplicated": 6,
@@ -8,20 +8,21 @@
     "JEEBench · IIT Delhi DAIR": 473,
     "JEE Main practice collection · eQOURSE / soughed": 0,
     "Physics Wallah AI · JEE Main 2025 Mathematics": 466,
-    "Kshitij Gupta · NEET UG question collection": 342
+    "Kshitij Gupta · NEET UG question collection": 342,
+    "Practice4U · practice collection": 5320
   },
   "exams": {
     "jee-main": {
-      "count": 466,
-      "mcq": 371
+      "count": 3847,
+      "mcq": 2581
     },
     "jee-advanced": {
-      "count": 473,
-      "mcq": 94
+      "count": 2284,
+      "mcq": 979
     },
     "neet": {
-      "count": 342,
-      "mcq": 342
+      "count": 470,
+      "mcq": 470
     }
   },
   "sources": [
@@ -56,6 +57,13 @@
       "revision": "615882ae7a172dc6a2a782d74418039f1d889a30",
       "kind": "pyq",
       "evidence": "Curator-transcribed NEET papers and supplied answer keys; not independently re-keyed. Only 2021–2024 records are imported; ambiguous 2025/mock records are excluded."
+    },
+    {
+      "name": "Practice4U · practice collection",
+      "url": "https://practice4u.vercel.app/",
+      "license": "All rights reserved · Practice4U",
+      "kind": "practice",
+      "evidence": "Signed-in collection captured 2026-11-01. Source keys retained; ten randomly selected records were spot-checked, not the full collection. Claimed paper provenance is unverified."
     }
   ],
   "downloads": [
@@ -119,5 +127,17 @@
       "Biology": 100
     },
     "note": "Study notes, 2025/mock records, invalid choices/keys, incomplete matching lists and circuit/diagram/graph references excluded. Generated explanations omitted. Source-supplied keys are not independently verified."
+  },
+  "practice4uImport": {
+    "captured": "2026-11-01",
+    "input": 3679,
+    "uniqueImported": 3679,
+    "examPlacements": {
+      "jee-main": 3381,
+      "jee-advanced": 1811,
+      "neet": 128
+    },
+    "inputSha256": "9aae71bdaaf210c700c08481adb19caedee5fa5db8dfbba97b049f6c37136dd7",
+    "note": "Exam tags overlap. Imported as practice, with no claimed PYQ year. Unsupported types, figures, passages and invalid options were held by the compatibility audit. Whole-bank correctness and official-paper provenance are unverified."
   }
 }

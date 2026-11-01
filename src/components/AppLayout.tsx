@@ -62,6 +62,13 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
         bgVar: "--feat-dashboard-bg",
       },
       {
+        to: "/daily-session",
+        label: "Daily Session",
+        icon: Sparkles,
+        colorVar: "--feat-dashboard",
+        bgVar: "--feat-dashboard-bg",
+      },
+      {
         to: "/syllabus",
         label: "Syllabus",
         icon: BookOpen,
