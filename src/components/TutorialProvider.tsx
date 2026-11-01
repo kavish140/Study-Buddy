@@ -132,7 +132,7 @@ export const ALL_TOURS: Tour[] = [
         id: "quiz-generate",
         target: "tour-quiz-generate",
         title: "3️⃣ Generate & Attempt",
-        body: 'Hit "Start quiz" to select existing questions from the bank. No model writes the questions.',
+        body: 'Hit "Start quiz" to search the bank first. AI finds related questions if needed, then creates labelled practice questions only when the bank cannot fill your quiz.',
         placement: "bottom",
       },
     ],

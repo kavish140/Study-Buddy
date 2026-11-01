@@ -343,7 +343,7 @@ function TeachPage() {
       });
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
-      toast.error("AI failed to respond. Please try again.");
+      toast.error(err instanceof Error ? err.message : "AI failed to respond. Please try again.");
       setStreaming(false);
       // Remove the empty AI placeholder
       setMessages((prev) => prev.filter((m) => m.id !== aiId));

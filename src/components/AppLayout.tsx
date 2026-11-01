@@ -470,6 +470,30 @@ function FeaturePanel({
 
 export function AppLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const [chatViewport, setChatViewport] = useState<{
+    height: number;
+    top: number;
+    keyboard: boolean;
+  } | null>(null);
+  useEffect(() => {
+    if (path !== "/chat") return;
+    const viewport = window.visualViewport;
+    const update = () =>
+      setChatViewport({
+        height: viewport?.height ?? window.innerHeight,
+        top: viewport?.offsetTop ?? 0,
+        keyboard: window.innerHeight - (viewport?.height ?? window.innerHeight) > 150,
+      });
+    update();
+    viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    return () => {
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [path]);
   const { user, loading, error: authError, retry: retryAuth, signOut } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -628,8 +652,14 @@ export function AppLayout() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
-      style={{ background: "var(--background)", color: "var(--foreground)" }}
+      className={cn("flex flex-col", path === "/chat" ? "chat-shell" : "min-h-screen")}
+      style={{
+        background: "var(--background)",
+        color: "var(--foreground)",
+        ...(path === "/chat" && chatViewport
+          ? { height: chatViewport.height, top: chatViewport.top }
+          : {}),
+      }}
     >
       {/* ── Top Bar ─────────────────────────────────────────────────────── */}
       <header className="top-bar">
@@ -755,12 +785,16 @@ export function AppLayout() {
         )}
       >
         <Outlet />
-        <LegalFooter />
+        {path !== "/chat" && <LegalFooter />}
       </main>
 
       {/* ── Mobile bottom tab bar ────────────────────────────────────── */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-20"
+        className={cn(
+          "md:hidden bottom-0 left-0 right-0 z-20 shrink-0",
+          path === "/chat" ? "relative" : "fixed",
+          path === "/chat" && chatViewport?.keyboard && "hidden",
+        )}
         style={{
           background:
             effectiveTheme === "dark" ? "rgba(6, 9, 26, 0.95)" : "rgba(255, 255, 255, 0.95)",

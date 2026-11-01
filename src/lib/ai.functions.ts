@@ -4,6 +4,47 @@ import { consumeChatStream, readAIJson } from "./ai-response";
 import { validateAIResult } from "./ai-validation";
 import { drawBankQuestions, examIdFromName, filterBank, loadQuestionBank } from "./question-bank";
 import { MAX_PDF_BYTES } from "./chat-attachments";
+import { selectQuiz } from "./quiz-selection";
+import { toQuizQuestion } from "./question-bank";
+import { userErrorMessage } from "./user-error";
+
+export async function getHybridQuizQuestions({
+  data,
+  onProgress,
+}: {
+  data: { topic: string; count: number; difficulty?: string; examName?: string };
+  onProgress?: (message: string) => void;
+}) {
+  const { data: initialSession } = await supabase.auth.getSession();
+  const userId = initialSession.session?.user.id;
+  if (!userId) throw new Error("Your session expired. Please sign in again.");
+  const examId = examIdFromName(data.examName);
+  if (!["jee", "jee-main", "jee-advanced", "neet"].includes(examId))
+    throw new Error("Quiz practice is not available for this exam yet.");
+  const result = await selectQuiz(data, {
+    load: () => loadQuestionBank(examId),
+    reserve: (questions, count) => drawBankQuestions(questions, count, true),
+    convert: toQuizQuestion,
+    select: (request) =>
+      invokeEdgeFunction("selectQuizQuestions", {
+        ...request,
+        candidates: request.candidates.map(({ id, subject, topic, tags, question, options }) => ({
+          id,
+          subject,
+          topic,
+          tags,
+          question,
+          options,
+        })),
+      }),
+    generate: (request) => invokeEdgeFunction("generateQuizFallback", request),
+    progress: onProgress,
+  });
+  const { data: currentSession } = await supabase.auth.getSession();
+  if (currentSession.session?.user.id !== userId)
+    throw new Error("Your account changed. Please start the quiz again.");
+  return result;
+}
 
 async function invokeEdgeFunction<T = Record<string, unknown>>(
   action: string,
@@ -23,12 +64,12 @@ async function invokeEdgeFunction<T = Record<string, unknown>>(
     result = response.data;
     error = response.error;
   } catch (err) {
-    throw new Error(err instanceof Error ? err.message : "Failed to reach AI service");
+    throw new Error(userErrorMessage(err, "Failed to reach AI service. Please try again."));
   }
 
   if (error) {
     if (error.context instanceof Response) await readAIJson(error.context);
-    throw new Error(error.message || "Failed to invoke AI function");
+    throw new Error(userErrorMessage(error, "Failed to reach AI service. Please try again."));
   }
 
   if (result?.error) {

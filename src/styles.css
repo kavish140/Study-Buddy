@@ -1400,9 +1400,20 @@
   min-width: 0;
 }
 
+.chat-shell {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.chat-shell > .top-bar {
+  flex-shrink: 0;
+}
+
 .app-content--chat {
-  height: calc(100dvh - 124px - env(safe-area-inset-bottom, 0px));
-  flex: none;
+  min-height: 0;
+  flex: 1 1 0%;
   overflow: hidden;
 }
 
@@ -1420,12 +1431,6 @@
 @media (min-width: 640px) {
   .top-bar__xp-pill {
     display: flex;
-  }
-}
-
-@media (min-width: 768px) {
-  .app-content--chat {
-    height: calc(100dvh - 60px);
   }
 }
 

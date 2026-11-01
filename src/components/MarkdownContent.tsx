@@ -83,7 +83,7 @@ function CodeBlock({ lang, content }: { lang: string; content: string }) {
           )}
         </button>
       </div>
-      <pre className="bg-muted/20 p-4 overflow-x-auto text-xs font-mono leading-relaxed text-foreground/90">
+      <pre className="bg-muted/20 p-4 whitespace-pre-wrap break-words text-xs font-mono leading-relaxed text-foreground/90">
         <code>{content}</code>
       </pre>
     </div>
@@ -375,7 +375,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
       blocks.push(
         <div key={blocks.length} className="flex items-start gap-2 mb-1">
           <span className="text-primary mt-0.5 shrink-0 text-xs">•</span>
-          <span>{renderInline(line.slice(2))}</span>
+          <span className="min-w-0">{renderInline(line.slice(2))}</span>
         </div>,
       );
       continue;
@@ -390,7 +390,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
           <span className="text-primary font-semibold shrink-0 text-xs min-w-[1.25rem]">
             {numMatch[1]}.
           </span>
-          <span>{renderInline(line.slice(numMatch[0].length))}</span>
+          <span className="min-w-0">{renderInline(line.slice(numMatch[0].length))}</span>
         </div>,
       );
       continue;

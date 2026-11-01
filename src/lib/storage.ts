@@ -45,6 +45,7 @@ export type Topic = { id: string; name: string; done: boolean };
 export type Subject = { id: string; name: string; color: string; topics: Topic[] };
 
 export type QuizQuestion = {
+  origin?: "generated";
   source?: { name: string; url: string; license: string };
   question: string;
   options: string[];

@@ -33,7 +33,7 @@ import { useAppContext } from "@/hooks/use-app-context";
 import { pastedAttachment, validateChatAttachment } from "@/lib/chat-attachments";
 import { PasteImageButton } from "@/components/PasteImageButton";
 import { parseTutorTools, tutorToolTarget, TUTOR_TOOLS } from "@/lib/tutor-tools";
-import { parseTutorResponse } from "@/lib/tutor-interaction";
+import { parseTutorResponse, formatTutorText } from "@/lib/tutor-interaction";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
@@ -487,7 +487,7 @@ function EmptyState({
               />
             </label>
             <div
-              className="flex-1 rounded-2xl border border-border focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200"
+              className="flex-1 min-w-0 rounded-2xl border border-border focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200"
               style={{ background: "var(--muted)" }}
             >
               <textarea
@@ -505,7 +505,7 @@ function EmptyState({
                 placeholder="Ask a question, or paste an image…"
                 rows={1}
                 autoFocus
-                className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
+                className="block w-full bg-transparent px-3 py-3 text-base sm:text-sm outline-none resize-none placeholder:text-muted-foreground"
               />
             </div>
             <PasteImageButton onFile={(file) => onFileSelected(file, input)} disabled={creating} />
@@ -1014,7 +1014,7 @@ function ChatView({
 
       {/* Messages \u2014 also a drop target */}
       <div
-        className="flex-1 overflow-y-auto relative"
+        className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain relative"
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -1073,8 +1073,8 @@ function ChatView({
       {session.messages.length > 0 &&
         session.messages[session.messages.length - 1]?.role === "assistant" &&
         !isStreaming && (
-          <div className="px-4 pb-2 max-w-3xl mx-auto w-full overflow-x-auto">
-            <div className="flex gap-2 pb-1">
+          <div className="px-3 sm:px-4 pb-2 max-w-3xl mx-auto w-full shrink-0">
+            <div className="flex flex-wrap gap-2 pb-1">
               {quickActions.map((action) => (
                 <button
                   key={action.label}
@@ -1159,7 +1159,7 @@ function ChatView({
 
       {/* Input area */}
       <div
-        className="border-t border-border p-4 shrink-0"
+        className="border-t border-border p-2 sm:p-4 shrink-0"
         style={{ background: "var(--background)", backdropFilter: "blur(20px)" }}
       >
         <div className="max-w-3xl mx-auto">
@@ -1189,7 +1189,7 @@ function ChatView({
             </label>
 
             <div
-              className="flex-1 rounded-2xl border border-border focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200"
+              className="flex-1 min-w-0 rounded-2xl border border-border focus-within:border-primary/40 focus-within:shadow-glow-sm transition-all duration-200"
               style={{ background: "var(--muted)" }}
               data-tour="tour-chat-input"
             >
@@ -1213,7 +1213,7 @@ function ChatView({
                       : "Try the next step, share your reasoning, or ask a question…"
                 }
                 rows={1}
-                className="w-full bg-transparent px-4 py-3 text-sm outline-none resize-none placeholder:text-muted-foreground"
+                className="block w-full bg-transparent px-3 py-2.5 text-base sm:text-sm outline-none resize-none placeholder:text-muted-foreground"
                 disabled={isStreaming}
               />
             </div>
@@ -1293,7 +1293,7 @@ function MessageBubble({
       >
         <div
           className={cn(
-            "rounded-2xl text-sm leading-relaxed",
+            "min-w-0 max-w-full rounded-2xl text-sm leading-relaxed",
             isUser ? "rounded-tr-sm" : "card-light rounded-tl-sm",
           )}
           style={
@@ -1322,7 +1322,10 @@ function MessageBubble({
                 {message.content}
               </p>
             ) : (
-              <MarkdownContent content={parsed.content} isStreaming={isStreaming} />
+              <MarkdownContent
+                content={formatTutorText(parsed.content)}
+                isStreaming={isStreaming}
+              />
             )}
           </div>
         </div>
@@ -1333,7 +1336,7 @@ function MessageBubble({
               <Link
                 key={action.tool}
                 {...tutorToolTarget(action)}
-                className="rounded-xl border border-primary/25 bg-primary/5 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="max-w-full break-words [overflow-wrap:anywhere] rounded-xl border border-primary/25 bg-primary/5 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
                 {TUTOR_TOOLS[action.tool].label}
                 {action.topic ? ` · ${action.topic}` : ""}
@@ -1342,7 +1345,7 @@ function MessageBubble({
           </div>
         )}
         {!isUser && parsed.checkpoint && !isStreaming && (
-          <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 space-y-3">
+          <div className="min-w-0 max-w-full rounded-2xl border border-primary/25 bg-primary/5 p-4 space-y-3">
             <p className="text-xs font-semibold text-primary">Your turn</p>
             <MarkdownContent content={parsed.checkpoint.question} />
             <div className="flex flex-wrap gap-2">
@@ -1356,7 +1359,7 @@ function MessageBubble({
                       `For your checkpoint: ${parsed.checkpoint!.question}\n\nMy response: ${option}`,
                     )
                   }
-                  className="text-left text-sm rounded-xl border border-primary/25 px-3 py-2 hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50 disabled:cursor-default"
+                  className="max-w-full break-words [overflow-wrap:anywhere] text-left text-sm rounded-xl border border-primary/25 px-3 py-2 hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50 disabled:cursor-default"
                 >
                   {option}
                 </button>

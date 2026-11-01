@@ -1,3 +1,5 @@
+import { indexQuestionTopics } from "./quiz-search.ts";
+
 export type BankQuestion = {
   id: string;
   exam_id: string;
@@ -23,6 +25,11 @@ export type BankQuestion = {
 };
 
 const cache = new Map<string, Promise<BankQuestion[]>>();
+export function quizExamOptions(examId = "") {
+  if (examId === "neet") return ["NEET UG"];
+  if (examId.startsWith("jee")) return ["Mixed JEE", "JEE Main", "JEE Advanced"];
+  return ["Mixed JEE", "JEE Main", "JEE Advanced", "NEET UG"];
+}
 export function hasImportedQuestionBank(examId = "") {
   return ["jee", "jee-main", "jee-advanced", "neet"].includes(examId);
 }
@@ -37,7 +44,29 @@ export function loadQuestionBank(examId: string): Promise<BankQuestion[]> {
       .then(async (response) => {
         if (!response.ok)
           throw new Error("The question bank could not be loaded. Please try again.");
-        return (await response.json()) as BankQuestion[];
+        let bank: BankQuestion[];
+        try {
+          bank = await response.json();
+        } catch {
+          throw new Error(
+            "The question bank returned an unreadable response. Please reload and try again.",
+          );
+        }
+        if (
+          !Array.isArray(bank) ||
+          bank.some(
+            (q) =>
+              !q ||
+              typeof q.id !== "string" ||
+              typeof q.question !== "string" ||
+              typeof q.subject !== "string" ||
+              typeof q.topic !== "string" ||
+              !Array.isArray(q.tags) ||
+              !Array.isArray(q.options),
+          )
+        )
+          throw new Error("The question bank data is incomplete. Please reload and try again.");
+        return bank.map(indexQuestionTopics);
       })
       .catch((error) => {
         cache.delete(examId);

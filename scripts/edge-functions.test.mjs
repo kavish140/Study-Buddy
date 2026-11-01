@@ -29,6 +29,12 @@ async function loadFunction(t, name, overrides = {}) {
     await readFile(new URL(`../supabase/functions/${name}/index.ts`, import.meta.url), "utf8")
   )
     .replace(
+      '"../_shared/quiz-validation.ts"',
+      JSON.stringify(
+        new URL("../supabase/functions/_shared/quiz-validation.ts", import.meta.url).href,
+      ),
+    )
+    .replace(
       /^import .*createClient.*;$/m,
       'const createClient = () => ({ from: () => { const q = { select: () => q, eq: () => q, order: () => q, gte: () => q, limit: () => q, abortSignal: async () => ({data: [{display_name: "Ada"}], count: 1, error: null}) }; return q; }, auth: { getUser: async () => ({ data: { user: { id: "test-user" } }, error: null }) } });',
     )
@@ -93,6 +99,128 @@ test("all structured study tools use the replacement Groq model and JSON mode", 
     assert.equal(call.model, "openai/gpt-oss-120b");
     assert.equal(call.response_format.type, "json_object");
   }
+});
+
+test("semantic selection validates the topic and returns only supplied bank IDs", async (t) => {
+  const requests = [];
+  t.mock.method(globalThis, "fetch", async (_url, init) => {
+    const payload = JSON.parse(init.body);
+    requests.push(payload);
+    const result =
+      requests.length === 1 ? { valid: true, topic: "Chemical Bonding" } : { ids: ["bank-1"] };
+    return Response.json({
+      choices: [{ message: { content: JSON.stringify(result) }, finish_reason: "stop" }],
+    });
+  });
+  const invoke = await loadFunction(t, "study-ai");
+  const response = await invoke({
+    action: "selectQuizQuestions",
+    data: {
+      topic: "chemical bonding",
+      count: 5,
+      examName: "Mixed JEE",
+      candidates: [
+        {
+          id: "bank-1",
+          subject: "Chemistry",
+          question: "Find the hybridisation.",
+          options: ["sp", "sp2", "sp3", "none"],
+        },
+      ],
+    },
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).ids, ["bank-1"]);
+  assert.match(requests[1].messages[1].content, /Find the hybridisation/);
+  assert.match(requests[1].messages[0].content, /Never invent/);
+});
+
+test("random and out-of-syllabus topics are rejected before selection or generation", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async () => {
+    calls++;
+    return Response.json({
+      choices: [{ message: { content: '{"valid":false,"topic":""}' }, finish_reason: "stop" }],
+    });
+  });
+  const invoke = await loadFunction(t, "study-ai");
+  for (const action of ["selectQuizQuestions", "generateQuizFallback"]) {
+    const response = await invoke({
+      action,
+      data: { topic: "asdkjhasd", count: 5, candidates: [] },
+    });
+    assert.equal(response.status, 422);
+    assert.match((await response.json()).error, /exam syllabus/);
+  }
+  assert.equal(calls, 2);
+});
+
+test("generation validates answer keys and strips invented provenance", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async () => {
+    const output =
+      calls++ === 0
+        ? { valid: true, topic: "Kinematics" }
+        : {
+            questions: [
+              {
+                question: "What is the SI unit of acceleration?",
+                options: ["m/s", "m/s²", "m", "s"],
+                answerIndex: 1,
+                explanation: "Acceleration is change in velocity per unit time, measured in m/s².",
+                source: { name: "Fake paper" },
+              },
+            ],
+          };
+    return Response.json({
+      choices: [{ message: { content: JSON.stringify(output) }, finish_reason: "stop" }],
+    });
+  });
+  const invoke = await loadFunction(t, "study-ai");
+  const response = await invoke({
+    action: "generateQuizFallback",
+    data: { topic: "Kinematics", count: 1 },
+  });
+  assert.equal(response.status, 200);
+  const { questions } = await response.json();
+  assert.equal(questions[0].origin, "generated");
+  assert.equal(questions[0].source, undefined);
+  assert.equal(questions[0].answerIndex, 1);
+});
+
+test("selection rejects fabricated IDs instead of opening an unrelated quiz", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async () =>
+    Response.json({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify(
+              calls++ === 0 ? { valid: true, topic: "Kinematics" } : { ids: ["fabricated"] },
+            ),
+          },
+          finish_reason: "stop",
+        },
+      ],
+    }),
+  );
+  const invoke = await loadFunction(t, "study-ai");
+  const response = await invoke({
+    action: "selectQuizQuestions",
+    data: {
+      topic: "Kinematics",
+      count: 1,
+      candidates: [
+        {
+          id: "bank-1",
+          subject: "Physics",
+          question: "An object accelerates.",
+          options: ["a", "b", "c", "d"],
+        },
+      ],
+    },
+  });
+  assert.equal(response.status, 502);
 });
 
 test("chat uses the same configurable model and streams", async (t) => {

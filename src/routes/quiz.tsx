@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { todayIST } from "@/lib/date-utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Loader2, Sparkles, RotateCcw, Check, X } from "lucide-react";
 import { uid, XP_REWARDS, type SavedQuiz, type QuizQuestion } from "@/lib/storage";
-import { getQuizQuestions, hasImportedQuestionBank } from "@/lib/question-bank";
+import { hasImportedQuestionBank, quizExamOptions } from "@/lib/question-bank";
+import { getHybridQuizQuestions } from "@/lib/ai.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useTutorial } from "@/components/TutorialProvider";
 import { MarkdownContent } from "@/components/MarkdownContent";
-import { useAppContext } from "@/hooks/use-app-context";
 import { withoutInlineCredit } from "@/lib/legal";
 
 export const Route = createFileRoute("/quiz")({
@@ -44,8 +44,11 @@ function QuizPage() {
     queryKey: ["quizzes"],
     queryFn: api.getQuizzes,
   });
-  const { data: profile } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
-  const { contextSummary } = useAppContext();
+  const {
+    data: profile,
+    isPending: profileLoading,
+    isError: profileError,
+  } = useQuery({ queryKey: ["userProfile"], queryFn: api.getUserProfile });
   const { triggerPageTour } = useTutorial();
 
   useEffect(() => {
@@ -64,25 +67,35 @@ function QuizPage() {
   }, [tutorTopic]);
   const [count, setCount] = useState("5");
   const [bankExam, setBankExam] = useState("Mixed JEE");
-  const [examChosen, setExamChosen] = useState(false);
+  const examOptions = profileLoading || profileError ? [] : quizExamOptions(profile?.exam_id);
+  const selectedExam = examOptions.includes(bankExam) ? bankExam : (examOptions[0] ?? "");
   useEffect(() => {
-    if (!examChosen && profile?.exam_id === "neet") setBankExam("NEET UG");
-  }, [profile?.exam_id, examChosen]);
+    setBankExam(quizExamOptions(profile?.exam_id)[0]);
+  }, [profile?.exam_id]);
   const [difficulty, setDifficulty] = useState<"any" | "easy" | "medium" | "hard">("any");
   const [loading, setLoading] = useState(false);
+  const requestInFlight = useRef(false);
+  const [progress, setProgress] = useState("");
+  const [quizError, setQuizError] = useState<string | null>(null);
   const [active, setActive] = useState<SavedQuiz | null>(null);
 
   const handleGenerate = async (retryCount = 0) => {
+    if (requestInFlight.current) return;
+    if (!selectedExam) {
+      setQuizError("Your exam profile could not load. Refresh the page and try again.");
+      return;
+    }
+    requestInFlight.current = true;
     setLoading(true);
+    setQuizError(null);
     try {
-      const res = await getQuizQuestions({
+      const res = await getHybridQuizQuestions({
+        onProgress: setProgress,
         data: {
           topic,
           count: Number(count),
           difficulty,
-          examName: bankExam,
-          source: "quiz",
-          appContext: contextSummary,
+          examName: selectedExam,
         },
       });
 
@@ -91,26 +104,16 @@ function QuizPage() {
         throw new Error("No bank questions were selected — please try again.");
       }
 
-      // Defensive: coerce answerIndex to number in case AI returns a string,
-      // and derive from answer text if the AI omitted answerIndex entirely.
-      const questions: QuizQuestion[] = res.questions.map(
-        (q: QuizQuestion & { answer?: string }) => {
-          let idx: number | undefined =
-            typeof q.answerIndex === "string" ? parseInt(q.answerIndex, 10) : q.answerIndex;
-
-          // Fallback: if answerIndex is missing or NaN, try to match the answer string against options
-          if (idx === undefined || Number.isNaN(idx)) {
-            const fallbackIdx = q.answer
-              ? q.options.findIndex(
-                  (o) => o.trim().toLowerCase() === q.answer!.trim().toLowerCase(),
-                )
-              : -1;
-            idx = fallbackIdx >= 0 ? fallbackIdx : 0;
-          }
-
-          return { ...q, answerIndex: idx };
-        },
-      );
+      const questions = res.questions;
+      if (
+        questions.some(
+          (q) =>
+            !Number.isInteger(q.answerIndex) ||
+            q.answerIndex < 0 ||
+            q.answerIndex >= q.options.length,
+        )
+      )
+        throw new Error("A question has an invalid answer key. Please try again.");
 
       const quiz: SavedQuiz = {
         id: uid(),
@@ -129,6 +132,7 @@ function QuizPage() {
       // Only catches quiz GENERATION errors (edge function failures), not save errors.
       // Save errors are surfaced via saveMutation’s top-level onError toast.
       const msg = e instanceof Error ? e.message : "Unable to select bank questions";
+      setQuizError(msg);
       toast.error(msg, {
         action:
           retryCount < 2
@@ -139,6 +143,7 @@ function QuizPage() {
             : undefined,
       });
     } finally {
+      requestInFlight.current = false;
       setLoading(false);
     }
   };
@@ -174,8 +179,11 @@ function QuizPage() {
     <div className="max-w-5xl mx-auto px-6 py-10 animate-fade-up">
       <h1 className="text-3xl font-bold tracking-tight font-heading">Practice Quiz</h1>
       <p className="text-muted-foreground mt-1">
-        Practice sourced JEE and NEET questions. Mixed JEE practice includes Main and Advanced
-        questions. No AI question generation.
+        {profile?.exam_id === "neet"
+          ? "Practice sourced NEET questions from the question bank."
+          : "Practice sourced questions. Mixed JEE includes JEE Main and Advanced questions."}{" "}
+        We search the bank first. AI finds related bank questions and creates additional practice
+        only when needed.
       </p>
 
       {profile?.exam_id && !hasImportedQuestionBank(profile.exam_id) && (
@@ -194,17 +202,16 @@ function QuizPage() {
         </div>
         <select
           aria-label="Question source exam"
-          value={bankExam}
+          disabled={loading || profileLoading || profileError}
+          value={selectedExam}
           onChange={(e) => {
-            setExamChosen(true);
             setBankExam(e.target.value);
           }}
           className="mb-3 w-full rounded-lg border p-2 text-sm bg-background"
         >
-          <option>Mixed JEE</option>
-          <option>JEE Main</option>
-          <option>JEE Advanced</option>
-          <option>NEET UG</option>
+          {examOptions.map((exam) => (
+            <option key={exam}>{exam}</option>
+          ))}
         </select>
         <div
           className="grid md:grid-cols-[1fr_120px_140px_auto] gap-2"
@@ -212,11 +219,13 @@ function QuizPage() {
         >
           <Input
             value={topic}
+            maxLength={200}
+            disabled={loading}
             onChange={(e) => setTopic(e.target.value)}
             placeholder={"Optional topic or subject — leave blank for mixed practice"}
             onKeyDown={(e) => e.key === "Enter" && !loading && handleGenerate()}
           />
-          <Select value={count} onValueChange={setCount}>
+          <Select value={count} onValueChange={setCount} disabled={loading}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -228,26 +237,40 @@ function QuizPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={difficulty} onValueChange={(v) => setDifficulty(v as typeof difficulty)}>
+          <Select
+            value={difficulty}
+            onValueChange={(v) => setDifficulty(v as typeof difficulty)}
+            disabled={loading}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="any">Any difficulty</SelectItem>
-              <SelectItem value="easy">Source: easy</SelectItem>
-              <SelectItem value="medium">Source: medium</SelectItem>
-              <SelectItem value="hard">Source: hard</SelectItem>
+              <SelectItem value="easy">Easy</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="hard">Hard</SelectItem>
             </SelectContent>
           </Select>
           <Button
             onClick={() => handleGenerate()}
-            disabled={loading}
+            disabled={loading || profileLoading || profileError}
             className="bg-gradient-primary"
             data-tour="tour-quiz-generate"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start quiz"}
           </Button>
         </div>
+        {loading && (
+          <p role="status" className="mt-3 text-sm text-muted-foreground">
+            {progress}
+          </p>
+        )}
+        {quizError && (
+          <p role="alert" className="mt-3 text-sm text-destructive">
+            {quizError}
+          </p>
+        )}
       </div>
 
       <h2 className="text-sm font-medium text-muted-foreground mt-8 mb-3">Past quizzes</h2>
@@ -277,10 +300,16 @@ function QuizPage() {
               <Button
                 size="sm"
                 variant="secondary"
-                disabled={!q.questions.every((question) => question.source)}
+                disabled={
+                  !q.questions.every(
+                    (question) => question.source || question.origin === "generated",
+                  )
+                }
                 onClick={() => setActive(q)}
               >
-                {q.questions.every((question) => question.source) ? "Retake" : "Legacy attempt"}
+                {q.questions.every((question) => question.source || question.origin === "generated")
+                  ? "Retake"
+                  : "Legacy attempt"}
               </Button>
             </div>
           ))}
@@ -343,6 +372,11 @@ function QuizRunner({
         {quiz.questions.map((q: QuizQuestion, i) => (
           <div key={`q-${i}-${q.question.slice(0, 20)}`} className="p-5 rounded-2xl card-light">
             <div className="text-xs text-muted-foreground mb-1">Question {i + 1}</div>
+            <div className="text-xs text-muted-foreground mb-2">
+              {q.origin === "generated"
+                ? "AI-generated practice"
+                : `Question bank${q.source?.name ? ` · ${q.source.name}` : ""}`}
+            </div>
             {/* Question text — MarkdownContent renders inline LaTeX like $\sin x$ */}
             <div className="font-medium text-sm leading-relaxed">
               <MarkdownContent content={q.question} />

@@ -1,6 +1,23 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseTutorResponse } from "../src/lib/tutor-interaction.ts";
+import { parseTutorResponse, formatTutorText } from "../src/lib/tutor-interaction.ts";
+
+test("JSON-labelled checkpoints render as controls rather than raw code", () => {
+  const result = parseTutorResponse(
+    'Your turn.\n```json\n{"question":"Choose your response.","options":[]}\n```',
+  );
+  assert.equal(result.content, "Your turn.");
+  assert.deepEqual(result.checkpoint, { question: "Choose your response.", options: [] });
+  const code = 'Example:\n```json\n{"value":42}\n```';
+  assert.equal(parseTutorResponse(code).content, code);
+});
+
+test("run-together answer options get separate paragraphs without changing code", () => {
+  const options = "A) Bond order 1 B) Bond order 2 C) Paramagnetic D) Diamagnetic";
+  assert.equal(formatTutorText(options), options.replaceAll(/ (?=[B-D]\))/g, "\n\n"));
+  const code = `\`\`\`text\n${options}\n\`\`\``;
+  assert.equal(formatTutorText(code), code);
+});
 
 test("checkpoint choices preserve equations and free responses", () => {
   const parsed = parseTutorResponse(

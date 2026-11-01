@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   bankQuiz,
+  quizExamOptions,
   bankMock,
   filterBank,
   isCorrectBankAnswer,
@@ -13,6 +14,12 @@ import {
   setQuestionHistoryUser,
 } from "../src/lib/question-bank.ts";
 import { importJEEBench, importMainPractice, importNEET } from "./question-importers.mjs";
+
+test("quiz exam options follow the account's exam family", () => {
+  for (const exam of ["jee", "jee-main", "jee-advanced"])
+    assert.deepEqual(quizExamOptions(exam), ["Mixed JEE", "JEE Main", "JEE Advanced"]);
+  assert.deepEqual(quizExamOptions("neet"), ["NEET UG"]);
+});
 
 const main = JSON.parse(
   await readFile(new URL("../public/question-bank/jee-main.json", import.meta.url), "utf8"),
@@ -101,10 +108,13 @@ test("quizzes and mocks only fetch static question-bank files, with no AI fallba
 
 test("NEET import preserves source keys and statement lists without importing notes, mocks or generated reasoning", () => {
   const row = {
-    question_id: "NEET_2023_TEST_1", subject: "Biology",
-    question: "Choose the correct statement.", statements: ["A. First statement", "B. Second statement"],
+    question_id: "NEET_2023_TEST_1",
+    subject: "Biology",
+    question: "Choose the correct statement.",
+    statements: ["A. First statement", "B. Second statement"],
     options: { a: "First", b: "Second", c: "Both", d: "Neither" },
-    correct_answer_key: "c", brief_explanation: "Generated source reasoning",
+    correct_answer_key: "c",
+    brief_explanation: "Generated source reasoning",
   };
   const q = importNEET(row);
   assert.equal(q.exam_id, "neet");
@@ -118,19 +128,49 @@ test("NEET import preserves source keys and statement lists without importing no
   assert.equal(importNEET({ ...row, correct_answer_key: "e" }), null);
   assert.equal(importNEET({ ...row, statements: { A: "Missing list" } }), null);
   assert.equal(importNEET({ ...row, question: "Match List-I with List-II" }), null);
-  assert.equal(importNEET({ ...row, options: { a: "Statement I is incorrect.", b: "Statement I is false.", c: "Both", d: "Neither" } }), null);
+  assert.equal(
+    importNEET({
+      ...row,
+      options: {
+        a: "Statement I is incorrect.",
+        b: "Statement I is false.",
+        c: "Both",
+        d: "Neither",
+      },
+    }),
+    null,
+  );
   assert.ok(importNEET({ ...row, options: { a: "α²", b: "α³", c: "β²", d: "β³" } }));
   assert.equal(importNEET({ ...row, question: "Consider the following figure" }), null);
-  assert.equal(importNEET({ ...row, subject: "Physics", question: "A system follows the cycle abcda. Find work along path bc." }), null);
-  assert.equal(importNEET({ ...row, subject: "Chemistry", question: "Choose the correct structure." }), null);
-  assert.equal(importNEET({ ...row, options: { a: "Same", b: "Same", c: "Other", d: "Neither" } }), null);
+  assert.equal(
+    importNEET({
+      ...row,
+      subject: "Physics",
+      question: "A system follows the cycle abcda. Find work along path bc.",
+    }),
+    null,
+  );
+  assert.equal(
+    importNEET({ ...row, subject: "Chemistry", question: "Choose the correct structure." }),
+    null,
+  );
+  assert.equal(
+    importNEET({ ...row, options: { a: "Same", b: "Same", c: "Other", d: "Neither" } }),
+    null,
+  );
   assert.ok(neet.length > 300);
-  assert.deepEqual([...new Set(neet.map((q) => q.subject))].sort(), ["Biology", "Chemistry", "Physics"]);
+  assert.deepEqual([...new Set(neet.map((q) => q.subject))].sort(), [
+    "Biology",
+    "Chemistry",
+    "Physics",
+  ]);
   assert.ok(neet.every((q) => q.year >= 2021 && q.year <= 2024 && q.explanation === undefined));
 });
 
 test("NEET manifest counts match the shipped snapshot", async () => {
-  const manifest = JSON.parse(await readFile(new URL("../public/question-bank/manifest.json", import.meta.url), "utf8"));
+  const manifest = JSON.parse(
+    await readFile(new URL("../public/question-bank/manifest.json", import.meta.url), "utf8"),
+  );
   assert.equal(manifest.exams.neet.count, neet.length);
   assert.equal(manifest.count, main.length + advanced.length + neet.length);
   for (const [subject, count] of Object.entries(manifest.neetImport.subjects))

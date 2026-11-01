@@ -24,10 +24,13 @@ import { useAccent } from "../hooks/use-accent";
 import { AuthProvider } from "../contexts/AuthContext";
 import { LegalFooter } from "../components/LegalFooter";
 import { LEGAL_PATHS } from "../lib/legal";
+import { userErrorMessage } from "../lib/user-error";
 
-const SITE_ORIGIN = new URL(import.meta.env.VITE_SITE_URL || "https://study-buddy.sitenova.dev").origin;
+const SITE_ORIGIN = new URL(import.meta.env.VITE_SITE_URL || "https://study-buddy.sitenova.dev")
+  .origin;
 const SOCIAL_IMAGE = `${SITE_ORIGIN}/og-study-buddy.png`;
-const SOCIAL_DESCRIPTION = "Plan your prep, learn with AI, and practice with purpose. Your study tools, together in Study Buddy.";
+const SOCIAL_DESCRIPTION =
+  "Plan your prep, learn with AI, and practice with purpose. Your study tools, together in Study Buddy.";
 
 function NotFoundComponent() {
   return (
@@ -65,7 +68,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           This page didn't load
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          {userErrorMessage(error, "This page couldn't load. Try again or head back home.")}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -105,8 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Study Buddy — Big exam goals. Better study days." },
       {
         property: "og:description",
-        content:
-          SOCIAL_DESCRIPTION,
+        content: SOCIAL_DESCRIPTION,
       },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Study Buddy" },
@@ -116,12 +118,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image:type", content: "image/png" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
-      { property: "og:image:alt", content: "Study Buddy — Big exam goals. Better study days. AI tutoring, study plans and sourced practice." },
+      {
+        property: "og:image:alt",
+        content:
+          "Study Buddy — Big exam goals. Better study days. AI tutoring, study plans and sourced practice.",
+      },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Study Buddy — Big exam goals. Better study days." },
       { name: "twitter:description", content: SOCIAL_DESCRIPTION },
       { name: "twitter:image", content: SOCIAL_IMAGE },
-      { name: "twitter:image:alt", content: "Study Buddy: AI tutoring, study plans and sourced practice." },
+      {
+        name: "twitter:image:alt",
+        content: "Study Buddy: AI tutoring, study plans and sourced practice.",
+      },
     ],
     links: [
       {

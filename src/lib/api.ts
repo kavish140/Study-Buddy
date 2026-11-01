@@ -67,7 +67,6 @@ export const api = {
     if (!user_id) return [];
     const { data, error } = await supabase.from("quizzes").select("*").eq("user_id", user_id);
     if (error) {
-      toast.error("Error fetching quizzes: " + error.message);
       throw error;
     }
     return ((data as SavedQuiz[]) || []).sort((a, b) => {
